@@ -35,3 +35,7 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Claude harness ###
+_workspace/
+.claude/settings.local.json

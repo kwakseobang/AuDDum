@@ -1,0 +1,34 @@
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "0"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p:*)",
+      "Bash(ls:*)",
+      "Bash(./gradlew compileJava:*)",
+      "Bash(./gradlew compileTestJava:*)",
+      "Bash(./gradlew test:*)",
+      "Bash(./gradlew build:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git merge-base:*)",
+      "Bash(git fetch origin:*)",
+      "Bash(git branch --show-current)",
+      "Bash(gh issue view:*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./src/main/resources/application-local.yaml)",
+      "Bash(rm -rf:*)",
+      "Bash(git push origin main:*)",
+      "Bash(git push origin develop:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(gh pr merge:*)"
+    ]
+  }
+}
