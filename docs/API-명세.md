@@ -158,8 +158,8 @@
 - `question`은 1~500자이고 줄바꿈이 없다(줄바꿈의 범위는 도메인 모델 §4). `options`는 문자열 2~5개이고 각 1~50자이며 서로 달라야 한다. 글자 수는 유니코드 문자 단위이고, 질문과 선택지는 앞뒤 공백을 제거한 뒤 길이를 판단하며 제거한 값을 저장한다.
 - `category`는 `SOME`, `BLIND_DATE`, `CONTACT`, `IN_RELATIONSHIP`, `BREAKUP`, `LOVE_VALUES`, `ETC` 중 하나다.
 - `closesAt`은 선택이다. 있으면 요청 시점보다 미래여야 하고 상한은 없다. 없으면 마감 없는 투표다.
-- 성공 시 `201`, `Location: /api/v1/polls/{id}`, 본문은 상세 조회와 같은 형태다.
-- 실패: 입력 위반 400 `VALIDATION_FAILED`(위반 필드를 `errors`에 담는다), 미로그인 401, 정지 회원 403 `MEMBER_SUSPENDED`, 연속 생성 간격 위반 429 `POLL_RATE_LIMITED`, 직전과 같은 질문 409 `DUPLICATE_POLL`.
+- 성공 시 `201`, `Location: /api/v1/polls/{id}`, 본문은 만든 투표의 공개 ID 문자열 하나다. 상세는 `GET /polls/{pollId}`로 조회한다.
+- 실패: 입력 위반 400 `VALIDATION_FAILED`(위반 필드를 `errors`에 담는다), 미로그인 401, 정지 회원 403 `MEMBER_SUSPENDED`, 연속 생성 간격(직전 생성 후 30초 미만) 위반 429 `POLL_RATE_LIMITED`, 직전과 같은 질문 409 `DUPLICATE_POLL`. 둘이 겹치면 409가 우선한다.
 - 투표와 선택지는 한 트랜잭션으로 저장한다. 중간에 실패하면 전부 롤백된다.
 
 `POST /polls` 요청 예시
@@ -460,7 +460,7 @@ flowchart TD
 
 이 명세를 쓰면서 제안으로 정한 값이다. 운영이나 구현 중 바꿀 수 있다.
 
-- 페이지 크기(기본 20, 최대 50), `ETC` 신고 사유의 글자 수 상한(임시 200자), 연속 생성 간격 수치
+- 페이지 크기(기본 20, 최대 50), `ETC` 신고 사유의 글자 수 상한(임시 200자)
 - 관리자 신고 목록의 정렬 기준(기본은 접수 순)
 - 로그인 중 state 저장 방식과 로그인 실패 응답 방식
 

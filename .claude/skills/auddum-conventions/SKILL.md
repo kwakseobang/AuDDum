@@ -52,7 +52,7 @@ test-writer와 domain-reviewer가 **같은 기준**을 쓰기 위한 공유 문�
 - 한 테스트는 규칙 하나만 확인한다. 정상 경로와 예외 경로를 따로 쓴다.
 - 예외는 `isInstanceOf(AuddumException.class).hasMessage(...)`로 확인한다. 상태 위반은 오류 코드의 메시지(`PollErrorCode.POLL_CLOSED.getMessage()`), 입력 검증 실패는 필드별 사유 문구가 메시지다. `errorCode` 필드를 꺼내 비교하지 않는다.
 - 테스트 지원 클래스는 레포에 있는 것을 상속한다. 없으면 만들지 말고 사용자에게 묻는다.
-- 작성 형식은 `docs/개발-가이드.md` §3 "테스트 작성 방식"을 따른다: `ControllerTestSupport`를 상속하고 `mvcTester.get().uri(..).assertThat().hasStatus(HttpStatus.X).apply(print()).bodyJson().hasPathSatisfying(..)` 체이닝, `var`, `{도메인}Fixture`.
+- 작성 형식은 `docs/개발-가이드.md` §3 "테스트 작성 방식"을 따른다: `WebApiTestSupport`를 상속하고 `mvcTester.get().uri(..).assertThat().hasStatus(HttpStatus.X).apply(print()).bodyJson().hasPathSatisfying(..)` 체이닝, `var`, `{도메인}Fixture`.
 - Repository 쿼리 단독 테스트는 쓰지 않는다. 서비스 통합에서 간접 확인한다.
 
 ## §3 리뷰 기준 ID
