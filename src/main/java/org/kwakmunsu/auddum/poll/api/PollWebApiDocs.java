@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.kwakmunsu.auddum.poll.api.dto.PollCreateRequest;
+import org.kwakmunsu.auddum.poll.api.dto.PollDetailResponse;
+import org.kwakmunsu.auddum.poll.api.dto.PollListResponse;
 import org.springframework.http.ResponseEntity;
 
 /**
@@ -30,6 +32,29 @@ public abstract class PollWebApiDocs {
     public abstract ResponseEntity<String> createPoll(
         @Parameter(hidden = true) Long memberId,
         PollCreateRequest request
+    );
+
+    @Operation(
+        summary = "투표 목록",
+        description = "공개(PUBLIC) 투표를 최신순으로 내린다. 마감된 투표도 closed=true로 포함한다. "
+            + "cursor는 이전 응답의 nextCursor를 그대로 넘기는 불투명한 값이다."
+    )
+    @ApiResponse(responseCode = "200", description = "목록. 투표가 없으면 빈 items")
+    @ApiResponse(responseCode = "400", description = "MALFORMED_REQUEST: cursor 형식 오류, size가 숫자가 아님")
+    public abstract ResponseEntity<PollListResponse> getPolls(
+        @Parameter(description = "이전 응답의 nextCursor. 없으면 첫 페이지") String cursor,
+        @Parameter(description = "한 페이지 개수. 기본 20, 1보다 작으면 1, 50을 넘으면 50으로 보정") Integer size
+    );
+
+    @Operation(
+        summary = "투표 상세",
+        description = "선택지·마감·참여 수를 내린다. myChoice와 result는 참여 기능 전까지 null이다. 숨김·삭제 투표는 404다."
+    )
+    @ApiResponse(responseCode = "200", description = "상세")
+    @ApiResponse(responseCode = "400", description = "MALFORMED_REQUEST: 공개 ID 형식 오류")
+    @ApiResponse(responseCode = "404", description = "POLL_NOT_FOUND: 없거나 숨김·삭제된 투표")
+    public abstract ResponseEntity<PollDetailResponse> getPoll(
+        @Parameter(description = "투표 공개 ID(12자 영숫자)", example = "aB3dE5fG7hJk") String pollId
     );
 
 }

@@ -1,6 +1,7 @@
 package org.kwakmunsu.auddum;
 
 import org.kwakmunsu.auddum.poll.application.PollCommandService;
+import org.kwakmunsu.auddum.poll.application.PollQueryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -21,5 +22,8 @@ public abstract class WebApiTestSupport {
 
     @MockitoBean
     protected PollCommandService pollCommandService;
+
+    @MockitoBean
+    protected PollQueryService pollQueryService;
 
 }
