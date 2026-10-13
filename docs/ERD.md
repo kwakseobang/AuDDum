@@ -228,6 +228,8 @@ vote는 poll이 아니라 poll_option을 통해 poll에 연결된다. (poll_id, 
 
 ## 5. 제약조건과 인덱스
 
+V1에는 제약(UNIQUE, CHECK, FK)과 그것이 쓰는 인덱스만 둔다. 이것들이 빠지면 규칙이 사라진다. 조회 속도만 바꾸는 인덱스는 아래 "조회 최적화 인덱스"로 미룬다.
+
 중복 참여, 선택지 소속, 신원 구분은 애플리케이션 검증과 별개로 DB가 최종 방어선이 되게 한다. 삭제는 모두 상태값 변경(논리 삭제)이므로 외래키는 ON DELETE RESTRICT로 둔다.
 
 | 테이블 | 제약·인덱스 | 목적 |
@@ -235,8 +237,6 @@ vote는 poll이 아니라 poll_option을 통해 poll에 연결된다. (poll_id, 
 | member_auth | UNIQUE (provider, provider_user_id) | 카카오 계정당 회원 하나. 같은 계정의 동시 최초 로그인에서 회원이 둘 생기는 것을 막는다. |
 | member_auth | UNIQUE (member_id, provider) | 회원당 제공자 하나 |
 | refresh_token | UNIQUE (token_hash), INDEX (member_id) | 토큰 조회, 회원 탈퇴·정지 시 일괄 폐기 |
-| poll | INDEX (status, id) | 공개 투표 목록의 커서 조회 |
-| poll | INDEX (author_id, id) | 작성자 본인의 투표 조회(숨김·삭제 포함) |
 | poll_option | UNIQUE (poll_id, position), UNIQUE (poll_id, content) | 순서와 선택지 내용의 중복 방지 |
 | poll_option | UNIQUE (poll_id, id), CHECK (position BETWEEN 1 AND 5) | vote 복합 외래키의 대상, 선택지 5개 상한 |
 | vote | FOREIGN KEY (poll_id, option_id) → poll_option (poll_id, id) | 선택지가 해당 투표 소속임을 DB가 보장 |
@@ -244,9 +244,20 @@ vote는 poll이 아니라 poll_option을 통해 poll에 연결된다. (poll_id, 
 | vote | CHECK (member_id와 anon_id 중 정확히 하나만 NOT NULL) | 신원 구분 |
 | vote | INDEX (poll_id, option_id) | 선택지별 득표 집계. 복합 외래키 인덱스를 겸한다. |
 | report | UNIQUE (poll_id, reporter_member_id), UNIQUE (poll_id, reporter_anon_id) | 신고자당 투표당 1회 (P-18) |
-| report | CHECK (신고자 신원 정확히 하나), INDEX (status, created_at) | 신원 구분, 관리자 대기 목록 |
-| admin_action | INDEX (target_poll_id), INDEX (target_member_id), INDEX (admin_id, created_at) | 대상별·관리자별 이력 조회 |
+| report | CHECK (신고자 신원 정확히 하나) | 신원 구분 |
+| admin_action | INDEX (target_poll_id), INDEX (target_member_id) | 외래키 인덱스를 겸한다. 대상별 이력 조회 |
 | poll | UNIQUE (public_id) | 외부 식별자 중복 방지, public_id로 단건 조회 |
+
+### 조회 최적화 인덱스 (V1에 넣지 않는다)
+
+없어도 결과는 같고 느려질 뿐인 인덱스다. 대량 시드 데이터에서 `EXPLAIN`으로 쿼리 플랜을 확인한 뒤, 필요한 것만 새 마이그레이션으로 추가한다(로드맵 M4). 측정 전후 수치를 함께 남긴다.
+
+| 후보 인덱스 | 받치려는 쿼리 | 확인할 것 |
+| --- | --- | --- |
+| poll (status, id) | 공개 투표 목록의 커서 조회 | 숨김·삭제 비율이 높을 때 풀 스캔·filesort가 생기는가 |
+| poll (author_id, id) | 작성자 본인의 투표 조회(숨김·삭제 포함) | author_id 외래키 인덱스만으로 충분한가 |
+| report (status, created_at) | 관리자 신고 대기 목록 | 대기 건수가 많을 때 정렬 비용 |
+| admin_action (admin_id, created_at) | 관리자별 이력 조회 | admin_id 외래키 인덱스만으로 충분한가 |
 
 ### vote 테이블 DDL 초안
 

@@ -8,6 +8,8 @@ spring:
     password:
   jpa:
     open-in-view: false
+    hibernate:
+      ddl-auto: none # 스키마는 Flyway가 만든다. Hibernate가 덮어쓰지 않게 한다.
     properties:
       hibernate:
         jdbc:
