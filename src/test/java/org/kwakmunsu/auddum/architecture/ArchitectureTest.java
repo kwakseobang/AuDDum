@@ -1,5 +1,6 @@
 package org.kwakmunsu.auddum.architecture;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
@@ -10,6 +11,8 @@ import com.tngtech.archunit.junit.ArchTest;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.kwakmunsu.auddum.support.stereotype.ApplicationService;
+import org.kwakmunsu.auddum.support.stereotype.WebApi;
 
 /**
  * 아키텍처 설계서 §2의 패키지 규칙을 검증한다.
@@ -72,11 +75,50 @@ class ArchitectureTest {
     static void 다른_도메인의_repository를_직접_쓰지_않는다(JavaClasses classes) {
         for (String domain : DOMAINS) {
             noClasses().that().resideOutsideOfPackage(ROOT + "." + domain + "..")
-                    .should().dependOnClassesThat().resideInAPackage(ROOT + "." + domain + ".repository..")
-                    .because(domain + "의 repository는 " + domain + " 안에서만 쓴다")
+                    .should().dependOnClassesThat().resideInAPackage(ROOT + "." + domain + ".infrastructure..")
+                    .because(domain + "의 repository(infrastructure)는 " + domain + " 안에서만 쓴다")
                     .allowEmptyShould(true)
                     .check(classes);
         }
+    }
+
+    /** 응답은 controller가 만들므로 domain의 엔티티·값 객체는 쓸 수 있고, 데이터는 서비스를 거쳐서만 받는다. */
+    @ArchTest
+    static void WebApi는_infrastructure에_의존하지_않는다(JavaClasses classes) {
+        noClasses().that().areAnnotatedWith(WebApi.class)
+                .should().dependOnClassesThat().resideInAPackage("..infrastructure..")
+                .because("controller는 repository를 직접 쓰지 않고 서비스를 거친다")
+                .allowEmptyShould(true)
+                .check(classes);
+    }
+
+    @ArchTest
+    static void WebApi는_api_패키지에_둔다(JavaClasses classes) {
+        classes().that().areAnnotatedWith(WebApi.class)
+                .should().resideInAPackage(ROOT + ".*.api..")
+                .because("역할 어노테이션과 패키지가 어긋나면 안 된다")
+                .allowEmptyShould(true)
+                .check(classes);
+    }
+
+    @ArchTest
+    static void 서비스_어노테이션은_application_패키지에_둔다(JavaClasses classes) {
+        classes().that().areAnnotatedWith(ApplicationService.class).or().areMetaAnnotatedWith(ApplicationService.class)
+                .and().areNotAnnotations()
+                .should().resideInAPackage(ROOT + ".*.application..")
+                .because("역할 어노테이션과 패키지가 어긋나면 안 된다")
+                .allowEmptyShould(true)
+                .check(classes);
+    }
+
+    @ArchTest
+    static void domain은_바깥_계층에_의존하지_않는다(JavaClasses classes) {
+        noClasses().that().resideInAPackage(ROOT + ".*.domain..")
+                .should().dependOnClassesThat().resideInAnyPackage(
+                        ROOT + ".*.api..", ROOT + ".*.application..", ROOT + ".*.infrastructure..")
+                .because("의존은 api → application → domain 방향이고 infrastructure는 domain에 의존한다")
+                .allowEmptyShould(true)
+                .check(classes);
     }
 
     @ArchTest
