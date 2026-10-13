@@ -83,8 +83,8 @@ class FlywayV1SchemaTest {
     @Test
     void poll_status_기본값은_PUBLIC이다() {
         long author = member();
-        long id = insert("INSERT INTO poll (author_id, question, category, created_at, public_id) "
-                + "VALUES (" + author + ", 'q', 'SOME', NOW(), '" + publicId() + "')");
+        long id = insert("INSERT INTO poll (author_id, question, category, created_at, updated_at, public_id) "
+                + "VALUES (" + author + ", 'q', 'SOME', NOW(), NOW(), '" + publicId() + "')");
 
         assertThat(jdbc.queryForObject("SELECT status FROM poll WHERE id = ?", String.class, id))
                 .isEqualTo("PUBLIC");
@@ -93,8 +93,8 @@ class FlywayV1SchemaTest {
     @Test
     void report_status_기본값은_PENDING이다() {
         long poll = poll(member());
-        long id = insert("INSERT INTO report (poll_id, reporter_anon_id, reason, created_at) "
-                + "VALUES (" + poll + ", '" + uuid() + "', 'SPAM', NOW())");
+        long id = insert("INSERT INTO report (poll_id, reporter_anon_id, reason, created_at, updated_at) "
+                + "VALUES (" + poll + ", '" + uuid() + "', 'SPAM', NOW(), NOW())");
 
         assertThat(jdbc.queryForObject("SELECT status FROM report WHERE id = ?", String.class, id))
                 .isEqualTo("PENDING");
@@ -406,7 +406,7 @@ class FlywayV1SchemaTest {
     @Test
     void 존재하지_않는_관리자의_admin_action은_거부된다() {
         assertThatThrownBy(() -> jdbc.update(
-                "INSERT INTO admin_action (admin_id, action_type, created_at) VALUES (999999, 'HIDE_POLL', NOW())"))
+                "INSERT INTO admin_action (admin_id, action_type, created_at, updated_at) VALUES (999999, 'HIDE_POLL', NOW(), NOW())"))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
@@ -444,13 +444,13 @@ class FlywayV1SchemaTest {
     }
 
     private void memberAuth(long memberId, String provider, String providerUserId) {
-        jdbc.update("INSERT INTO member_auth (member_id, provider, provider_user_id, created_at) "
-                + "VALUES (?, ?, ?, NOW())", memberId, provider, providerUserId);
+        jdbc.update("INSERT INTO member_auth (member_id, provider, provider_user_id, created_at, updated_at) "
+                + "VALUES (?, ?, ?, NOW(), NOW())", memberId, provider, providerUserId);
     }
 
     private void refreshToken(long memberId, String tokenHash) {
-        jdbc.update("INSERT INTO refresh_token (member_id, token_hash, expires_at, created_at) "
-                + "VALUES (?, ?, NOW(), NOW())", memberId, tokenHash);
+        jdbc.update("INSERT INTO refresh_token (member_id, token_hash, expires_at, created_at, updated_at) "
+                + "VALUES (?, ?, NOW(), NOW(), NOW())", memberId, tokenHash);
     }
 
     private long poll(long authorId) {
@@ -458,21 +458,21 @@ class FlywayV1SchemaTest {
     }
 
     private long poll(long authorId, String publicId) {
-        return insert("INSERT INTO poll (author_id, question, category, status, created_at, public_id) "
-                + "VALUES (" + authorId + ", 'q', 'SOME', 'PUBLIC', NOW(), '" + publicId + "')");
+        return insert("INSERT INTO poll (author_id, question, category, status, created_at, updated_at, public_id) "
+                + "VALUES (" + authorId + ", 'q', 'SOME', 'PUBLIC', NOW(), NOW(), '" + publicId + "')");
     }
 
     private long option(long pollId, int position, String content) {
-        return insert("INSERT INTO poll_option (poll_id, position, content) VALUES ("
-                + pollId + ", " + position + ", '" + content + "')");
+        return insert("INSERT INTO poll_option (poll_id, position, content, created_at, updated_at) VALUES ("
+                + pollId + ", " + position + ", '" + content + "', NOW(), NOW())");
     }
 
     private long vote(long pollId, long optionId, Long memberId, String anonId) {
         GeneratedKeyHolder keys = new GeneratedKeyHolder();
         jdbc.update(con -> {
             PreparedStatement ps = con.prepareStatement(
-                    "INSERT INTO vote (poll_id, option_id, member_id, anon_id, created_at) "
-                            + "VALUES (?, ?, ?, ?, NOW())", Statement.RETURN_GENERATED_KEYS);
+                    "INSERT INTO vote (poll_id, option_id, member_id, anon_id, created_at, updated_at) "
+                            + "VALUES (?, ?, ?, ?, NOW(), NOW())", Statement.RETURN_GENERATED_KEYS);
             ps.setLong(1, pollId);
             ps.setLong(2, optionId);
             ps.setObject(3, memberId);
@@ -483,8 +483,8 @@ class FlywayV1SchemaTest {
     }
 
     private void report(long pollId, Long memberId, String anonId) {
-        jdbc.update("INSERT INTO report (poll_id, reporter_member_id, reporter_anon_id, reason, status, created_at) "
-                + "VALUES (?, ?, ?, 'SPAM', 'PENDING', NOW())", pollId, memberId, anonId);
+        jdbc.update("INSERT INTO report (poll_id, reporter_member_id, reporter_anon_id, reason, status, created_at, updated_at) "
+                + "VALUES (?, ?, ?, 'SPAM', 'PENDING', NOW(), NOW())", pollId, memberId, anonId);
     }
 
     private String publicId() {

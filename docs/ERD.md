@@ -37,7 +37,7 @@ AuDDum(어떰)의 확정 정책과 [도메인 모델](도메인-모델.md)을 My
 | P-04 탈퇴 시 작성 투표 익명화 유지, 투표 기록 보존 | member 행은 WITHDRAWN으로 남기고 식별 정보(member_auth)만 지운다. poll, vote는 그대로 둔다. | member, poll, vote |
 | P-20·27 JWT 사용, 동시 로그인 허용, 마지막 로그인 시각 저장 | 리프레시 토큰을 서버에 저장하고(회원당 여러 건), member.last_login_at을 둔다. | refresh_token, member |
 | P-01·02 숨김·삭제는 상태값, 숨김만 관리자가 복구(삭제는 복구 불가), 수정 불가·삭제만 허용 | poll.status(PUBLIC, HIDDEN, DELETED). 수정 이력 테이블은 필요 없다. | poll |
-| P-16 질문 100자, 선택지 50자, 선택지 간 중복 불허 | question VARCHAR(100), content VARCHAR(50), (poll_id, content) 유니크 | poll, poll_option |
+| P-16 질문 500자, 선택지 50자, 선택지 간 중복 불허 | question VARCHAR(500), content VARCHAR(50), (poll_id, content) 유니크 | poll, poll_option |
 | 선택지는 2~5개 | 개수는 애플리케이션에서 검증하고, DB에는 position 범위(1~5)만 제약한다. | poll_option |
 | P-15 마감 시간은 선택, 상한 없음 | poll.close_at NULL 허용. 마감 여부는 저장하지 않고 서버 시각과 비교해 계산한다. | poll |
 | P-08·09·10 회원·비회원 중복 참여 방지, 쿠키 첫 참여 시 발급 | vote에 member_id, anon_id를 두고 각각 (poll_id, …) 유니크 | vote |
@@ -128,7 +128,7 @@ vote는 poll이 아니라 poll_option을 통해 poll에 연결된다. (poll_id, 
 
 ## 4. 테이블 정의
 
-테이블이 8개다. 시각 컬럼은 모두 한국 시간(KST) 기준으로 저장하는 DATETIME(6)이고, PK는 BIGINT AUTO_INCREMENT다. 상태값과 카테고리는 DB ENUM이 아니라 VARCHAR에 코드 문자열로 저장하고 애플리케이션 enum으로 검증한다. **[기술 초안]**
+테이블이 8개다. 시각 컬럼은 모두 한국 시간(KST) 기준으로 저장하는 DATETIME(6)이고, PK는 BIGINT AUTO_INCREMENT다. 모든 테이블이 `created_at`·`updated_at`을 가지며 엔티티의 부모 `BaseEntity`가 자동으로 채운다. 상태값과 카테고리는 DB ENUM이 아니라 VARCHAR에 코드 문자열로 저장하고 애플리케이션 enum으로 검증한다. **[기술 초안]**
 
 ### member
 
@@ -150,7 +150,7 @@ vote는 poll이 아니라 poll_option을 통해 poll에 연결된다. (poll_id, 
 | member_id | BIGINT | N | FK → member |
 | provider | VARCHAR(20) | N | KAKAO |
 | provider_user_id | VARCHAR(64) | N | 카카오 고유 식별자 |
-| created_at | DATETIME(6) | N | 생성 시각 |
+| created_at, updated_at | DATETIME(6) | N | 생성·수정 시각 |
 
 ### refresh_token
 
@@ -161,7 +161,7 @@ vote는 poll이 아니라 poll_option을 통해 poll에 연결된다. (poll_id, 
 | token_hash | CHAR(64) | N | 토큰 원문이 아니라 해시값만 저장한다. |
 | expires_at | DATETIME(6) | N | 만료 시각 (발급 시점 + 14일) |
 | revoked_at | DATETIME(6) | Y | 폐기 시각 |
-| created_at | DATETIME(6) | N | 생성 시각 |
+| created_at, updated_at | DATETIME(6) | N | 생성·수정 시각 |
 
 ### poll
 
@@ -169,13 +169,11 @@ vote는 poll이 아니라 poll_option을 통해 poll에 연결된다. (poll_id, 
 | --- | --- | --- | --- |
 | id | BIGINT | N | PK |
 | author_id | BIGINT | N | FK → member. 탈퇴해도 행은 남으므로 NOT NULL 유지 |
-| question | VARCHAR(100) | N | 질문 (유니코드 문자 단위 100자) |
+| question | VARCHAR(500) | N | 질문 (유니코드 문자 단위 500자) |
 | category | VARCHAR(20) | N | SOME, BLIND_DATE, CONTACT, IN_RELATIONSHIP, BREAKUP, LOVE_VALUES, ETC (썸, 소개팅, 연락, 연애 중, 이별, 연애 가치관, 기타) |
 | status | VARCHAR(20) | N | PUBLIC(기본값), HIDDEN, DELETED |
 | close_at | DATETIME(6) | Y | 마감 시각. NULL이면 마감 없음 |
-| status_changed_at | DATETIME(6) | Y | 마지막 상태 변경 시각 |
-| status_changed_by | BIGINT | Y | FK → member. 숨기거나 삭제한 주체(작성자 또는 관리자) |
-| created_at | DATETIME(6) | N | 생성 시각 |
+| created_at, updated_at | DATETIME(6) | N | 생성·수정 시각 |
 | public_id | VARCHAR(36) | N | 외부에 노출하는 투표 식별자. URL과 API에는 id 대신 이 값을 쓴다. 형식은 12자 영숫자 |
 
 ### poll_option
@@ -186,6 +184,7 @@ vote는 poll이 아니라 poll_option을 통해 poll에 연결된다. (poll_id, 
 | poll_id | BIGINT | N | FK → poll |
 | position | TINYINT | N | 표시 순서 1~5 |
 | content | VARCHAR(50) | N | 선택지 텍스트 (줄바꿈 불가) |
+| created_at, updated_at | DATETIME(6) | N | 생성·수정 시각 |
 
 ### vote
 
@@ -196,7 +195,7 @@ vote는 poll이 아니라 poll_option을 통해 poll에 연결된다. (poll_id, 
 | option_id | BIGINT | N | 선택지 ID |
 | member_id | BIGINT | Y | FK → member. 회원이 참여한 경우 |
 | anon_id | CHAR(36) | Y | 비회원 익명 식별자(UUID). 비회원이 참여한 경우 |
-| created_at | DATETIME(6) | N | 참여 시각. 수정·삭제하지 않는다. |
+| created_at, updated_at | DATETIME(6) | N | 참여·수정 시각. 참여 기록은 수정·삭제하지 않으므로 둘이 같다. |
 
 ### report
 
@@ -209,7 +208,7 @@ vote는 poll이 아니라 poll_option을 통해 poll에 연결된다. (poll_id, 
 | reason | VARCHAR(30) | N | ABUSE_HATE, SEXUAL_HARASSMENT, PERSONAL_INFO, SPAM, ETC |
 | detail | VARCHAR(200) | Y | '기타' 사유의 짧은 텍스트. 글자 수 상한은 구현 때 확정(임시 200) |
 | status | VARCHAR(20) | N | PENDING(기본값), RESOLVED, DISMISSED (API 명세에서 확정) |
-| created_at | DATETIME(6) | N | 접수 시각 |
+| created_at, updated_at | DATETIME(6) | N | 접수·수정 시각 |
 | handled_at | DATETIME(6) | Y | 처리 시각 |
 | handled_by | BIGINT | Y | FK → member. 처리한 관리자 |
 
@@ -224,7 +223,7 @@ vote는 poll이 아니라 poll_option을 통해 poll에 연결된다. (poll_id, 
 | target_member_id | BIGINT | Y | FK → member |
 | report_id | BIGINT | Y | FK → report. 신고에서 비롯된 조치일 때 |
 | reason | VARCHAR(200) | Y | 관리자가 남기는 사유 (회원에게 노출하지 않는다) |
-| created_at | DATETIME(6) | N | 조치 시각 |
+| created_at, updated_at | DATETIME(6) | N | 조치·수정 시각 |
 
 ## 5. 제약조건과 인덱스
 
@@ -269,6 +268,7 @@ CREATE TABLE vote (
   member_id  BIGINT   NULL,
   anon_id    CHAR(36) NULL,
   created_at DATETIME(6) NOT NULL,
+  updated_at DATETIME(6) NOT NULL,
   CONSTRAINT uq_vote_member UNIQUE (poll_id, member_id),
   CONSTRAINT uq_vote_anon   UNIQUE (poll_id, anon_id),
   CONSTRAINT fk_vote_option FOREIGN KEY (poll_id, option_id)
@@ -284,7 +284,7 @@ CREATE TABLE vote (
 - MySQL의 UNIQUE 인덱스는 NULL을 서로 다른 값으로 취급한다. 그래서 (poll_id, member_id) 제약은 member_id가 NULL인 비회원 행에 영향을 주지 않고, 회원과 비회원에 각각 독립적으로 적용된다. 회원·비회원 신원을 한 테이블에 섞을 때의 NULL 처리 우려는 이 구조로 해소된다.
 - CHECK 제약은 MySQL 8.0.16 이상에서만 실제로 강제된다. 사용할 MySQL 8.4는 이에 해당한다. (확정)
 - 선택지 내용은 대소문자와 악센트를 구분하지 않고 중복 여부를 판단한다. (확정) MySQL 8의 기본 콜레이션 utf8mb4_0900_ai_ci가 이 방식이므로 poll_option.content에 그대로 쓰고, 저장 전에 앞뒤 공백을 제거한다.
-- 위 제약이 모든 위반을 막는 것은 아니다. 선택지 2~5개 하한, 마감 시각, 질문 100자 같은 규칙은 애플리케이션이 검증한다.
+- 위 제약이 모든 위반을 막는 것은 아니다. 선택지 2~5개 하한, 마감 시각, 질문 500자 같은 규칙은 애플리케이션이 검증한다.
 
 ## 6. 핵심 쿼리 패턴
 
@@ -341,8 +341,8 @@ SELECT option_id FROM vote WHERE poll_id = :pollId AND anon_id = :anonId;
 -- 1) 트랜잭션 안에서 투표 상태 확인
 SELECT status, close_at FROM poll WHERE id = :pollId;
 -- 2) 저장 (유니크·복합 외래키 위반이면 예외)
-INSERT INTO vote (poll_id, option_id, member_id, anon_id, created_at)
-VALUES (:pollId, :optionId, :memberId, :anonId, :now);
+INSERT INTO vote (poll_id, option_id, member_id, anon_id, created_at, updated_at)
+VALUES (:pollId, :optionId, :memberId, :anonId, :now, :now);
 ```
 
 유니크 위반은 "이미 참여"로 변환한다. 같은 선택지의 재전송이면 기존 기록을 읽어 200으로 돌려주고, 다른 선택지이면 409를 반환한다. 요청은 선택지 id가 아니라 표시 순서(position)로 선택지를 가리키고, 서버가 (투표, position)으로 선택지 id를 찾는다. 해당 순서의 선택지가 없으면 400으로 응답한다. 복합 외래키는 그래도 DB 단의 마지막 방어선으로 둔다. 마감 판단은 요청을 받은 시점에 한 번만 한다. (P-11)
