@@ -120,6 +120,19 @@ class ProblemDetailResponseTest extends ControllerTestSupport {
     }
 
     @Test
+    void 필드_정보를_가진_AuddumException도_errors를_내린다() {
+        mvcTester.get()
+                .uri("/probe/auddum-validation")
+                .assertThat()
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .apply(print())
+                .bodyJson()
+                .hasPathSatisfying("$.code", v -> v.assertThat().isEqualTo("VALIDATION_FAILED"))
+                .hasPathSatisfying("$.errors[0].field", v -> v.assertThat().isEqualTo("closesAt"))
+                .hasPathSatisfying("$.errors[0].reason", v -> v.assertThat().isEqualTo("마감 시각은 현재보다 뒤여야 합니다."));
+    }
+
+    @Test
     void errors의_각_항목은_field와_reason을_가진다() {
         mvcTester.post()
                 .uri("/probe/validate")
@@ -241,6 +254,11 @@ class ProblemDetailResponseTest extends ControllerTestSupport {
         @GetMapping("/probe/auddum/{code}")
         String throwAuddum(@PathVariable String code) {
             throw new AuddumException(DefaultErrorCode.valueOf(code));
+        }
+
+        @GetMapping("/probe/auddum-validation")
+        String throwValidation() {
+            throw AuddumException.validation("closesAt", "마감 시각은 현재보다 뒤여야 합니다.");
         }
 
         @GetMapping("/probe/number/{id}")

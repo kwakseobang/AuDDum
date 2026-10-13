@@ -31,7 +31,12 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         logByLevel(errorCode.getLogLevel(), "[%s] %s".formatted(errorCode.name(), ex.getMessage()), ex);
 
-        return ResponseEntity.status(errorCode.getStatus()).body(problemOf(errorCode));
+        ProblemDetail problem = problemOf(errorCode);
+        if (!ex.getErrors().isEmpty()) {
+            problem.setProperty(ERRORS, ex.getErrors());
+        }
+
+        return ResponseEntity.status(errorCode.getStatus()).body(problem);
     }
 
     @ExceptionHandler(Exception.class)
