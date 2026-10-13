@@ -22,7 +22,6 @@
     "deny": [
       "Read(./.env)",
       "Read(./.env.*)",
-      "Read(./src/main/resources/application-local.yaml)",
       "Bash(rm -rf:*)",
       "Bash(git push origin main:*)",
       "Bash(git push origin develop:*)",
