@@ -155,7 +155,7 @@
 **POST /polls**
 
 - 요청: `{ question, category, options, closesAt }`
-- `question`은 1~100자이고 줄바꿈이 없다. `options`는 문자열 2~5개이고 각 1~50자이며 서로 달라야 한다. 글자 수는 유니코드 문자 단위다.
+- `question`은 1~500자이고 줄바꿈이 없다(줄바꿈의 범위는 도메인 모델 §4). `options`는 문자열 2~5개이고 각 1~50자이며 서로 달라야 한다. 글자 수는 유니코드 문자 단위이고, 질문과 선택지는 앞뒤 공백을 제거한 뒤 길이를 판단하며 제거한 값을 저장한다.
 - `category`는 `SOME`, `BLIND_DATE`, `CONTACT`, `IN_RELATIONSHIP`, `BREAKUP`, `LOVE_VALUES`, `ETC` 중 하나다.
 - `closesAt`은 선택이다. 있으면 요청 시점보다 미래여야 하고 상한은 없다. 없으면 마감 없는 투표다.
 - 성공 시 `201`, `Location: /api/v1/polls/{id}`, 본문은 상세 조회와 같은 형태다.
@@ -257,7 +257,7 @@
 
 **DELETE /polls/{pollId}**
 
-- 작성자 본인만 삭제할 수 있다. 작성자가 아니면 403 `FORBIDDEN`이다. 관리자가 숨긴 투표는 작성자도 삭제할 수 없고 403 `POLL_NOT_DELETABLE`이다.
+- 작성자 본인만 삭제할 수 있다. 작성자가 아니면 공개 투표는 403 `FORBIDDEN`이고, 숨김·삭제된 투표는 존재를 숨기려고 404 `POLL_NOT_FOUND`다. 관리자가 숨긴 투표는 작성자도 삭제할 수 없고 403 `POLL_NOT_DELETABLE`이다.
 - 이미 삭제된 투표는 404다. 삭제는 되돌릴 수 없고, 투표 기록은 보존한다.
 - 정지 회원은 삭제도 할 수 없고 403 `MEMBER_SUSPENDED`다.
 
