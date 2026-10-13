@@ -122,6 +122,24 @@ class ArchitectureTest {
     }
 
     @ArchTest
+    static void application은_api에_의존하지_않는다(JavaClasses classes) {
+        noClasses().that().resideInAPackage(ROOT + ".*.application..")
+                .should().dependOnClassesThat().resideInAPackage(ROOT + ".*.api..")
+                .because("의존은 api → application 방향이다")
+                .allowEmptyShould(true)
+                .check(classes);
+    }
+
+    @ArchTest
+    static void infrastructure는_api와_application에_의존하지_않는다(JavaClasses classes) {
+        noClasses().that().resideInAPackage(ROOT + ".*.infrastructure..")
+                .should().dependOnClassesThat().resideInAnyPackage(ROOT + ".*.api..", ROOT + ".*.application..")
+                .because("infrastructure는 domain에만 의존한다")
+                .allowEmptyShould(true)
+                .check(classes);
+    }
+
+    @ArchTest
     static void common_패키지를_만들지_않는다(JavaClasses classes) {
         noClasses().should().resideInAPackage("..common..")
                 .because("여러 도메인이 쓰는 규칙은 해당 도메인에 둔다")
