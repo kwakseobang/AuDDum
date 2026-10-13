@@ -1,0 +1,13 @@
+# 운영: RDS. 비밀 값은 서버의 환경 변수로만 주입한다.
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      connection-init-sql: SET time_zone = '+09:00'
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
