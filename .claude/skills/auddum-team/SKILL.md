@@ -68,7 +68,7 @@ description: "AuDDum에서 이슈 하나를 처리하는 동안 옆에서 돕는
 
 1. `./gradlew build`를 돌린다. 실패하면 리뷰 전에 알리고 멈춘다.
 2. `git diff develop...HEAD`를 `00_diff-r<k>.patch`로 저장한다.
-3. domain-reviewer를 호출한다. 판정에 따라 분기한다.
+3. domain-reviewer를 호출한다. 끝나면 **리포트 전문을 사용자에게 그대로 보인다**(경로만 알리지 않는다). 판정에 따라 분기한다.
 
 | 판정 | 행동 |
 |---|---|
