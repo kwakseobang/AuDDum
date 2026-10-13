@@ -177,8 +177,9 @@
 
 - 요청 파라미터 `cursor`, `size`. 공개(PUBLIC) 투표만 최신순으로 내려준다. 마감된 투표도 마감 표시와 함께 포함한다. 카테고리 필터는 MVP에서 제외한다.
 - 응답: `{ items: [{ id, question, category, participantCount, closed, closesAt, createdAt }], nextCursor }`
-- `cursor`나 `size` 형식 오류는 400 `MALFORMED_REQUEST`이다. `size`가 상한을 넘으면 상한으로 보정한다.
+- `cursor`나 `size` 형식 오류는 400 `MALFORMED_REQUEST`이다. `size`가 상한을 넘으면 상한(50)으로, 1보다 작으면 1로 보정한다. `cursor`가 없거나 비어 있으면 첫 페이지다.
 - 투표가 없으면 빈 `items`로 200이다.
+- 참여 기능(#15·#16) 전에는 `participantCount`가 항상 0이다.
 
 `GET /polls` 응답 예시
 
@@ -202,10 +203,11 @@
 **GET /polls/{pollId}**
 
 - 응답: `{ id, question, category, options: [{ position, content }], closesAt, closed, participantCount, myChoice, result }`
+- 참여 기능(#15·#16) 전에는 `participantCount`가 0이고 `myChoice`와 `result`는 null이다.
 - `myChoice`는 내가 이미 참여했을 때만 선택지 `position`이고 아니면 null이다. 참여 여부는 회원 식별자 또는 익명 쿠키로 판단한다.
 - `result`는 4절의 공개 규칙에 따라 내려준다. 공개하지 않는 경우 null이고 선택지와 전체 참여 수만 내려준다.
 - 마감된 투표는 조회되며 `closed`가 true다.
-- 숨김(HIDDEN)·삭제(DELETED) 투표는 일반 사용자에게 404 `POLL_NOT_FOUND`이고 작성자와 관리자에게는 200이다. 이때 응답에 `status`를 담아 직접 확인할 수 있게 한다.
+- 숨김(HIDDEN)·삭제(DELETED) 투표는 일반 사용자에게 404 `POLL_NOT_FOUND`이고 작성자와 관리자에게는 200이다. 이때 응답에 `status`를 담아 직접 확인할 수 있게 한다. 인증 도입(M3) 전에는 작성자·관리자를 구분하지 않고 모두에게 404다.
 - ID 형식 오류 400 `MALFORMED_REQUEST`, 없는 ID 404.
 
 `GET /polls/{pollId}` 응답 예시: 참여 전(결과 비공개)
