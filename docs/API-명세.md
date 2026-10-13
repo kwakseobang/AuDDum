@@ -53,7 +53,7 @@
 
 | 필드 | 설명 |
 | --- | --- |
-| `type` | 기본값 `about:blank` |
+| `type` | 기본값 `about:blank`. 기본값이면 응답에서 생략한다(RFC 7807에서 생략은 `about:blank`와 같다). |
 | `title` | 상태 코드의 짧은 설명 |
 | `status` | HTTP 상태 코드 |
 | `detail` | 사람이 읽는 설명. 내부 오류의 상세는 담지 않는다. |
@@ -65,7 +65,6 @@
 
 ```json
 {
-  "type": "about:blank",
   "title": "Bad Request",
   "status": 400,
   "detail": "요청 값이 올바르지 않습니다.",
