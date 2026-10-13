@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.kwakmunsu.auddum.ControllerTestSupport;
+import org.kwakmunsu.auddum.WebApiTestSupport;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 전역 예외 처리(@RestControllerAdvice)가 만드는 오류 응답 형식을 검증한다. (API 명세 §1, §7)
  */
 @Import(ProblemDetailResponseTest.ErrorProbeController.class)
-class ProblemDetailResponseTest extends ControllerTestSupport {
+class ProblemDetailResponseTest extends WebApiTestSupport {
 
     @Test
     void 오류는_application_problem_json으로_내려간다() {

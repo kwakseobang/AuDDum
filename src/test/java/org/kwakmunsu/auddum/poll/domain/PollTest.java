@@ -7,12 +7,14 @@ import static org.kwakmunsu.auddum.poll.domain.PollFixture.AUTHOR_ID;
 import static org.kwakmunsu.auddum.poll.domain.PollFixture.NOW;
 import static org.kwakmunsu.auddum.poll.domain.PollFixture.OTHER_MEMBER_ID;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.Test;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class PollTest {
 
@@ -646,6 +648,71 @@ class PollTest {
         assertThatThrownBy(() -> poll.deleteByAdmin())
                 .isInstanceOf(AuddumException.class)
                 .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
+    }
+
+    // ---- 직전 투표 뒤 생성 ----
+
+    @Test
+    void 질문이_같으면_직전_투표_뒤에_만들_수_없다() {
+        var latest = 생성_시각이_있는_투표("점심 뭐 먹지?", NOW.minusDays(30));
+        var poll = PollFixture.마감_없는_투표();
+
+        assertThatThrownBy(() -> poll.ensureCreatableAfter(latest, NOW))
+                .isInstanceOf(AuddumException.class)
+                .hasMessage(PollErrorCode.DUPLICATE_POLL.getMessage());
+    }
+
+    @Test
+    void 앞뒤_공백만_다른_같은_질문도_직전_투표_뒤에_만들_수_없다() {
+        var latest = 생성_시각이_있는_투표("  점심 뭐 먹지?  ", NOW.minusDays(30));
+        var poll = PollFixture.마감_없는_투표();
+
+        assertThatThrownBy(() -> poll.ensureCreatableAfter(latest, NOW))
+                .isInstanceOf(AuddumException.class)
+                .hasMessage(PollErrorCode.DUPLICATE_POLL.getMessage());
+    }
+
+    @Test
+    void 대소문자만_다른_질문은_같은_질문이_아니다() {
+        var latest = 생성_시각이_있는_투표("Hello there", NOW.minusDays(30));
+        var poll = Poll.create(AUTHOR_ID, "hello there", Category.ETC, List.of("가", "나"), null, NOW);
+
+        assertThatCode(() -> poll.ensureCreatableAfter(latest, NOW)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void 직전_생성_후_30초가_지나지_않았으면_다른_질문도_만들_수_없다() {
+        var latest = 생성_시각이_있는_투표("다른 질문", NOW.minusSeconds(29));
+        var poll = PollFixture.마감_없는_투표();
+
+        assertThatThrownBy(() -> poll.ensureCreatableAfter(latest, NOW))
+                .isInstanceOf(AuddumException.class)
+                .hasMessage(PollErrorCode.POLL_RATE_LIMITED.getMessage());
+    }
+
+    @Test
+    void 직전_생성_후_정확히_30초가_지나면_만들_수_있다() {
+        var latest = 생성_시각이_있는_투표("다른 질문", NOW.minusSeconds(30));
+        var poll = PollFixture.마감_없는_투표();
+
+        assertThatCode(() -> poll.ensureCreatableAfter(latest, NOW)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void 질문이_같고_간격도_짧으면_DUPLICATE_POLL이_우선한다() {
+        var latest = 생성_시각이_있는_투표("점심 뭐 먹지?", NOW.minusSeconds(5));
+        var poll = PollFixture.마감_없는_투표();
+
+        assertThatThrownBy(() -> poll.ensureCreatableAfter(latest, NOW))
+                .isInstanceOf(AuddumException.class)
+                .hasMessage(PollErrorCode.DUPLICATE_POLL.getMessage());
+    }
+
+    private Poll 생성_시각이_있는_투표(String question, LocalDateTime createdAt) {
+        var poll = Poll.create(AUTHOR_ID, question, Category.ETC, List.of("가", "나"), null, NOW);
+        ReflectionTestUtils.setField(poll, "createdAt", createdAt);
+
+        return poll;
     }
 
 }
