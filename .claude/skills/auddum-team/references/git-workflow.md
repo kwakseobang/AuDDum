@@ -7,7 +7,7 @@
 - 기능 브랜치는 `develop`에서 분기한다: `git switch develop && git pull && git switch -c feature/<이슈번호>-<영문-요약>`. 모드 A에서 사용자 확인 후 만든다.
 - `main`·`develop`에서는 쓰기 모드를 진행하지 않는다.
 - **커밋·push·PR은 사용자 확인을 받은 뒤에만** 한다. 확인 없이 하지 않는다.
-- 경로를 명시해 스테이징한다. `git add -A`·`git add .`는 쓰지 않는다. `.env*`, `application-local.yaml`은 절대 스테이징하지 않는다.
+- 경로를 명시해 스테이징한다. `git add -A`·`git add .`는 쓰지 않는다. `.env`와 `.env.*`(`.env.example`은 샘플이라 예외)는 절대 스테이징하지 않는다. `application-local.yaml`은 비밀 값 없이 환경 변수 참조만 두므로 커밋 대상이지만, 스테이징 전에 실제 값이 들어갔는지 확인한다.
 - 커밋 메시지는 `docs/개발-가이드.md` §2 형식이다. 제안은 하네스가 하고 최종 문구는 사용자가 정한다.
 - push: `git push -u origin <브랜치>`. force push 금지. 거부되면 우회하지 않고 보고한다.
 - PR: `gh pr create --base develop --head <브랜치> --title "<제목>" --body-file <본문 파일>`. 제목은 커밋 형식이다. 본문에 `Closes #<n>`(이슈가 있을 때만)을 넣는다.
