@@ -36,6 +36,9 @@ out/
 ### VS Code ###
 .vscode/
 
+### 로컬 비밀 값 ###
+.env
+
 ### Claude harness ###
 _workspace/
 .claude/settings.local.json
