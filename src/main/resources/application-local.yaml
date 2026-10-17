@@ -8,3 +8,18 @@ spring:
     password: ${DB_PASSWORD:}
     hikari:
       connection-init-sql: SET time_zone = '+09:00'
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            # 값이 없으면 앱은 뜨지만 카카오 로그인은 실패한다. 운영(prod)에는 기본값이 없어 값이 없으면 기동하지 못한다.
+            client-id: ${KAKAO_CLIENT_ID:unset}
+            client-secret: ${KAKAO_CLIENT_SECRET:unset}
+
+auddum:
+  frontend:
+    base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
+  auth:
+    # 로컬은 http라 Secure 쿠키를 거부하는 브라우저가 있다.
+    cookie-secure: false
