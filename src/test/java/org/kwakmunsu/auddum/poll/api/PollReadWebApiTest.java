@@ -25,16 +25,16 @@ import org.springframework.test.util.ReflectionTestUtils;
  */
 class PollReadWebApiTest extends WebApiTestSupport {
 
-    private static final LocalDateTime 생성 = LocalDateTime.of(2026, 10, 12, 13, 0);
+    private static final LocalDateTime CREATED_AT = LocalDateTime.of(2026, 10, 12, 13, 0);
     /** {"id":1}을 URL-safe base64로 감싼 값. 테스트 투표의 내부 id가 1이다. */
     private static final String CURSOR_OF_ID_1 = "eyJpZCI6MX0";
-    private static final LocalDateTime 마감 = LocalDateTime.of(2099, 10, 19, 23, 59);
+    private static final LocalDateTime CLOSES_AT = LocalDateTime.of(2099, 10, 19, 23, 59);
 
     // ---- 목록 ----
 
     @Test
     void 인증_없이_목록을_조회하면_200과_items_nextCursor를_내린다() {
-        var poll = 투표를_만든다(마감);
+        var poll = createPoll(CLOSES_AT);
         given(pollQueryService.getPolls(null, 20)).willReturn(slice(List.of(poll), true));
 
         mvcTester.get()
@@ -55,9 +55,9 @@ class PollReadWebApiTest extends WebApiTestSupport {
 
     @Test
     void 목록_항목은_내부_id를_노출하지_않는다() {
-        given(pollQueryService.getPolls(null, 20)).willReturn(slice(List.of(투표를_만든다(마감)), false));
+        given(pollQueryService.getPolls(null, 20)).willReturn(slice(List.of(createPoll(CLOSES_AT)), false));
 
-        var body = 본문을_읽는다("/api/v1/polls");
+        var body = readBody("/api/v1/polls");
 
         @SuppressWarnings("unchecked")
         var item = ((List<Map<String, Object>>) body.get("items")).getFirst();
@@ -67,9 +67,9 @@ class PollReadWebApiTest extends WebApiTestSupport {
 
     @Test
     void 마감_시각이_없는_투표는_closesAt이_null이고_closed가_false다() {
-        given(pollQueryService.getPolls(null, 20)).willReturn(slice(List.of(투표를_만든다(null)), false));
+        given(pollQueryService.getPolls(null, 20)).willReturn(slice(List.of(createPoll(null)), false));
 
-        var body = 본문을_읽는다("/api/v1/polls");
+        var body = readBody("/api/v1/polls");
 
         @SuppressWarnings("unchecked")
         var item = ((List<Map<String, Object>>) body.get("items")).getFirst();
@@ -80,7 +80,7 @@ class PollReadWebApiTest extends WebApiTestSupport {
 
     @Test
     void 마감된_투표는_목록에서_closed가_true다() {
-        given(pollQueryService.getPolls(null, 20)).willReturn(slice(List.of(마감된_투표를_만든다()), false));
+        given(pollQueryService.getPolls(null, 20)).willReturn(slice(List.of(createClosedPoll()), false));
 
         mvcTester.get()
             .uri("/api/v1/polls")
@@ -94,7 +94,7 @@ class PollReadWebApiTest extends WebApiTestSupport {
     void 투표가_없으면_빈_items와_null_nextCursor로_200이다() {
         given(pollQueryService.getPolls(null, 20)).willReturn(slice(List.of(), false));
 
-        var body = 본문을_읽는다("/api/v1/polls");
+        var body = readBody("/api/v1/polls");
 
         assertThat(body.get("items")).isEqualTo(List.of());
         assertThat(body).containsKey("nextCursor");
@@ -117,7 +117,7 @@ class PollReadWebApiTest extends WebApiTestSupport {
 
     @Test
     void 인증_없이_상세를_조회하면_200과_명세_필드를_내린다() {
-        var poll = 투표를_만든다(마감);
+        var poll = createPoll(CLOSES_AT);
         var id = poll.getPublicId().value();
         given(pollQueryService.getPoll(id)).willReturn(poll);
 
@@ -141,11 +141,11 @@ class PollReadWebApiTest extends WebApiTestSupport {
 
     @Test
     void 상세의_myChoice와_result는_키가_있고_값은_null이다() {
-        var poll = 투표를_만든다(마감);
+        var poll = createPoll(CLOSES_AT);
         var id = poll.getPublicId().value();
         given(pollQueryService.getPoll(id)).willReturn(poll);
 
-        var body = 본문을_읽는다("/api/v1/polls/" + id);
+        var body = readBody("/api/v1/polls/" + id);
 
         assertThat(body).containsKeys("myChoice", "result");
         assertThat(body.get("myChoice")).isNull();
@@ -154,11 +154,11 @@ class PollReadWebApiTest extends WebApiTestSupport {
 
     @Test
     void 상세_응답은_내부_id와_status를_담지_않는다() {
-        var poll = 투표를_만든다(마감);
+        var poll = createPoll(CLOSES_AT);
         var id = poll.getPublicId().value();
         given(pollQueryService.getPoll(id)).willReturn(poll);
 
-        var body = 본문을_읽는다("/api/v1/polls/" + id);
+        var body = readBody("/api/v1/polls/" + id);
 
         assertThat(body.keySet()).containsExactlyInAnyOrder(
             "id", "question", "category", "options", "closesAt", "closed", "participantCount", "myChoice", "result");
@@ -166,7 +166,7 @@ class PollReadWebApiTest extends WebApiTestSupport {
 
     @Test
     void 마감된_투표_상세는_200이고_closed가_true다() {
-        var poll = 마감된_투표를_만든다();
+        var poll = createClosedPoll();
         var id = poll.getPublicId().value();
         given(pollQueryService.getPoll(id)).willReturn(poll);
 
@@ -185,7 +185,7 @@ class PollReadWebApiTest extends WebApiTestSupport {
     }
 
 
-    private Map<String, Object> 본문을_읽는다(String uri) {
+    private Map<String, Object> readBody(String uri) {
         var result = mvcTester.get().uri(uri).exchange();
         assertThat(result).hasStatus(HttpStatus.OK);
 
@@ -195,18 +195,18 @@ class PollReadWebApiTest extends WebApiTestSupport {
         return body;
     }
 
-    private Poll 투표를_만든다(LocalDateTime closesAt) {
+    private Poll createPoll(LocalDateTime closesAt) {
         var poll = Poll.create(1L, "읽씹 3시간 뒤 답장, 이거 관심 없는 걸까요?", Category.SOME,
             List.of("관심 없음", "그냥 바쁜 것", "더 지켜봐야 함"), closesAt, LocalDateTime.now());
         ReflectionTestUtils.setField(poll, "id", 1L);
-        ReflectionTestUtils.setField(poll, "createdAt", 생성);
+        ReflectionTestUtils.setField(poll, "createdAt", CREATED_AT);
 
         return poll;
     }
 
     /** 생성 시점에는 과거 마감을 만들 수 없으므로 필드를 직접 과거로 바꾼다. */
-    private Poll 마감된_투표를_만든다() {
-        var poll = 투표를_만든다(마감);
+    private Poll createClosedPoll() {
+        var poll = createPoll(CLOSES_AT);
         ReflectionTestUtils.setField(poll, "closesAt", new ClosesAt(LocalDateTime.of(2000, 1, 1, 0, 0)));
 
         return poll;

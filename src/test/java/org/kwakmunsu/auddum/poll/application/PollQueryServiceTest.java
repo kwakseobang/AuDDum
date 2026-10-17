@@ -37,52 +37,52 @@ class PollQueryServiceTest extends IntegrationTestSupport {
 
     @Test
     void 목록은_공개_투표만_내려준다() {
-        var 공개 = 투표를_저장한다("공개 투표");
-        var 숨김 = 투표를_저장한다("숨김 투표");
-        var 삭제 = 투표를_저장한다("삭제 투표");
-        숨김.hide();
-        삭제.deleteByAdmin();
+        var publicPoll = savePoll("공개 투표");
+        var hiddenPoll = savePoll("숨김 투표");
+        var deletedPoll = savePoll("삭제 투표");
+        hiddenPoll.hide();
+        deletedPoll.deleteByAdmin();
         entityManager.flush();
         entityManager.clear();
 
         var slice = pollQueryService.getPolls(null, 20);
 
-        assertThat(slice.getContent()).extracting(Poll::getId).containsExactly(공개.getId());
+        assertThat(slice.getContent()).extracting(Poll::getId).containsExactly(publicPoll.getId());
     }
 
     @Test
     void 마감된_투표도_목록에_포함한다() {
-        var 마감 = 투표를_저장한다("마감된 투표");
-        마감시킨다(마감.getId());
-        var 진행 = 투표를_저장한다("진행 중 투표");
+        var closedPoll = savePoll("마감된 투표");
+        closePoll(closedPoll.getId());
+        var openPoll = savePoll("진행 중 투표");
 
         var slice = pollQueryService.getPolls(null, 20);
 
-        assertThat(slice.getContent()).extracting(Poll::getId).containsExactly(진행.getId(), 마감.getId());
+        assertThat(slice.getContent()).extracting(Poll::getId).containsExactly(openPoll.getId(), closedPoll.getId());
         assertThat(slice.getContent().get(1).isClosed(LocalDateTime.now(TimeConfig.KST))).isTrue();
     }
 
     @Test
     void 목록은_최신순이다() {
-        var 첫째 = 투표를_저장한다("첫째");
-        var 둘째 = 투표를_저장한다("둘째");
-        var 셋째 = 투표를_저장한다("셋째");
+        var first = savePoll("첫째");
+        var second = savePoll("둘째");
+        var third = savePoll("셋째");
 
         var slice = pollQueryService.getPolls(null, 20);
 
         assertThat(slice.getContent()).extracting(Poll::getId)
-            .containsExactly(셋째.getId(), 둘째.getId(), 첫째.getId());
+            .containsExactly(third.getId(), second.getId(), first.getId());
     }
 
     @Test
     void 목록_항목은_생성_시각을_담는다() {
-        var poll = 투표를_저장한다("예전 투표");
-        var 과거 = LocalDateTime.of(2026, 10, 12, 13, 0);
-        생성시각을_바꾼다(poll.getId(), 과거);
+        var poll = savePoll("예전 투표");
+        var pastCreatedAt = LocalDateTime.of(2026, 10, 12, 13, 0);
+        changeCreatedAt(poll.getId(), pastCreatedAt);
 
         var slice = pollQueryService.getPolls(null, 20);
 
-        assertThat(slice.getContent().getFirst().getCreatedAt()).isEqualTo(과거);
+        assertThat(slice.getContent().getFirst().getCreatedAt()).isEqualTo(pastCreatedAt);
     }
 
     @Test
@@ -95,7 +95,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
 
     @Test
     void size만큼_내려주고_더_있으면_hasNext다() {
-        투표를_저장한다(21);
+        savePoll(21);
 
         var slice = pollQueryService.getPolls(null, 20);
 
@@ -105,7 +105,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
 
     @Test
     void size가_50이면_50개를_내려준다() {
-        투표를_저장한다(51);
+        savePoll(51);
 
         var slice = pollQueryService.getPolls(null, 50);
 
@@ -115,7 +115,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
 
     @Test
     void size가_1이면_한_개와_hasNext를_내려준다() {
-        투표를_저장한다(3);
+        savePoll(3);
 
         var slice = pollQueryService.getPolls(null, 1);
 
@@ -125,7 +125,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
 
     @Test
     void 남은_개수가_size와_같으면_hasNext가_아니다() {
-        투표를_저장한다(2);
+        savePoll(2);
 
         var slice = pollQueryService.getPolls(null, 2);
 
@@ -135,43 +135,43 @@ class PollQueryServiceTest extends IntegrationTestSupport {
 
     @Test
     void 마지막_id를_넘기면_이어서_내려주고_마지막에_hasNext가_아니다() {
-        var 저장 = 투표를_저장한다(5);
-        var 최신순 = new ArrayList<>(저장.reversed().stream().map(Poll::getId).toList());
+        var saved = savePoll(5);
+        var newestFirstIds = new ArrayList<>(saved.reversed().stream().map(Poll::getId).toList());
 
-        var 첫째쪽 = pollQueryService.getPolls(null, 2);
-        var 둘째쪽 = pollQueryService.getPolls(첫째쪽.getContent().getLast().getId(), 2);
-        var 셋째쪽 = pollQueryService.getPolls(둘째쪽.getContent().getLast().getId(), 2);
+        var firstPage = pollQueryService.getPolls(null, 2);
+        var secondPage = pollQueryService.getPolls(firstPage.getContent().getLast().getId(), 2);
+        var thirdPage = pollQueryService.getPolls(secondPage.getContent().getLast().getId(), 2);
 
-        assertThat(첫째쪽.getContent()).extracting(Poll::getId).containsExactlyElementsOf(최신순.subList(0, 2));
-        assertThat(둘째쪽.getContent()).extracting(Poll::getId).containsExactlyElementsOf(최신순.subList(2, 4));
-        assertThat(셋째쪽.getContent()).extracting(Poll::getId).containsExactly(최신순.get(4));
-        assertThat(첫째쪽.hasNext()).isTrue();
-        assertThat(둘째쪽.hasNext()).isTrue();
-        assertThat(셋째쪽.hasNext()).isFalse();
+        assertThat(firstPage.getContent()).extracting(Poll::getId).containsExactlyElementsOf(newestFirstIds.subList(0, 2));
+        assertThat(secondPage.getContent()).extracting(Poll::getId).containsExactlyElementsOf(newestFirstIds.subList(2, 4));
+        assertThat(thirdPage.getContent()).extracting(Poll::getId).containsExactly(newestFirstIds.get(4));
+        assertThat(firstPage.hasNext()).isTrue();
+        assertThat(secondPage.hasNext()).isTrue();
+        assertThat(thirdPage.hasNext()).isFalse();
     }
 
     @Test
     void 커서_이후_숨김_처리된_투표는_건너뛰고_이어진다() {
-        var 첫째 = 투표를_저장한다("첫째");
-        var 둘째 = 투표를_저장한다("둘째");
-        var 셋째 = 투표를_저장한다("셋째");
-        var 첫쪽 = pollQueryService.getPolls(null, 1);
-        둘째.hide();
+        var first = savePoll("첫째");
+        var second = savePoll("둘째");
+        var third = savePoll("셋째");
+        var firstPage = pollQueryService.getPolls(null, 1);
+        second.hide();
         entityManager.flush();
         entityManager.clear();
 
-        var 둘째쪽 = pollQueryService.getPolls(첫쪽.getContent().getLast().getId(), 1);
+        var secondPage = pollQueryService.getPolls(firstPage.getContent().getLast().getId(), 1);
 
-        assertThat(첫쪽.getContent()).extracting(Poll::getId).containsExactly(셋째.getId());
-        assertThat(둘째쪽.getContent()).extracting(Poll::getId).containsExactly(첫째.getId());
-        assertThat(둘째쪽.hasNext()).isFalse();
+        assertThat(firstPage.getContent()).extracting(Poll::getId).containsExactly(third.getId());
+        assertThat(secondPage.getContent()).extracting(Poll::getId).containsExactly(first.getId());
+        assertThat(secondPage.hasNext()).isFalse();
     }
 
     // ---- 상세 ----
 
     @Test
     void 공개_투표_상세는_선택지를_position_순서로_내려준다() {
-        var poll = 투표를_저장한다("상세 투표", List.of("관심 없음", "그냥 바쁜 것", "더 지켜봐야 함"));
+        var poll = savePoll("상세 투표", List.of("관심 없음", "그냥 바쁜 것", "더 지켜봐야 함"));
         entityManager.flush();
         entityManager.clear();
 
@@ -185,8 +185,8 @@ class PollQueryServiceTest extends IntegrationTestSupport {
 
     @Test
     void 마감된_투표도_상세_조회된다() {
-        var poll = 투표를_저장한다("마감된 투표");
-        마감시킨다(poll.getId());
+        var poll = savePoll("마감된 투표");
+        closePoll(poll.getId());
 
         var found = pollQueryService.getPoll(poll.getPublicId().value());
 
@@ -195,7 +195,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
 
     @Test
     void 숨김_투표_상세는_POLL_NOT_FOUND다() {
-        var poll = 투표를_저장한다("숨김 투표");
+        var poll = savePoll("숨김 투표");
         poll.hide();
         entityManager.flush();
         entityManager.clear();
@@ -207,7 +207,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
 
     @Test
     void 삭제_투표_상세는_POLL_NOT_FOUND다() {
-        var poll = 투표를_저장한다("삭제 투표");
+        var poll = savePoll("삭제 투표");
         poll.deleteByAdmin();
         entityManager.flush();
         entityManager.clear();
@@ -227,31 +227,31 @@ class PollQueryServiceTest extends IntegrationTestSupport {
 
     // ---- 보조 ----
 
-    private Long 작성자 = null;
+    private Long authorId = null;
 
-    private Long 작성자를_구한다() {
-        if (작성자 == null) {
-            작성자 = memberJpaRepository.save(MemberFixture.createMember()).getId();
+    private Long getAuthorId() {
+        if (authorId == null) {
+            authorId = memberJpaRepository.save(MemberFixture.createMember()).getId();
         }
 
-        return 작성자;
+        return authorId;
     }
 
-    private Poll 투표를_저장한다(String question) {
-        return 투표를_저장한다(question, List.of("가", "나"));
+    private Poll savePoll(String question) {
+        return savePoll(question, List.of("가", "나"));
     }
 
-    private Poll 투표를_저장한다(String question, List<String> options) {
-        var poll = Poll.create(작성자를_구한다(), question, Category.ETC, options, null, LocalDateTime.now(TimeConfig.KST));
+    private Poll savePoll(String question, List<String> options) {
+        var poll = Poll.create(getAuthorId(), question, Category.ETC, options, null, LocalDateTime.now(TimeConfig.KST));
 
         return pollJpaRepository.saveAndFlush(poll);
     }
 
     /** 오래된 순(저장 순서)으로 돌려준다. */
-    private List<Poll> 투표를_저장한다(int count) {
+    private List<Poll> savePoll(int count) {
         var polls = new ArrayList<Poll>();
         for (int i = 1; i <= count; i++) {
-            polls.add(투표를_저장한다("질문 " + i));
+            polls.add(savePoll("질문 " + i));
         }
         entityManager.clear();
 
@@ -259,7 +259,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
     }
 
     /** 생성 시점에는 과거 마감을 만들 수 없으므로, 저장한 뒤 JPQL 벌크 수정으로 마감 시각을 과거로 덮어쓴다. */
-    private void 마감시킨다(Long pollId) {
+    private void closePoll(Long pollId) {
         entityManager.createQuery("update Poll p set p.closesAt.value = :closesAt where p.id = :id")
             .setParameter("closesAt", LocalDateTime.now(TimeConfig.KST).minusDays(1))
             .setParameter("id", pollId)
@@ -268,7 +268,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
     }
 
     /** 감사가 created_at을 현재 시각으로 채우므로, 저장한 뒤 JPQL 벌크 수정으로 덮어쓴다. */
-    private void 생성시각을_바꾼다(Long pollId, LocalDateTime createdAt) {
+    private void changeCreatedAt(Long pollId, LocalDateTime createdAt) {
         entityManager.createQuery("update Poll p set p.createdAt = :createdAt where p.id = :id")
             .setParameter("createdAt", createdAt)
             .setParameter("id", pollId)

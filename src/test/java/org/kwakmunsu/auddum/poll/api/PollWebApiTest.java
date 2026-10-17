@@ -27,7 +27,7 @@ import org.springframework.http.MediaType;
  */
 class PollWebApiTest extends WebApiTestSupport {
 
-    private static final String 본문 = """
+    private static final String REQUEST_BODY = """
         {"question": "읽씹 3시간 뒤 답장, 이거 관심 없는 걸까요?",
          "category": "SOME",
          "options": ["관심 없음", "그냥 바쁜 것", "더 지켜봐야 함"]}
@@ -35,14 +35,14 @@ class PollWebApiTest extends WebApiTestSupport {
 
     @Test
     void 생성하면_201과_Location을_내린다() {
-        var poll = 투표를_만든다(null);
+        var poll = createPoll(null);
         given(pollCommandService.createPoll(any(NewPoll.class), eq(1L))).willReturn(poll);
 
         mvcTester.post()
             .uri("/api/v1/polls")
             .header("X-Member-Id", "1")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(본문)
+            .content(REQUEST_BODY)
             .assertThat()
             .hasStatus(HttpStatus.CREATED)
             .hasHeader("Location", "/api/v1/polls/" + poll.getPublicId().value());
@@ -50,14 +50,14 @@ class PollWebApiTest extends WebApiTestSupport {
 
     @Test
     void 본문은_공개_ID_문자열_하나다() {
-        var poll = 투표를_만든다(null);
+        var poll = createPoll(null);
         given(pollCommandService.createPoll(any(NewPoll.class), eq(1L))).willReturn(poll);
 
         mvcTester.post()
             .uri("/api/v1/polls")
             .header("X-Member-Id", "1")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(본문)
+            .content(REQUEST_BODY)
             .assertThat()
             .hasStatus(HttpStatus.CREATED)
             .apply(print())
@@ -67,7 +67,7 @@ class PollWebApiTest extends WebApiTestSupport {
 
     @Test
     void 오프셋이_있는_마감_시각은_KST_시각으로_바꿔_서비스에_넘긴다() {
-        given(pollCommandService.createPoll(any(NewPoll.class), eq(1L))).willReturn(투표를_만든다(null));
+        given(pollCommandService.createPoll(any(NewPoll.class), eq(1L))).willReturn(createPoll(null));
 
         mvcTester.post()
             .uri("/api/v1/polls")
@@ -87,13 +87,13 @@ class PollWebApiTest extends WebApiTestSupport {
 
     @Test
     void X_Member_Id_헤더의_값이_서비스에_memberId로_전달된다() {
-        given(pollCommandService.createPoll(any(NewPoll.class), eq(7L))).willReturn(투표를_만든다(null));
+        given(pollCommandService.createPoll(any(NewPoll.class), eq(7L))).willReturn(createPoll(null));
 
         mvcTester.post()
             .uri("/api/v1/polls")
             .header("X-Member-Id", "7")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(본문)
+            .content(REQUEST_BODY)
             .assertThat()
             .hasStatus(HttpStatus.CREATED);
 
@@ -105,7 +105,7 @@ class PollWebApiTest extends WebApiTestSupport {
         mvcTester.post()
             .uri("/api/v1/polls")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(본문)
+            .content(REQUEST_BODY)
             .assertThat()
             .hasStatus(HttpStatus.UNAUTHORIZED)
             .hasContentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
@@ -118,7 +118,7 @@ class PollWebApiTest extends WebApiTestSupport {
 
     @Test
     void 알_수_없는_요청_필드는_무시하고_생성한다() {
-        given(pollCommandService.createPoll(any(NewPoll.class), eq(1L))).willReturn(투표를_만든다(null));
+        given(pollCommandService.createPoll(any(NewPoll.class), eq(1L))).willReturn(createPoll(null));
 
         mvcTester.post()
             .uri("/api/v1/polls")
@@ -172,7 +172,7 @@ class PollWebApiTest extends WebApiTestSupport {
             .uri("/api/v1/polls")
             .header("X-Member-Id", "1")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(본문)
+            .content(REQUEST_BODY)
             .assertThat()
             .hasStatus(HttpStatus.BAD_REQUEST)
             .apply(print())
@@ -242,7 +242,7 @@ class PollWebApiTest extends WebApiTestSupport {
             .uri("/api/v1/polls")
             .header("X-Member-Id", "1")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(본문)
+            .content(REQUEST_BODY)
             .assertThat()
             .hasStatus(HttpStatus.TOO_MANY_REQUESTS)
             .hasContentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
@@ -262,7 +262,7 @@ class PollWebApiTest extends WebApiTestSupport {
             .uri("/api/v1/polls")
             .header("X-Member-Id", "1")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(본문)
+            .content(REQUEST_BODY)
             .assertThat()
             .hasStatus(HttpStatus.CONFLICT)
             .hasContentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
@@ -271,7 +271,7 @@ class PollWebApiTest extends WebApiTestSupport {
             .hasPathSatisfying("$.code", v -> v.assertThat().isEqualTo("DUPLICATE_POLL"));
     }
 
-    private Poll 투표를_만든다(LocalDateTime closesAt) {
+    private Poll createPoll(LocalDateTime closesAt) {
         return Poll.create(1L, "읽씹 3시간 뒤 답장, 이거 관심 없는 걸까요?", Category.SOME,
             List.of("관심 없음", "그냥 바쁜 것", "더 지켜봐야 함"), closesAt, LocalDateTime.now());
     }

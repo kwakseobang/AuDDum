@@ -17,12 +17,12 @@ class OptionContentTest {
 
     @Test
     void 오십_자_선택지는_만들_수_있다() {
-        assertThat(OptionContent.of(PollFixture.글자(50)).value()).hasSize(50);
+        assertThat(OptionContent.of(PollFixture.repeatChar(50)).value()).hasSize(50);
     }
 
     @Test
     void 오십한_자_선택지는_만들_수_없다() {
-        assertThatThrownBy(() -> OptionContent.of(PollFixture.글자(51)))
+        assertThatThrownBy(() -> OptionContent.of(PollFixture.repeatChar(51)))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage("선택지는 1~50자여야 합니다.");
     }
@@ -55,12 +55,12 @@ class OptionContentTest {
 
     @Test
     void 앞뒤_공백이_붙은_오십_자_선택지은_제거_후_길이로_판단해_만들_수_있다() {
-        assertThat(OptionContent.of(" " + PollFixture.글자(50) + " ").value()).isEqualTo(PollFixture.글자(50));
+        assertThat(OptionContent.of(" " + PollFixture.repeatChar(50) + " ").value()).isEqualTo(PollFixture.repeatChar(50));
     }
 
     @Test
     void 앞뒤_공백이_붙은_오십한_자_선택지은_만들_수_없다() {
-        assertThatThrownBy(() -> OptionContent.of(" " + PollFixture.글자(51) + " "))
+        assertThatThrownBy(() -> OptionContent.of(" " + PollFixture.repeatChar(51) + " "))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage("선택지는 1~50자여야 합니다.");
     }
