@@ -24,6 +24,19 @@ class RedirectSavingFilterTest {
     }
 
     @Test
+    void redirect가_없는_로그인_시작은_이전_시도의_redirect를_지운다() throws Exception {
+        var first = new MockHttpServletRequest("GET", "/oauth2/authorization/kakao");
+        first.setParameter("redirect", "/polls/AbC123xyz012");
+        filter.doFilter(first, new MockHttpServletResponse(), new MockFilterChain());
+        var second = new MockHttpServletRequest("GET", "/oauth2/authorization/kakao");
+        second.setSession(first.getSession(false));
+
+        filter.doFilter(second, new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(second.getSession(false).getAttribute(OAuth2LoginSuccessHandler.REDIRECT_SESSION_KEY)).isNull();
+    }
+
+    @Test
     void 로그인_시작이_아닌_요청은_세션을_만들지_않는다() throws Exception {
         var request = new MockHttpServletRequest("GET", "/api/v1/polls");
         request.setParameter("redirect", "/polls");

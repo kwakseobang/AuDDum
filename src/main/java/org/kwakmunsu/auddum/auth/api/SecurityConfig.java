@@ -23,10 +23,11 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
         HttpSecurity http,
         MemberCommandService memberCommandService,
-        @Value("${auddum.frontend.base-url}") String frontendBaseUrl
+        @Value("${auddum.frontend.base-url}") String frontendBaseUrl,
+        @Value("${auddum.auth.cookie-secure}") boolean cookieSecure
     ) throws Exception {
         var userService = new OAuth2LoginUserService(new DefaultOAuth2UserService(), memberCommandService);
-        var successHandler = new OAuth2LoginSuccessHandler(new CookieTokenIssuer(), new RedirectPathValidator(), frontendBaseUrl);
+        var successHandler = new OAuth2LoginSuccessHandler(new CookieTokenIssuer(cookieSecure), new RedirectPathValidator(), frontendBaseUrl);
 
         http
             .csrf(AbstractHttpConfigurer::disable)

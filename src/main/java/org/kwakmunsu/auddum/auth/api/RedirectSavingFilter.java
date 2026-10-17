@@ -28,6 +28,9 @@ public class RedirectSavingFilter extends OncePerRequestFilter {
         String redirect = request.getParameter("redirect");
         if (redirect != null) {
             request.getSession().setAttribute(OAuth2LoginSuccessHandler.REDIRECT_SESSION_KEY, redirect);
+        } else if (request.getSession(false) != null) {
+            // 이전에 중단한 로그인의 값이 남아 엉뚱한 곳으로 이동하지 않게 지운다.
+            request.getSession(false).removeAttribute(OAuth2LoginSuccessHandler.REDIRECT_SESSION_KEY);
         }
 
         filterChain.doFilter(request, response);

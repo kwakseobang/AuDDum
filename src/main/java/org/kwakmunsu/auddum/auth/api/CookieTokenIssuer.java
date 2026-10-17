@@ -14,6 +14,13 @@ import org.springframework.http.ResponseCookie;
  */
 public class CookieTokenIssuer implements TokenIssuer {
 
+    private final boolean secure;
+
+    /** @param secure Secure 속성 여부. 운영은 true, http인 로컬은 false(`auddum.auth.cookie-secure`) */
+    public CookieTokenIssuer(boolean secure) {
+        this.secure = secure;
+    }
+
     static final String ACCESS_COOKIE = "access_token";
     static final String REFRESH_COOKIE = "refresh_token";
     private static final Duration ACCESS_TTL = Duration.ofMinutes(30);
@@ -28,7 +35,7 @@ public class CookieTokenIssuer implements TokenIssuer {
     private void addCookie(HttpServletResponse response, String name, String path, Duration ttl) {
         ResponseCookie cookie = ResponseCookie.from(name, UUID.randomUUID().toString())
             .httpOnly(true)
-            .secure(true)
+            .secure(secure)
             .sameSite("Lax")
             .path(path)
             .maxAge(ttl)

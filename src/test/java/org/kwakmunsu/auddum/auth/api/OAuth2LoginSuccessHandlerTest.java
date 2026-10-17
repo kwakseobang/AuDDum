@@ -72,6 +72,16 @@ class OAuth2LoginSuccessHandlerTest {
     }
 
     @Test
+    void 프런트_주소_끝에_슬래시가_있어도_경로가_겹치지_않는다() throws Exception {
+        var response = new MockHttpServletResponse();
+        var slashHandler = new OAuth2LoginSuccessHandler(tokenIssuer, new RedirectPathValidator(), FRONT + "/");
+
+        slashHandler.onAuthenticationSuccess(requestWithRedirect("/polls"), response, authentication(Role.MEMBER));
+
+        assertThat(response.getRedirectedUrl()).isEqualTo(FRONT + "/polls");
+    }
+
+    @Test
     void 로그인이_끝나면_로그인_과정에서_쓴_세션을_버린다() throws Exception {
         var request = requestWithRedirect("/polls");
         var session = (MockHttpSession) request.getSession(false);

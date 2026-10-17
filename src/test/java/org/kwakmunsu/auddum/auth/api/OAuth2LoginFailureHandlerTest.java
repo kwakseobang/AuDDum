@@ -4,10 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
 
 /**
@@ -38,6 +42,33 @@ class OAuth2LoginFailureHandlerTest {
         var timeout = new OAuth2AuthenticationException(new OAuth2Error("invalid_token_response"), new ResourceAccessException("timeout"));
 
         assertRedirectsWithCode(timeout, "SOCIAL_UNAVAILABLE");
+    }
+
+    @Test
+    void 카카오가_4xx로_거절한_인가_코드_실패는_장애가_아니라_SOCIAL_AUTH_FAILED다() throws Exception {
+        var rejected = new OAuth2AuthenticationException(new OAuth2Error("invalid_grant"),
+            HttpClientErrorException.create(HttpStatus.BAD_REQUEST, "Bad Request", HttpHeaders.EMPTY, new byte[0], null));
+
+        assertRedirectsWithCode(rejected, "SOCIAL_AUTH_FAILED");
+    }
+
+    @Test
+    void 로그인_과정에서_쓴_세션은_실패해도_버린다() throws Exception {
+        var request = new MockHttpServletRequest();
+        var session = (MockHttpSession) request.getSession(true);
+
+        handler.onAuthenticationFailure(request, new MockHttpServletResponse(), oauthError("invalid_grant"));
+
+        assertThat(session.isInvalid()).isTrue();
+    }
+
+    @Test
+    void 프런트_주소_끝에_슬래시가_있어도_경로가_겹치지_않는다() throws Exception {
+        var response = new MockHttpServletResponse();
+
+        new OAuth2LoginFailureHandler(FRONT + "/").onAuthenticationFailure(new MockHttpServletRequest(), response, oauthError("invalid_grant"));
+
+        assertThat(response.getRedirectedUrl()).isEqualTo(FRONT + "/login/error?code=SOCIAL_AUTH_FAILED");
     }
 
     @Test

@@ -35,3 +35,5 @@ spring:
 auddum:
   frontend:
     base-url: http://localhost:3000
+  auth:
+    cookie-secure: true
