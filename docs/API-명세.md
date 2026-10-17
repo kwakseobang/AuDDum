@@ -124,6 +124,7 @@
 
 - 응답 `{ status, role, createdAt }`. 닉네임이나 프로필은 저장하지 않아 내려주지 않는다.
 - `status`는 `ACTIVE`, `SUSPENDED`이다. 프런트엔드는 이 값으로 화면을 다르게 보여주되, 최종 검증은 서버가 한다.
+- 정지 회원도 조회할 수 있다(자기 상태를 봐야 한다). 로그인하지 않았거나 탈퇴한(또는 DB에 없는) 회원의 토큰이면 401 `UNAUTHENTICATED`다. `createdAt`은 KST 오프셋이 붙은 ISO-8601이다.
 
 `GET /members/me` 응답 예시
 
