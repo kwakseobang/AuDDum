@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.kwakmunsu.auddum.auth.domain.RefreshToken;
 import org.kwakmunsu.auddum.auth.infrastructure.JwtTokenProvider;
 import org.kwakmunsu.auddum.auth.infrastructure.RefreshTokenJpaRepository;
-import org.kwakmunsu.auddum.member.application.MemberQueryService;
+import org.kwakmunsu.auddum.member.application.MemberReader;
 import org.kwakmunsu.auddum.member.domain.Member;
 import org.kwakmunsu.auddum.member.domain.Role;
 import org.kwakmunsu.auddum.support.error.AuddumException;
@@ -28,7 +28,7 @@ public class RefreshTokenService {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenJpaRepository refreshTokenRepository;
-    private final MemberQueryService memberQueryService;
+    private final MemberReader memberReader;
 
     /**
      * 로그인한 회원에게 새 액세스·리프레시 토큰을 발급한다. 리프레시 토큰은 기기마다 한 건씩 쌓인다.
@@ -55,8 +55,8 @@ public class RefreshTokenService {
         replace(stored, now);
         // 회원이 없어 아래에서 401이 되어도 위의 폐기는 커밋된다(noRollbackFor). 결과가 같아 의도한 동작이다.
 
-        Member member = memberQueryService.findMember(stored.getMemberId())
-            .orElseThrow(RefreshTokenService::unauthenticated);
+        Member member = memberReader.getMember(stored.getMemberId());
+        member.ensureNotWithdrawn();
 
         return issue(member.getId(), member.getRole(), now);
     }

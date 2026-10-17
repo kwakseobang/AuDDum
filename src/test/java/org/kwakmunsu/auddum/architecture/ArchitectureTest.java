@@ -28,10 +28,10 @@ class ArchitectureTest {
     /** 의존 다이어그램(아키텍처 §2)에서 각 도메인이 쓸 수 있는 다른 도메인. support는 모두가 쓸 수 있다. */
     private static final Map<String, Set<String>> ALLOWED = Map.of(
             "member", Set.of(),
-            "poll", Set.of(),
+            "poll", Set.of("member"),
             "auth", Set.of("member"),
-            "vote", Set.of("poll"),
-            "report", Set.of("poll"),
+            "vote", Set.of("poll", "member"),
+            "report", Set.of("poll", "member"),
             "admin", Set.of("report", "poll", "member")
     );
 

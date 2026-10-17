@@ -4,6 +4,7 @@ import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.kwakmunsu.auddum.auth.api.AuthCookies;
 import org.kwakmunsu.auddum.auth.application.RefreshTokenService;
+import org.kwakmunsu.auddum.member.application.MemberCommandService;
 import org.kwakmunsu.auddum.poll.application.PollCommandService;
 import org.kwakmunsu.auddum.poll.application.PollQueryService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,5 +56,8 @@ public abstract class WebApiTestSupport {
 
     @MockitoBean
     protected RefreshTokenService refreshTokenService;
+
+    @MockitoBean
+    protected MemberCommandService memberCommandService;
 
 }

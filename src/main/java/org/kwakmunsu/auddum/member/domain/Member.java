@@ -9,10 +9,12 @@ import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.kwakmunsu.auddum.support.error.AuddumException;
+import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
 import org.kwakmunsu.auddum.support.jpa.BaseEntity;
 
 /**
- * 회원 애그리거트 루트. 소셜 연동(MemberAuth)은 member_auth가 회원을 참조하는 별도 엔티티다. 리프레시 토큰, 정지·탈퇴 전이 같은 상태 규칙은 M3의 다른 이슈(#14 등)에서 더한다.
+ * 회원 애그리거트 루트. 소셜 연동(MemberAuth)은 member_auth가 회원을 참조하는 별도 엔티티다. 리프레시 토큰은 auth가 가진다.
  */
 @Table(name = "member")
 @Getter
@@ -52,8 +54,39 @@ public class Member extends BaseEntity {
         this.lastLoginAt = now;
     }
 
+    /** 탈퇴. 정지 중에도 할 수 있고, 이미 탈퇴한 회원이면 401이다. 소셜 연동·리프레시 토큰 삭제는 서비스가 같은 트랜잭션에서 함께 한다. */
+    public void withdraw(LocalDateTime now) {
+        ensureNotWithdrawn();
+
+        this.status = MemberStatus.WITHDRAWN;
+        this.withdrawnAt = now;
+    }
+
+    /** 정상 회원만 통과시킨다. 탈퇴했으면 401, 정지면 403이다. 정지 회원이 할 수 있는 탈퇴·로그아웃에서는 부르지 않는다. */
+    public void ensureActive() {
+        ensureNotWithdrawn();
+        if (isSuspended()) {
+            throw new AuddumException(MemberErrorCode.MEMBER_SUSPENDED);
+        }
+    }
+
+    /** 탈퇴한 회원이면 401이다. */
+    public void ensureNotWithdrawn() {
+        if (isWithdrawn()) {
+            throw new AuddumException(DefaultErrorCode.UNAUTHENTICATED);
+        }
+    }
+
     public boolean isActive() {
         return status == MemberStatus.ACTIVE;
+    }
+
+    public boolean isSuspended() {
+        return status == MemberStatus.SUSPENDED;
+    }
+
+    public boolean isWithdrawn() {
+        return status == MemberStatus.WITHDRAWN;
     }
 
     public boolean isAdmin() {
