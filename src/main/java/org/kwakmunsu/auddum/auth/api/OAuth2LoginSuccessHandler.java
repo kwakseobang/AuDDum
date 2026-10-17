@@ -4,11 +4,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Objects;
 import org.jspecify.annotations.NonNull;
 import org.kwakmunsu.auddum.auth.application.AuddumOAuth2User;
 import org.kwakmunsu.auddum.auth.application.RedirectPathValidator;
-import org.kwakmunsu.auddum.auth.application.TokenIssuer;
+import org.kwakmunsu.auddum.auth.application.RefreshTokenService;
+import org.kwakmunsu.auddum.support.config.TimeConfig;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
@@ -21,12 +23,19 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     /** 로그인 시작 때 `redirect` 파라미터를 보관하는 세션 키. */
     public static final String REDIRECT_SESSION_KEY = "auddum.login.redirect";
 
-    private final TokenIssuer tokenIssuer;
+    private final RefreshTokenService refreshTokenService;
+    private final AuthCookies authCookies;
     private final RedirectPathValidator redirectPathValidator;
     private final String frontendBaseUrl;
 
-    public OAuth2LoginSuccessHandler(TokenIssuer tokenIssuer, RedirectPathValidator redirectPathValidator, String frontendBaseUrl) {
-        this.tokenIssuer = tokenIssuer;
+    public OAuth2LoginSuccessHandler(
+        RefreshTokenService refreshTokenService,
+        AuthCookies authCookies,
+        RedirectPathValidator redirectPathValidator,
+        String frontendBaseUrl
+    ) {
+        this.refreshTokenService = refreshTokenService;
+        this.authCookies = authCookies;
         this.redirectPathValidator = redirectPathValidator;
         this.frontendBaseUrl = FrontendUrls.normalize(frontendBaseUrl);
     }
@@ -38,7 +47,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         Authentication authentication
     ) throws IOException {
         AuddumOAuth2User user = (AuddumOAuth2User) authentication.getPrincipal();
-        tokenIssuer.issue(Objects.requireNonNull(user).memberId(), user.role(), response);
+        Objects.requireNonNull(user);
+        authCookies.write(response, refreshTokenService.issue(user.memberId(), user.role(), LocalDateTime.now(TimeConfig.KST)));
 
         String redirect = popRedirect(request);
         response.sendRedirect(frontendBaseUrl + redirectPathValidator.resolve(redirect));

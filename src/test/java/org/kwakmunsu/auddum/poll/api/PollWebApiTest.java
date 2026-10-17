@@ -23,7 +23,7 @@ import org.springframework.http.MediaType;
 
 /**
  * POST /api/v1/polls 웹 계층(서비스는 목). API 명세 §3, §7.
- * 작성자는 임시로 X-Member-Id 헤더에서 읽는다(brief 결정 사항).
+ * 작성자는 로그인한 회원(SecurityContext)에서 읽는다.
  */
 class PollWebApiTest extends WebApiTestSupport {
 
@@ -40,7 +40,7 @@ class PollWebApiTest extends WebApiTestSupport {
 
         mvcTester.post()
             .uri("/api/v1/polls")
-            .header("X-Member-Id", "1")
+            .with(loginAs(1L))
             .contentType(MediaType.APPLICATION_JSON)
             .content(REQUEST_BODY)
             .assertThat()
@@ -55,7 +55,7 @@ class PollWebApiTest extends WebApiTestSupport {
 
         mvcTester.post()
             .uri("/api/v1/polls")
-            .header("X-Member-Id", "1")
+            .with(loginAs(1L))
             .contentType(MediaType.APPLICATION_JSON)
             .content(REQUEST_BODY)
             .assertThat()
@@ -71,7 +71,7 @@ class PollWebApiTest extends WebApiTestSupport {
 
         mvcTester.post()
             .uri("/api/v1/polls")
-            .header("X-Member-Id", "1")
+            .with(loginAs(1L))
             .contentType(MediaType.APPLICATION_JSON)
             .content("""
                 {"question": "질문", "category": "ETC", "options": ["가", "나"],
@@ -91,7 +91,7 @@ class PollWebApiTest extends WebApiTestSupport {
 
         mvcTester.post()
             .uri("/api/v1/polls")
-            .header("X-Member-Id", "7")
+            .with(loginAs(7L))
             .contentType(MediaType.APPLICATION_JSON)
             .content(REQUEST_BODY)
             .assertThat()
@@ -122,7 +122,7 @@ class PollWebApiTest extends WebApiTestSupport {
 
         mvcTester.post()
             .uri("/api/v1/polls")
-            .header("X-Member-Id", "1")
+            .with(loginAs(1L))
             .contentType(MediaType.APPLICATION_JSON)
             .content("""
                 {"question": "질문", "category": "ETC", "options": ["가", "나"],
@@ -136,7 +136,7 @@ class PollWebApiTest extends WebApiTestSupport {
     void 깨진_JSON은_400_MALFORMED_REQUEST다() {
         mvcTester.post()
             .uri("/api/v1/polls")
-            .header("X-Member-Id", "1")
+            .with(loginAs(1L))
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"question\": ")
             .assertThat()
@@ -149,7 +149,7 @@ class PollWebApiTest extends WebApiTestSupport {
     void 필수_필드가_없으면_400_VALIDATION_FAILED이고_서비스를_부르지_않는다() {
         mvcTester.post()
             .uri("/api/v1/polls")
-            .header("X-Member-Id", "1")
+            .with(loginAs(1L))
             .contentType(MediaType.APPLICATION_JSON)
             .content("{}")
             .assertThat()
@@ -170,7 +170,7 @@ class PollWebApiTest extends WebApiTestSupport {
 
         mvcTester.post()
             .uri("/api/v1/polls")
-            .header("X-Member-Id", "1")
+            .with(loginAs(1L))
             .contentType(MediaType.APPLICATION_JSON)
             .content(REQUEST_BODY)
             .assertThat()
@@ -186,7 +186,7 @@ class PollWebApiTest extends WebApiTestSupport {
     void 허용되지_않은_카테고리는_400이고_서비스를_부르지_않는다() {
         mvcTester.post()
             .uri("/api/v1/polls")
-            .header("X-Member-Id", "1")
+            .with(loginAs(1L))
             .contentType(MediaType.APPLICATION_JSON)
             .content("""
                 {"question": "질문", "category": "NOPE", "options": ["가", "나"]}
@@ -201,7 +201,7 @@ class PollWebApiTest extends WebApiTestSupport {
     void 과거_마감_시각은_400_VALIDATION_FAILED이고_closesAt을_errors에_담는다() {
         mvcTester.post()
             .uri("/api/v1/polls")
-            .header("X-Member-Id", "1")
+            .with(loginAs(1L))
             .contentType(MediaType.APPLICATION_JSON)
             .content("""
                 {"question": "질문", "category": "ETC", "options": ["가", "나"],
@@ -220,7 +220,7 @@ class PollWebApiTest extends WebApiTestSupport {
     void 선택지가_한_개이면_400_VALIDATION_FAILED이고_서비스를_부르지_않는다() {
         mvcTester.post()
             .uri("/api/v1/polls")
-            .header("X-Member-Id", "1")
+            .with(loginAs(1L))
             .contentType(MediaType.APPLICATION_JSON)
             .content("""
                 {"question": "질문", "category": "ETC", "options": ["가"]}
@@ -240,7 +240,7 @@ class PollWebApiTest extends WebApiTestSupport {
 
         mvcTester.post()
             .uri("/api/v1/polls")
-            .header("X-Member-Id", "1")
+            .with(loginAs(1L))
             .contentType(MediaType.APPLICATION_JSON)
             .content(REQUEST_BODY)
             .assertThat()
@@ -260,7 +260,7 @@ class PollWebApiTest extends WebApiTestSupport {
 
         mvcTester.post()
             .uri("/api/v1/polls")
-            .header("X-Member-Id", "1")
+            .with(loginAs(1L))
             .contentType(MediaType.APPLICATION_JSON)
             .content(REQUEST_BODY)
             .assertThat()
