@@ -47,7 +47,7 @@ test-writer와 domain-reviewer가 **같은 기준**을 쓰기 위한 공유 문�
 | 동시성 | 같은 신원의 동시 참여 | 실제 MySQL(컨테이너) | 기록 1건, 응답 201·200·409 |
 | 구조 | 패키지 의존 | ArchUnit | 순환·다른 도메인 repository·`common` |
 
-- 메서드 이름은 한글 서술이다. 예: `마감된_투표에는_참여할_수_없다`. `@DisplayName`은 쓰지 않는다.
+- 테스트 메서드(`@Test`) 이름만 한글 서술이다. 예: `마감된_투표에는_참여할_수_없다`. `@DisplayName`은 쓰지 않는다. 내부 헬퍼 메서드, 지역 변수, 상수, 픽스처 이름은 영어로 쓴다(`savePoll`, `closedPoll`, `QUESTION`).
 - 클래스 이름은 `{대상}Test`다.
 - 한 테스트는 규칙 하나만 확인한다. 정상 경로와 예외 경로를 따로 쓴다.
 - 예외는 `isInstanceOf(AuddumException.class).hasMessage(...)`로 확인한다. 상태 위반은 오류 코드의 메시지(`PollErrorCode.POLL_CLOSED.getMessage()`), 입력 검증 실패는 필드별 사유 문구가 메시지다. `errorCode` 필드를 꺼내 비교하지 않는다.
