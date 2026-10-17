@@ -31,7 +31,7 @@ public class PollQueryService {
             throw new AuddumException(DefaultErrorCode.MALFORMED_REQUEST);
         }
 
-        return pollRepository.findByPublicIdValue(publicId)
+        return pollRepository.findByPublicId(publicId)
             .filter(Poll::isPublic)
             .orElseThrow(() -> new AuddumException(PollErrorCode.POLL_NOT_FOUND));
     }

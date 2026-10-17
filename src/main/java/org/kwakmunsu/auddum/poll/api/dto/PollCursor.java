@@ -11,21 +11,12 @@ import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
  * 목록 커서. 마지막으로 본 투표의 내부 id를 {@code {"id":123}}로 만들어 URL-safe base64로 감싼 불투명 문자열이다.
  * 바깥에서는 해석하지 않는 값이라 형식이 틀리면 MALFORMED_REQUEST다.
  */
-final class PollCursor {
+record PollCursor(long id) {
 
     private static final Pattern PAYLOAD = Pattern.compile("\\{\"id\":(\\d{1,18})}");
 
-    private PollCursor() {
-    }
-
-    static String encode(Long id) {
-        byte[] payload = ("{\"id\":" + id + "}").getBytes(StandardCharsets.UTF_8);
-
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(payload);
-    }
-
     /** 커서가 없거나 비어 있으면 첫 페이지이므로 null이다. */
-    static Long decode(String cursor) {
+    static PollCursor from(String cursor) {
         if (cursor == null || cursor.isBlank()) {
             return null;
         }
@@ -34,13 +25,20 @@ final class PollCursor {
             String payload = new String(Base64.getUrlDecoder().decode(cursor), StandardCharsets.UTF_8);
             Matcher matcher = PAYLOAD.matcher(payload);
             if (matcher.matches()) {
-                return Long.valueOf(matcher.group(1));
+                return new PollCursor(Long.parseLong(matcher.group(1)));
             }
         } catch (IllegalArgumentException _) {
             // base64가 아니면 아래에서 형식 오류로 던진다.
         }
 
         throw new AuddumException(DefaultErrorCode.MALFORMED_REQUEST);
+    }
+
+    /** 응답의 nextCursor로 내리는 불투명 문자열. */
+    String encode() {
+        byte[] payload = ("{\"id\":" + id + "}").getBytes(StandardCharsets.UTF_8);
+
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(payload);
     }
 
 }

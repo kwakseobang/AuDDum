@@ -12,7 +12,9 @@ public record PollListRequest(
 
     /** 커서가 없으면 null이고 첫 페이지다. 형식이 틀리면 MALFORMED_REQUEST다. */
     public Long cursorId() {
-        return PollCursor.decode(cursor);
+        PollCursor decoded = PollCursor.from(cursor);
+
+        return decoded == null ? null : decoded.id();
     }
 
     public int pageSize() {
@@ -20,7 +22,7 @@ public record PollListRequest(
     }
 
     public static String nextCursor(Long lastId) {
-        return PollCursor.encode(lastId);
+        return new PollCursor(lastId).encode();
     }
 
 }
