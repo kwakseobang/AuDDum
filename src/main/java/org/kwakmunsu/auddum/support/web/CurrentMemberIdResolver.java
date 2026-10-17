@@ -4,18 +4,17 @@ import org.jspecify.annotations.NonNull;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
 import org.springframework.core.MethodParameter;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
 /**
- * 임시 신원. X-Member-Id 헤더의 숫자를 회원 ID로 쓴다. 없거나 숫자가 아니면 401이다.
- * 인증(#13)이 들어오면 이 클래스만 인증 정보에서 회원 ID를 꺼내도록 바꾼다.
+ * 인증된 신원(SecurityContext)에서 회원 ID를 꺼낸다. 토큰을 확인하는 곳은 auth의 AccessTokenFilter이고, 로그인하지 않았으면 401이다.
  */
 public class CurrentMemberIdResolver implements HandlerMethodArgumentResolver {
-
-    static final String HEADER = "X-Member-Id";
 
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
@@ -26,19 +25,15 @@ public class CurrentMemberIdResolver implements HandlerMethodArgumentResolver {
     public Object resolveArgument(
         @NonNull MethodParameter parameter,
         ModelAndViewContainer mavContainer,
-        NativeWebRequest webRequest,
+        @NonNull NativeWebRequest webRequest,
         WebDataBinderFactory binderFactory
     ) {
-        String header = webRequest.getHeader(HEADER);
-        if (header == null) {
-            throw new AuddumException(DefaultErrorCode.UNAUTHENTICATED);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated() && authentication.getPrincipal() instanceof Long memberId) {
+            return memberId;
         }
 
-        try {
-            return Long.valueOf(header.strip());
-        } catch (NumberFormatException e) {
-            throw new AuddumException(DefaultErrorCode.UNAUTHENTICATED, e);
-        }
+        throw new AuddumException(DefaultErrorCode.UNAUTHENTICATED);
     }
 
 }

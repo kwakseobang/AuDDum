@@ -2,7 +2,6 @@ package org.kwakmunsu.auddum.poll.api;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.kwakmunsu.auddum.poll.api.dto.PollCreateRequest;
@@ -19,10 +18,7 @@ public abstract class PollWebApiDocs {
 
     @Operation(
         summary = "투표 생성",
-        description = "투표와 선택지를 한 트랜잭션으로 만든다. 본문은 만든 투표의 공개 ID 문자열이고, 위치는 Location 헤더에도 담긴다.",
-        parameters = @Parameter(
-            name = "X-Member-Id", in = ParameterIn.HEADER, required = true,
-            description = "임시 신원(인증 도입 #13 전까지). 회원 ID", example = "1")
+        description = "투표와 선택지를 한 트랜잭션으로 만든다. 본문은 만든 투표의 공개 ID 문자열이고, 위치는 Location 헤더에도 담긴다. 로그인(액세스 토큰 쿠키)이 필요하다."
     )
     @ApiResponse(responseCode = "201", description = "생성됨. 본문은 공개 ID")
     @ApiResponse(responseCode = "400", description = "VALIDATION_FAILED(errors에 위반 필드) 또는 MALFORMED_REQUEST")

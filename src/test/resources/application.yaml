@@ -37,3 +37,5 @@ auddum:
     base-url: http://localhost:3000
   auth:
     cookie-secure: true
+    jwt:
+      secret: test-only-jwt-secret-key-test-only-0123456789

@@ -34,3 +34,5 @@ auddum:
     base-url: ${FRONTEND_BASE_URL}
   auth:
     cookie-secure: true
+    jwt:
+      secret: ${JWT_SECRET}

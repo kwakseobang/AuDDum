@@ -3,16 +3,18 @@ package org.kwakmunsu.auddum.auth.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import jakarta.servlet.http.HttpServletResponse;
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.kwakmunsu.auddum.auth.application.AuddumOAuth2User;
 import org.kwakmunsu.auddum.auth.application.RedirectPathValidator;
-import org.kwakmunsu.auddum.auth.application.TokenIssuer;
+import org.kwakmunsu.auddum.auth.application.IssuedTokens;
+import org.kwakmunsu.auddum.auth.application.RefreshTokenService;
 import org.kwakmunsu.auddum.member.domain.Role;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -21,8 +23,8 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 
 /**
  * API-명세 §2 SuccessHandler: 토큰 쿠키를 발급하고, 돌아갈 경로를 검증한 뒤 302한다. 허용되지 않으면 홈.
- * 가정한 이름: OAuth2LoginSuccessHandler(TokenIssuer, RedirectPathValidator, String frontendBaseUrl),
- * TokenIssuer#issue(Long memberId, Role role, HttpServletResponse), 세션 키 OAuth2LoginSuccessHandler.REDIRECT_SESSION_KEY.
+ * 가정한 이름: OAuth2LoginSuccessHandler(RefreshTokenService, AuthCookies, RedirectPathValidator, String frontendBaseUrl),
+ * RefreshTokenService#issue(Long memberId, Role role, LocalDateTime now), 세션 키 OAuth2LoginSuccessHandler.REDIRECT_SESSION_KEY.
  * 리다이렉트 위치는 {프런트 기본 주소}{경로}로 가정한다.
  */
 class OAuth2LoginSuccessHandlerTest {
@@ -30,8 +32,8 @@ class OAuth2LoginSuccessHandlerTest {
     static final String FRONT = "http://localhost:3000";
     static final long MEMBER_ID = 7L;
 
-    final TokenIssuer tokenIssuer = mock(TokenIssuer.class);
-    final OAuth2LoginSuccessHandler handler = new OAuth2LoginSuccessHandler(tokenIssuer, new RedirectPathValidator(), FRONT);
+    final RefreshTokenService refreshTokenService = serviceIssuingTokens();
+    final OAuth2LoginSuccessHandler handler = newHandler(FRONT);
 
     @Test
     void 로그인에_성공하면_회원_ID와_권한으로_토큰을_발급한다() throws Exception {
@@ -39,7 +41,7 @@ class OAuth2LoginSuccessHandlerTest {
 
         handler.onAuthenticationSuccess(requestWithRedirect("/polls"), response, authentication(Role.MEMBER));
 
-        verify(tokenIssuer).issue(eq(MEMBER_ID), eq(Role.MEMBER), any(HttpServletResponse.class));
+        verify(refreshTokenService).issue(eq(MEMBER_ID), eq(Role.MEMBER), any(LocalDateTime.class));
     }
 
     @Test
@@ -48,7 +50,7 @@ class OAuth2LoginSuccessHandlerTest {
 
         handler.onAuthenticationSuccess(requestWithRedirect("/"), response, authentication(Role.ADMIN));
 
-        verify(tokenIssuer).issue(eq(MEMBER_ID), eq(Role.ADMIN), any(HttpServletResponse.class));
+        verify(refreshTokenService).issue(eq(MEMBER_ID), eq(Role.ADMIN), any(LocalDateTime.class));
     }
 
     @Test
@@ -74,7 +76,7 @@ class OAuth2LoginSuccessHandlerTest {
     @Test
     void 프런트_주소_끝에_슬래시가_있어도_경로가_겹치지_않는다() throws Exception {
         var response = new MockHttpServletResponse();
-        var slashHandler = new OAuth2LoginSuccessHandler(tokenIssuer, new RedirectPathValidator(), FRONT + "/");
+        var slashHandler = newHandler(FRONT + "/");
 
         slashHandler.onAuthenticationSuccess(requestWithRedirect("/polls"), response, authentication(Role.MEMBER));
 
@@ -100,7 +102,18 @@ class OAuth2LoginSuccessHandlerTest {
 
         assertThat(response.getStatus()).isEqualTo(302);
         assertThat(response.getRedirectedUrl()).isEqualTo(FRONT + "/");
-        verify(tokenIssuer).issue(eq(MEMBER_ID), eq(Role.MEMBER), any(HttpServletResponse.class));
+        verify(refreshTokenService).issue(eq(MEMBER_ID), eq(Role.MEMBER), any(LocalDateTime.class));
+    }
+
+    private static RefreshTokenService serviceIssuingTokens() {
+        var service = mock(RefreshTokenService.class);
+        given(service.issue(any(), any(), any())).willReturn(new IssuedTokens("access", "refresh"));
+
+        return service;
+    }
+
+    private OAuth2LoginSuccessHandler newHandler(String frontendBaseUrl) {
+        return new OAuth2LoginSuccessHandler(refreshTokenService, new AuthCookies(true), new RedirectPathValidator(), frontendBaseUrl);
     }
 
     private MockHttpServletRequest requestWithRedirect(String redirect) {
