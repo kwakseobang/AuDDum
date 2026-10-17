@@ -4,6 +4,7 @@ import java.util.Optional;
 import org.kwakmunsu.auddum.member.domain.AuthProvider;
 import org.kwakmunsu.auddum.member.domain.MemberAuth;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -17,5 +18,9 @@ public interface MemberAuthJpaRepository extends JpaRepository<MemberAuth, Long>
         @Param("provider") AuthProvider provider,
         @Param("providerUserId") String providerUserId
     );
+
+    @Modifying
+    @Query("delete from MemberAuth a where a.member.id = :memberId")
+    void deleteByMemberId(@Param("memberId") Long memberId);
 
 }

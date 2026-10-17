@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.kwakmunsu.auddum.auth.domain.RefreshToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -19,5 +20,9 @@ public interface RefreshTokenJpaRepository extends JpaRepository<RefreshToken, L
     Optional<RefreshToken> findForUpdate(@Param("tokenHash") String tokenHash);
 
     List<RefreshToken> findAllByMemberId(Long memberId);
+
+    @Modifying
+    @Query("delete from RefreshToken t where t.memberId = :memberId")
+    void deleteAllByMemberId(@Param("memberId") Long memberId);
 
 }

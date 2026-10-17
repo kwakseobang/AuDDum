@@ -3,6 +3,7 @@ package org.kwakmunsu.auddum.poll.application;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.kwakmunsu.auddum.member.application.MemberReader;
 import org.kwakmunsu.auddum.poll.application.dto.NewPoll;
 import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.poll.infrastructure.PollJpaRepository;
@@ -17,18 +18,21 @@ import org.kwakmunsu.auddum.support.stereotype.CommandService;
 public class PollCommandService {
 
     private final PollJpaRepository pollRepository;
+    private final MemberReader memberReader;
 
     /** 공개 ID가 겹칠 때 다시 발급하는 최대 횟수. 12자 영숫자라 겹칠 일이 거의 없어 넘기면 서버 오류다. */
     static final int MAX_PUBLIC_ID_ATTEMPTS = 5;
 
     /**
-     * 새로운 투표를 생성합니다. 입력 검증, 직전 동일 질문(409), 생성 간격(429) 순서로 판단합니다.
+     * 새로운 투표를 생성합니다. 정상 회원만 만들 수 있고(정지 403, 탈퇴·없음 401), 입력 검증, 직전 동일 질문(409), 생성 간격(429) 순서로 판단합니다.
      *
      * @param newPoll 새로운 투표 정보
      * @param authorId 투표 작성자 ID
      * @return 생성된 투표
      */
     public Poll createPoll(NewPoll newPoll, Long authorId) {
+        memberReader.getActiveMember(authorId);
+
         LocalDateTime now = LocalDateTime.now(TimeConfig.KST);
         Poll poll = createWithUniquePublicId(newPoll, authorId, now);
 
