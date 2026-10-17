@@ -13,10 +13,10 @@ import org.kwakmunsu.auddum.poll.domain.Category;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class PollFixture {
 
-    static final String 질문 = "읽씹 3시간 뒤 답장, 이거 관심 없는 걸까요?";
+    static final String QUESTION = "읽씹 3시간 뒤 답장, 이거 관심 없는 걸까요?";
 
     static NewPoll createNewPoll() {
-        return createNewPoll(질문, List.of("가", "나"), null);
+        return createNewPoll(QUESTION, List.of("가", "나"), null);
     }
 
     static NewPoll createNewPoll(String question) {

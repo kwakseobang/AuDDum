@@ -23,7 +23,7 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 - 새 규칙마다 테스트를 하나 이상 둔다. 예외 경로(상태 코드·오류 코드)도 정상 경로만큼 쓴다.
 - 경계값을 쓴다: 마감 시각 직전·같음·직후, 글자 수 상한과 상한+1, 선택지 1·2·5·6개.
 - 동시성은 `docs/인증-중복-참여.md` §4 검증 항목을 따른다. 실제 MySQL이 필요한 테스트는 따로 표시한다.
-- 메서드 이름은 한글이고 `@DisplayName`은 쓰지 않는다. 형식은 `auddum-conventions` §2를 따른다.
+- `@Test` 메서드 이름만 한글이고 `@DisplayName`은 쓰지 않는다. 헬퍼 메서드·변수·상수·픽스처 이름은 영어로 쓴다. 형식은 `auddum-conventions` §2를 따른다.
 - docs가 기대 동작을 말하지 않는 부분은 테스트를 쓰지 않고 `## 쓰지 않은 테스트와 이유`·`## 사용자 질문`에 남긴다. 추측으로 메우지 않는다.
 - docs 기준으로 실패하면 테스트를 그대로 두고 bug-report에 적는다. 기대값을 바꾸거나 `@Disabled`를 붙이지 않는다.
 - Bash는 `./gradlew compileTestJava`와 `./gradlew test --tests <대상>` 실행에만 쓴다. git·gh·그 밖의 명령은 쓰지 않는다.
@@ -95,6 +95,6 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 - [ ] 요청 범위의 규칙마다 테스트가 있고 예외 경로도 있다
 - [ ] 경계값 테스트가 있다
 - [ ] `src/main/**`를 수정하지 않았다
-- [ ] `@DisplayName`이 없고 메서드 이름이 한글이다
+- [ ] `@DisplayName`이 없고 `@Test` 메서드 이름만 한글이다(헬퍼·변수·상수는 영어)
 - [ ] 실패 테스트가 모두 red / 자기 수정 완료 / BUG-n / 환경 중 하나로 분류돼 있다
 - [ ] `## Objections` 섹션이 존재 (비어있으면 "없음")

@@ -17,9 +17,14 @@ public record PublicId(
     private static final SecureRandom RANDOM = new SecureRandom();
 
     public PublicId {
-        if (value == null || value.length() != LENGTH || !value.chars().allMatch(c -> ALPHABET.indexOf(c) >= 0)) {
+        if (!isValid(value)) {
             throw AuddumException.validation("publicId", "공개 ID는 12자 영숫자여야 합니다.");
         }
+    }
+
+    /** 12자 영숫자인지 확인한다. 형식 오류를 400(MALFORMED_REQUEST)으로 구분해야 하는 조회 쪽이 쓴다. */
+    public static boolean isValid(String value) {
+        return value != null && value.length() == LENGTH && value.chars().allMatch(c -> ALPHABET.indexOf(c) >= 0);
     }
 
     public static PublicId of(String value) {

@@ -22,7 +22,7 @@ class PollTest {
 
     @Test
     void 투표를_만들면_공개_상태다() {
-        var poll = PollFixture.마감_없는_투표();
+        var poll = PollFixture.pollWithoutCloses();
 
         assertThat(poll.getStatus()).isEqualTo(PollStatus.PUBLIC);
         assertThat(poll.isPublic()).isTrue();
@@ -30,25 +30,25 @@ class PollTest {
 
     @Test
     void 투표를_만들면_12자_공개_ID가_부여된다() {
-        var poll = PollFixture.마감_없는_투표();
+        var poll = PollFixture.pollWithoutCloses();
 
         assertThat(poll.getPublicId().value()).matches("[A-Za-z0-9]{12}");
     }
 
     @Test
     void 투표를_만들면_질문이_그대로_담긴다() {
-        assertThat(PollFixture.마감_없는_투표().getQuestion().value()).isEqualTo("점심 뭐 먹지?");
+        assertThat(PollFixture.pollWithoutCloses().getQuestion().value()).isEqualTo("점심 뭐 먹지?");
     }
 
     @Test
     void 오백_자_질문으로_투표를_만들_수_있다() {
-        assertThatCode(() -> Poll.create(AUTHOR_ID, PollFixture.글자(500), Category.ETC, List.of("a", "b"), null, NOW))
+        assertThatCode(() -> Poll.create(AUTHOR_ID, PollFixture.repeatChar(500), Category.ETC, List.of("a", "b"), null, NOW))
                 .doesNotThrowAnyException();
     }
 
     @Test
     void 오백한_자_질문으로_투표를_만들_수_없다() {
-        assertThatThrownBy(() -> Poll.create(AUTHOR_ID, PollFixture.글자(501), Category.ETC, List.of("a", "b"), null, NOW))
+        assertThatThrownBy(() -> Poll.create(AUTHOR_ID, PollFixture.repeatChar(501), Category.ETC, List.of("a", "b"), null, NOW))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage("질문은 1~500자여야 합니다.");
     }
@@ -106,13 +106,13 @@ class PollTest {
 
     @Test
     void 오십_자_선택지로_투표를_만들_수_있다() {
-        assertThatCode(() -> Poll.create(AUTHOR_ID, "질문", Category.ETC, List.of(PollFixture.글자(50), "b"), null, NOW))
+        assertThatCode(() -> Poll.create(AUTHOR_ID, "질문", Category.ETC, List.of(PollFixture.repeatChar(50), "b"), null, NOW))
                 .doesNotThrowAnyException();
     }
 
     @Test
     void 오십한_자_선택지로_투표를_만들_수_없다() {
-        assertThatThrownBy(() -> Poll.create(AUTHOR_ID, "질문", Category.ETC, List.of(PollFixture.글자(51), "b"), null, NOW))
+        assertThatThrownBy(() -> Poll.create(AUTHOR_ID, "질문", Category.ETC, List.of(PollFixture.repeatChar(51), "b"), null, NOW))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage("선택지는 1~50자여야 합니다.");
     }
@@ -193,26 +193,26 @@ class PollTest {
 
     @Test
     void 마감_시각_없이_투표를_만들_수_있다() {
-        assertThatCode(PollFixture::마감_없는_투표).doesNotThrowAnyException();
+        assertThatCode(PollFixture::pollWithoutCloses).doesNotThrowAnyException();
     }
 
     @Test
     void 미래_마감_시각으로_투표를_만들_수_있다() {
-        var poll = PollFixture.마감_있는_투표(NOW.plusNanos(1));
+        var poll = PollFixture.pollWithCloses(NOW.plusNanos(1));
 
         assertThat(poll.getClosesAt().value()).isEqualTo(NOW.plusNanos(1));
     }
 
     @Test
     void 현재와_같은_마감_시각으로_투표를_만들_수_없다() {
-        assertThatThrownBy(() -> PollFixture.마감_있는_투표(NOW))
+        assertThatThrownBy(() -> PollFixture.pollWithCloses(NOW))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage("마감 시각은 현재보다 뒤여야 합니다.");
     }
 
     @Test
     void 과거_마감_시각으로_투표를_만들_수_없다() {
-        assertThatThrownBy(() -> PollFixture.마감_있는_투표(NOW.minusNanos(1)))
+        assertThatThrownBy(() -> PollFixture.pollWithCloses(NOW.minusNanos(1)))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage("마감 시각은 현재보다 뒤여야 합니다.");
     }
@@ -222,7 +222,7 @@ class PollTest {
     @Test
     void 마감_시각_직전에는_마감되지_않았다() {
         var closesAt = NOW.plusHours(1);
-        var poll = PollFixture.마감_있는_투표(closesAt);
+        var poll = PollFixture.pollWithCloses(closesAt);
 
         assertThat(poll.isClosed(closesAt.minusNanos(1))).isFalse();
     }
@@ -230,7 +230,7 @@ class PollTest {
     @Test
     void 마감_시각과_정확히_같으면_마감이다() {
         var closesAt = NOW.plusHours(1);
-        var poll = PollFixture.마감_있는_투표(closesAt);
+        var poll = PollFixture.pollWithCloses(closesAt);
 
         assertThat(poll.isClosed(closesAt)).isTrue();
     }
@@ -238,14 +238,14 @@ class PollTest {
     @Test
     void 마감_시각_직후에는_마감이다() {
         var closesAt = NOW.plusHours(1);
-        var poll = PollFixture.마감_있는_투표(closesAt);
+        var poll = PollFixture.pollWithCloses(closesAt);
 
         assertThat(poll.isClosed(closesAt.plusNanos(1))).isTrue();
     }
 
     @Test
     void 마감_시각이_없으면_언제든_마감되지_않는다() {
-        var poll = PollFixture.마감_없는_투표();
+        var poll = PollFixture.pollWithoutCloses();
 
         assertThat(poll.isClosed(NOW.plusYears(100))).isFalse();
     }
@@ -254,14 +254,14 @@ class PollTest {
 
     @Test
     void 공개이고_마감_전이면_참여할_수_있다() {
-        var poll = PollFixture.마감_있는_투표(NOW.plusHours(1));
+        var poll = PollFixture.pollWithCloses(NOW.plusHours(1));
 
         assertThatCode(() -> poll.ensureVotable(NOW.plusHours(1).minusNanos(1))).doesNotThrowAnyException();
     }
 
     @Test
     void 마감_시각과_정확히_같은_시각에는_참여할_수_없다() {
-        var poll = PollFixture.마감_있는_투표(NOW.plusHours(1));
+        var poll = PollFixture.pollWithCloses(NOW.plusHours(1));
 
         assertThatThrownBy(() -> poll.ensureVotable(NOW.plusHours(1)))
                 .isInstanceOf(AuddumException.class)
@@ -270,7 +270,7 @@ class PollTest {
 
     @Test
     void 마감된_투표에는_참여할_수_없다() {
-        var poll = PollFixture.마감_있는_투표(NOW.plusHours(1));
+        var poll = PollFixture.pollWithCloses(NOW.plusHours(1));
 
         assertThatThrownBy(() -> poll.ensureVotable(NOW.plusHours(2)))
                 .isInstanceOf(AuddumException.class)
@@ -279,7 +279,7 @@ class PollTest {
 
     @Test
     void 숨김_투표에는_참여할_수_없다() {
-        var poll = PollFixture.숨김_투표();
+        var poll = PollFixture.hiddenPoll();
 
         assertThatThrownBy(() -> poll.ensureVotable(NOW.plusMinutes(2)))
                 .isInstanceOf(AuddumException.class);
@@ -287,7 +287,7 @@ class PollTest {
 
     @Test
     void 삭제된_투표에는_참여할_수_없다() {
-        var poll = PollFixture.삭제된_투표();
+        var poll = PollFixture.deletedPoll();
 
         assertThatThrownBy(() -> poll.ensureVotable(NOW.plusMinutes(2)))
                 .isInstanceOf(AuddumException.class);
@@ -297,14 +297,14 @@ class PollTest {
 
     @Test
     void 투표의_선택지_순번이면_선택지를_돌려준다() {
-        var poll = PollFixture.마감_없는_투표();
+        var poll = PollFixture.pollWithoutCloses();
 
         assertThat(poll.ensureHasOption(2).getContent().value()).isEqualTo("파스타");
     }
 
     @Test
     void 순번_0은_이_투표의_선택지가_아니다() {
-        var poll = PollFixture.마감_없는_투표();
+        var poll = PollFixture.pollWithoutCloses();
 
         assertThatThrownBy(() -> poll.ensureHasOption(0))
                 .isInstanceOf(AuddumException.class)
@@ -313,7 +313,7 @@ class PollTest {
 
     @Test
     void 선택지_개수를_넘는_순번은_이_투표의_선택지가_아니다() {
-        var poll = PollFixture.마감_없는_투표();
+        var poll = PollFixture.pollWithoutCloses();
 
         assertThatThrownBy(() -> poll.ensureHasOption(3))
                 .isInstanceOf(AuddumException.class)
@@ -322,7 +322,7 @@ class PollTest {
 
     @Test
     void 범위_밖_순번_6은_이_투표의_선택지가_아니다() {
-        var poll = PollFixture.마감_없는_투표();
+        var poll = PollFixture.pollWithoutCloses();
 
         assertThatThrownBy(() -> poll.ensureHasOption(6))
                 .isInstanceOf(AuddumException.class)
@@ -331,7 +331,7 @@ class PollTest {
 
     @Test
     void 음수_순번은_이_투표의_선택지가_아니다() {
-        var poll = PollFixture.마감_없는_투표();
+        var poll = PollFixture.pollWithoutCloses();
 
         assertThatThrownBy(() -> poll.ensureHasOption(-1))
                 .isInstanceOf(AuddumException.class)
@@ -342,19 +342,19 @@ class PollTest {
 
     @Test
     void 작성자_ID면_작성자다() {
-        assertThat(PollFixture.마감_없는_투표().isAuthor(AUTHOR_ID)).isTrue();
+        assertThat(PollFixture.pollWithoutCloses().isAuthor(AUTHOR_ID)).isTrue();
     }
 
     @Test
     void 다른_회원은_작성자가_아니다() {
-        assertThat(PollFixture.마감_없는_투표().isAuthor(OTHER_MEMBER_ID)).isFalse();
+        assertThat(PollFixture.pollWithoutCloses().isAuthor(OTHER_MEMBER_ID)).isFalse();
     }
 
     // ---- 상태 전이: 허용 ----
 
     @Test
     void 관리자는_공개_투표를_숨길_수_있다() {
-        var poll = PollFixture.마감_없는_투표();
+        var poll = PollFixture.pollWithoutCloses();
 
         poll.hide();
 
@@ -364,7 +364,7 @@ class PollTest {
 
     @Test
     void 관리자는_숨김_투표를_복구할_수_있다() {
-        var poll = PollFixture.숨김_투표();
+        var poll = PollFixture.hiddenPoll();
 
         poll.restore();
 
@@ -373,7 +373,7 @@ class PollTest {
 
     @Test
     void 작성자는_공개_투표를_삭제할_수_있다() {
-        var poll = PollFixture.마감_없는_투표();
+        var poll = PollFixture.pollWithoutCloses();
 
         poll.deleteByAuthor(AUTHOR_ID);
 
@@ -382,7 +382,7 @@ class PollTest {
 
     @Test
     void 관리자는_공개_투표를_삭제할_수_있다() {
-        var poll = PollFixture.마감_없는_투표();
+        var poll = PollFixture.pollWithoutCloses();
 
         poll.deleteByAdmin();
 
@@ -391,7 +391,7 @@ class PollTest {
 
     @Test
     void 관리자는_숨김_투표를_삭제할_수_있다() {
-        var poll = PollFixture.숨김_투표();
+        var poll = PollFixture.hiddenPoll();
 
         poll.deleteByAdmin();
 
@@ -400,7 +400,7 @@ class PollTest {
 
     @Test
     void 복구한_투표는_다시_숨길_수_있다() {
-        var poll = PollFixture.숨김_투표();
+        var poll = PollFixture.hiddenPoll();
         poll.restore();
 
         poll.hide();
@@ -410,7 +410,7 @@ class PollTest {
 
     @Test
     void 복구한_투표에는_다시_참여할_수_있다() {
-        var poll = PollFixture.숨김_투표();
+        var poll = PollFixture.hiddenPoll();
         poll.restore();
 
         assertThatCode(() -> poll.ensureVotable(NOW.plusMinutes(3))).doesNotThrowAnyException();
@@ -420,7 +420,7 @@ class PollTest {
 
     @Test
     void 관리자가_숨긴_투표는_작성자가_삭제할_수_없다() {
-        var poll = PollFixture.숨김_투표();
+        var poll = PollFixture.hiddenPoll();
 
         assertThatThrownBy(() -> poll.deleteByAuthor(AUTHOR_ID))
                 .isInstanceOf(AuddumException.class)
@@ -429,7 +429,7 @@ class PollTest {
 
     @Test
     void 작성자_삭제가_거부되면_숨김_상태가_유지된다() {
-        var poll = PollFixture.숨김_투표();
+        var poll = PollFixture.hiddenPoll();
 
         assertThatThrownBy(() -> poll.deleteByAuthor(AUTHOR_ID))
                 .isInstanceOf(AuddumException.class);
@@ -439,7 +439,7 @@ class PollTest {
 
     @Test
     void 작성자가_아닌_회원은_투표를_삭제할_수_없다() {
-        var poll = PollFixture.마감_없는_투표();
+        var poll = PollFixture.pollWithoutCloses();
 
         assertThatThrownBy(() -> poll.deleteByAuthor(OTHER_MEMBER_ID))
                 .isInstanceOf(AuddumException.class)
@@ -448,7 +448,7 @@ class PollTest {
 
     @Test
     void 작성자가_아닌_회원이_숨김_투표를_삭제하려_하면_존재를_숨기려고_404다() {
-        var poll = PollFixture.숨김_투표();
+        var poll = PollFixture.hiddenPoll();
 
         assertThatThrownBy(() -> poll.deleteByAuthor(OTHER_MEMBER_ID))
                 .isInstanceOf(AuddumException.class)
@@ -457,7 +457,7 @@ class PollTest {
 
     @Test
     void 작성자가_아닌_회원이_삭제된_투표를_삭제하려_하면_404다() {
-        var poll = PollFixture.삭제된_투표();
+        var poll = PollFixture.deletedPoll();
 
         assertThatThrownBy(() -> poll.deleteByAuthor(OTHER_MEMBER_ID))
                 .isInstanceOf(AuddumException.class)
@@ -466,7 +466,7 @@ class PollTest {
 
     @Test
     void 작성자가_아닌_회원의_삭제가_거부되면_공개_상태가_유지된다() {
-        var poll = PollFixture.마감_없는_투표();
+        var poll = PollFixture.pollWithoutCloses();
 
         assertThatThrownBy(() -> poll.deleteByAuthor(OTHER_MEMBER_ID))
                 .isInstanceOf(AuddumException.class);
@@ -476,7 +476,7 @@ class PollTest {
 
     @Test
     void 공개_투표는_복구할_수_없다() {
-        var poll = PollFixture.마감_없는_투표();
+        var poll = PollFixture.pollWithoutCloses();
 
         assertThatThrownBy(() -> poll.restore())
                 .isInstanceOf(AuddumException.class)
@@ -485,7 +485,7 @@ class PollTest {
 
     @Test
     void 삭제된_투표는_복구할_수_없다() {
-        var poll = PollFixture.삭제된_투표();
+        var poll = PollFixture.deletedPoll();
 
         assertThatThrownBy(() -> poll.restore())
                 .isInstanceOf(AuddumException.class);
@@ -494,7 +494,7 @@ class PollTest {
 
     @Test
     void 삭제된_투표는_숨길_수_없다() {
-        var poll = PollFixture.삭제된_투표();
+        var poll = PollFixture.deletedPoll();
 
         assertThatThrownBy(() -> poll.hide())
                 .isInstanceOf(AuddumException.class);
@@ -503,7 +503,7 @@ class PollTest {
 
     @Test
     void 삭제된_투표는_작성자가_다시_삭제할_수_없다() {
-        var poll = PollFixture.삭제된_투표();
+        var poll = PollFixture.deletedPoll();
 
         assertThatThrownBy(() -> poll.deleteByAuthor(AUTHOR_ID))
                 .isInstanceOf(AuddumException.class);
@@ -512,7 +512,7 @@ class PollTest {
 
     @Test
     void 삭제된_투표는_관리자가_다시_삭제할_수_없다() {
-        var poll = PollFixture.삭제된_투표();
+        var poll = PollFixture.deletedPoll();
 
         assertThatThrownBy(() -> poll.deleteByAdmin())
                 .isInstanceOf(AuddumException.class);
@@ -537,7 +537,7 @@ class PollTest {
 
     @Test
     void 앞뒤_공백이_붙은_오백_자_질문으로_투표를_만들_수_있다() {
-        assertThatCode(() -> Poll.create(AUTHOR_ID, " " + PollFixture.글자(500) + " ", Category.ETC, List.of("a", "b"), null, NOW))
+        assertThatCode(() -> Poll.create(AUTHOR_ID, " " + PollFixture.repeatChar(500) + " ", Category.ETC, List.of("a", "b"), null, NOW))
                 .doesNotThrowAnyException();
     }
 
@@ -557,13 +557,13 @@ class PollTest {
 
     @Test
     void 앞뒤_공백이_붙은_오십_자_선택지로_투표를_만들_수_있다() {
-        assertThatCode(() -> Poll.create(AUTHOR_ID, "질문", Category.ETC, List.of(" " + PollFixture.글자(50) + " ", "b"), null, NOW))
+        assertThatCode(() -> Poll.create(AUTHOR_ID, "질문", Category.ETC, List.of(" " + PollFixture.repeatChar(50) + " ", "b"), null, NOW))
                 .doesNotThrowAnyException();
     }
 
     @Test
     void 앞뒤_공백이_붙은_오십한_자_선택지로_투표를_만들_수_없다() {
-        assertThatThrownBy(() -> Poll.create(AUTHOR_ID, "질문", Category.ETC, List.of(" " + PollFixture.글자(51) + " ", "b"), null, NOW))
+        assertThatThrownBy(() -> Poll.create(AUTHOR_ID, "질문", Category.ETC, List.of(" " + PollFixture.repeatChar(51) + " ", "b"), null, NOW))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage("선택지는 1~50자여야 합니다.");
     }
@@ -588,7 +588,7 @@ class PollTest {
 
     @Test
     void 이미_숨겨진_투표를_다시_숨겨도_예외가_없다() {
-        var poll = PollFixture.숨김_투표();
+        var poll = PollFixture.hiddenPoll();
 
         assertThatCode(() -> poll.hide()).doesNotThrowAnyException();
         assertThat(poll.getStatus()).isEqualTo(PollStatus.HIDDEN);
@@ -598,7 +598,7 @@ class PollTest {
 
     @Test
     void 숨김_투표_참여는_POLL_NOT_FOUND다() {
-        var poll = PollFixture.숨김_투표();
+        var poll = PollFixture.hiddenPoll();
 
         assertThatThrownBy(() -> poll.ensureVotable(NOW.plusMinutes(2)))
                 .isInstanceOf(AuddumException.class)
@@ -607,7 +607,7 @@ class PollTest {
 
     @Test
     void 삭제된_투표_참여는_POLL_NOT_FOUND다() {
-        var poll = PollFixture.삭제된_투표();
+        var poll = PollFixture.deletedPoll();
 
         assertThatThrownBy(() -> poll.ensureVotable(NOW.plusMinutes(2)))
                 .isInstanceOf(AuddumException.class)
@@ -616,7 +616,7 @@ class PollTest {
 
     @Test
     void 삭제된_투표_복구는_POLL_NOT_HIDDEN이다() {
-        var poll = PollFixture.삭제된_투표();
+        var poll = PollFixture.deletedPoll();
 
         assertThatThrownBy(() -> poll.restore())
                 .isInstanceOf(AuddumException.class)
@@ -625,7 +625,7 @@ class PollTest {
 
     @Test
     void 삭제된_투표_숨김은_POLL_NOT_FOUND다() {
-        var poll = PollFixture.삭제된_투표();
+        var poll = PollFixture.deletedPoll();
 
         assertThatThrownBy(() -> poll.hide())
                 .isInstanceOf(AuddumException.class)
@@ -634,7 +634,7 @@ class PollTest {
 
     @Test
     void 삭제된_투표_작성자_삭제는_POLL_NOT_FOUND다() {
-        var poll = PollFixture.삭제된_투표();
+        var poll = PollFixture.deletedPoll();
 
         assertThatThrownBy(() -> poll.deleteByAuthor(AUTHOR_ID))
                 .isInstanceOf(AuddumException.class)
@@ -643,7 +643,7 @@ class PollTest {
 
     @Test
     void 삭제된_투표_관리자_삭제는_POLL_NOT_FOUND다() {
-        var poll = PollFixture.삭제된_투표();
+        var poll = PollFixture.deletedPoll();
 
         assertThatThrownBy(() -> poll.deleteByAdmin())
                 .isInstanceOf(AuddumException.class)
@@ -654,8 +654,8 @@ class PollTest {
 
     @Test
     void 질문이_같으면_직전_투표_뒤에_만들_수_없다() {
-        var latest = 생성_시각이_있는_투표("점심 뭐 먹지?", NOW.minusDays(30));
-        var poll = PollFixture.마감_없는_투표();
+        var latest = pollCreatedAt("점심 뭐 먹지?", NOW.minusDays(30));
+        var poll = PollFixture.pollWithoutCloses();
 
         assertThatThrownBy(() -> poll.ensureCreatableAfter(latest, NOW))
                 .isInstanceOf(AuddumException.class)
@@ -664,8 +664,8 @@ class PollTest {
 
     @Test
     void 앞뒤_공백만_다른_같은_질문도_직전_투표_뒤에_만들_수_없다() {
-        var latest = 생성_시각이_있는_투표("  점심 뭐 먹지?  ", NOW.minusDays(30));
-        var poll = PollFixture.마감_없는_투표();
+        var latest = pollCreatedAt("  점심 뭐 먹지?  ", NOW.minusDays(30));
+        var poll = PollFixture.pollWithoutCloses();
 
         assertThatThrownBy(() -> poll.ensureCreatableAfter(latest, NOW))
                 .isInstanceOf(AuddumException.class)
@@ -674,7 +674,7 @@ class PollTest {
 
     @Test
     void 대소문자만_다른_질문은_같은_질문이_아니다() {
-        var latest = 생성_시각이_있는_투표("Hello there", NOW.minusDays(30));
+        var latest = pollCreatedAt("Hello there", NOW.minusDays(30));
         var poll = Poll.create(AUTHOR_ID, "hello there", Category.ETC, List.of("가", "나"), null, NOW);
 
         assertThatCode(() -> poll.ensureCreatableAfter(latest, NOW)).doesNotThrowAnyException();
@@ -682,8 +682,8 @@ class PollTest {
 
     @Test
     void 직전_생성_후_30초가_지나지_않았으면_다른_질문도_만들_수_없다() {
-        var latest = 생성_시각이_있는_투표("다른 질문", NOW.minusSeconds(29));
-        var poll = PollFixture.마감_없는_투표();
+        var latest = pollCreatedAt("다른 질문", NOW.minusSeconds(29));
+        var poll = PollFixture.pollWithoutCloses();
 
         assertThatThrownBy(() -> poll.ensureCreatableAfter(latest, NOW))
                 .isInstanceOf(AuddumException.class)
@@ -692,23 +692,23 @@ class PollTest {
 
     @Test
     void 직전_생성_후_정확히_30초가_지나면_만들_수_있다() {
-        var latest = 생성_시각이_있는_투표("다른 질문", NOW.minusSeconds(30));
-        var poll = PollFixture.마감_없는_투표();
+        var latest = pollCreatedAt("다른 질문", NOW.minusSeconds(30));
+        var poll = PollFixture.pollWithoutCloses();
 
         assertThatCode(() -> poll.ensureCreatableAfter(latest, NOW)).doesNotThrowAnyException();
     }
 
     @Test
     void 질문이_같고_간격도_짧으면_DUPLICATE_POLL이_우선한다() {
-        var latest = 생성_시각이_있는_투표("점심 뭐 먹지?", NOW.minusSeconds(5));
-        var poll = PollFixture.마감_없는_투표();
+        var latest = pollCreatedAt("점심 뭐 먹지?", NOW.minusSeconds(5));
+        var poll = PollFixture.pollWithoutCloses();
 
         assertThatThrownBy(() -> poll.ensureCreatableAfter(latest, NOW))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage(PollErrorCode.DUPLICATE_POLL.getMessage());
     }
 
-    private Poll 생성_시각이_있는_투표(String question, LocalDateTime createdAt) {
+    private Poll pollCreatedAt(String question, LocalDateTime createdAt) {
         var poll = Poll.create(AUTHOR_ID, question, Category.ETC, List.of("가", "나"), null, NOW);
         ReflectionTestUtils.setField(poll, "createdAt", createdAt);
 

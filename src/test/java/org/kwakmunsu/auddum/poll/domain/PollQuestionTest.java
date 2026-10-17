@@ -17,12 +17,12 @@ class PollQuestionTest {
 
     @Test
     void 오백_자_질문은_만들_수_있다() {
-        assertThat(PollQuestion.of(PollFixture.글자(500)).value()).hasSize(500);
+        assertThat(PollQuestion.of(PollFixture.repeatChar(500)).value()).hasSize(500);
     }
 
     @Test
     void 오백한_자_질문은_만들_수_없다() {
-        assertThatThrownBy(() -> PollQuestion.of(PollFixture.글자(501)))
+        assertThatThrownBy(() -> PollQuestion.of(PollFixture.repeatChar(501)))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage("질문은 1~500자여야 합니다.");
     }
@@ -73,12 +73,12 @@ class PollQuestionTest {
 
     @Test
     void 앞뒤_공백이_붙은_오백_자_질문은_제거_후_길이로_판단해_만들_수_있다() {
-        assertThat(PollQuestion.of(" " + PollFixture.글자(500) + " ").value()).isEqualTo(PollFixture.글자(500));
+        assertThat(PollQuestion.of(" " + PollFixture.repeatChar(500) + " ").value()).isEqualTo(PollFixture.repeatChar(500));
     }
 
     @Test
     void 앞뒤_공백이_붙은_오백한_자_질문은_만들_수_없다() {
-        assertThatThrownBy(() -> PollQuestion.of(" " + PollFixture.글자(501) + " "))
+        assertThatThrownBy(() -> PollQuestion.of(" " + PollFixture.repeatChar(501) + " "))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage("질문은 1~500자여야 합니다.");
     }
