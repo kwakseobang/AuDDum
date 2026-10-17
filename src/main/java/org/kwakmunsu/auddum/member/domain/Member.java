@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 import org.kwakmunsu.auddum.support.jpa.BaseEntity;
 
 /**
- * 회원 애그리거트 루트. 지금은 투표 작성자로 쓰이는 최소 형태이고, 카카오 연동·리프레시 토큰·정지·탈퇴 행위는 M3에서 더한다.
+ * 회원 애그리거트 루트. 소셜 연동(MemberAuth)은 member_auth가 회원을 참조하는 별도 엔티티다. 리프레시 토큰, 정지·탈퇴 전이 같은 상태 규칙은 M3의 다른 이슈(#14 등)에서 더한다.
  */
 @Table(name = "member")
 @Getter
@@ -40,10 +40,16 @@ public class Member extends BaseEntity {
     /** 회원 가입. 상태는 ACTIVE, 권한은 MEMBER다. */
     public static Member signUp() {
         Member member = new Member();
+
         member.status = MemberStatus.ACTIVE;
         member.role = Role.MEMBER;
 
         return member;
+    }
+
+    /** 로그인한 시각을 기록한다. 정지 회원도 로그인할 수 있고 상태는 바뀌지 않는다. */
+    public void recordLogin(LocalDateTime now) {
+        this.lastLoginAt = now;
     }
 
     public boolean isActive() {
