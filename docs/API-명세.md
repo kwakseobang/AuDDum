@@ -203,12 +203,14 @@
 
 **GET /polls/{pollId}**
 
-- 응답: `{ id, question, category, options: [{ position, content }], closesAt, closed, participantCount, myChoice, result }`
+- 응답: `{ id, question, category, status, options: [{ position, content }], closesAt, closed, participantCount, myChoice, result }`
+- `status`는 PUBLIC·HIDDEN·DELETED이고 공개 투표에도 항상 담는다.
 - 참여 기능(#15·#16) 전에는 `participantCount`가 0이고 `myChoice`와 `result`는 null이다.
 - `myChoice`는 내가 이미 참여했을 때만 선택지 `position`이고 아니면 null이다. 참여 여부는 회원 식별자 또는 익명 쿠키로 판단한다.
 - `result`는 4절의 공개 규칙에 따라 내려준다. 공개하지 않는 경우 null이고 선택지와 전체 참여 수만 내려준다.
 - 마감된 투표는 조회되며 `closed`가 true다.
-- 숨김(HIDDEN)·삭제(DELETED) 투표는 일반 사용자에게 404 `POLL_NOT_FOUND`이고 작성자와 관리자에게는 200이다. 이때 응답에 `status`를 담아 직접 확인할 수 있게 한다. 인증 도입(M3) 전에는 작성자·관리자를 구분하지 않고 모두에게 404다.
+- 숨김(HIDDEN)·삭제(DELETED) 투표는 일반 사용자에게 404 `POLL_NOT_FOUND`이고 작성자와 관리자에게는 200이다. 이때 응답의 `status`로 상태를 직접 확인할 수 있다.
+- 관리자는 DB의 `role`이 ADMIN이고 탈퇴하지 않은 회원이다(권한은 토큰이 아니라 DB로 판단한다). 아니면 일반 사용자로 본다. 비회원·정지 회원도 조회 규칙은 같다(조회는 회원 상태를 확인하지 않는다).
 - ID 형식 오류 400 `MALFORMED_REQUEST`, 없는 ID 404.
 
 `GET /polls/{pollId}` 응답 예시: 참여 전(결과 비공개)
@@ -218,6 +220,7 @@
   "id": "aB3dE5fG7hJk",
   "question": "읽씹 3시간 뒤 답장, 이거 관심 없는 걸까요?",
   "category": "SOME",
+  "status": "PUBLIC",
   "options": [
     { "position": 1, "content": "관심 없음" },
     { "position": 2, "content": "그냥 바쁜 것" },
@@ -238,6 +241,7 @@
   "id": "aB3dE5fG7hJk",
   "question": "읽씹 3시간 뒤 답장, 이거 관심 없는 걸까요?",
   "category": "SOME",
+  "status": "PUBLIC",
   "options": [
     { "position": 1, "content": "관심 없음" },
     { "position": 2, "content": "그냥 바쁜 것" },
@@ -407,7 +411,7 @@
 
 ```mermaid
 flowchart TD
-    A[POST /admin/reports/id/actions] --> B{관리자 권한<br/>토큰·DB role 모두 ADMIN?}
+    A[POST /admin/reports/id/actions] --> B{관리자 권한<br/>DB role이 ADMIN?}
     B -- 아니오 --> X1[403 FORBIDDEN]
     B -- 예 --> C{actions 조합이 허용되는가?}
     C -- 아니오 --> X2[400 VALIDATION_FAILED]

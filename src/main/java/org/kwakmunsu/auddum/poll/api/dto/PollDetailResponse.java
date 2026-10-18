@@ -6,6 +6,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import org.kwakmunsu.auddum.poll.domain.Category;
 import org.kwakmunsu.auddum.poll.domain.Poll;
+import org.kwakmunsu.auddum.poll.domain.PollStatus;
 import org.kwakmunsu.auddum.support.config.TimeConfig;
 
 /** 투표 상세. 참여 정보가 필요한 myChoice·result는 참여 기능(#15·#16) 전까지 항상 null이다. */
@@ -17,6 +18,9 @@ public record PollDetailResponse(
     String question,
 
     Category category,
+
+    @Schema(description = "노출 상태. 숨김·삭제는 작성자와 관리자에게만 내려간다")
+    PollStatus status,
 
     List<OptionResponse> options,
 
@@ -44,6 +48,7 @@ public record PollDetailResponse(
             poll.getPublicId().value(),
             poll.getQuestion().value(),
             poll.getCategory(),
+            poll.getStatus(),
             options,
             TimeConfig.toKstOffset(poll.getClosesAt() == null ? null : poll.getClosesAt().value()),
             poll.isClosed(now),
