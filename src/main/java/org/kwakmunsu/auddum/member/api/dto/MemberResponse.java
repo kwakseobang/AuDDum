@@ -24,7 +24,7 @@ public record MemberResponse(
         return new MemberResponse(
             member.getStatus(),
             member.getRole(),
-            member.getCreatedAt().atZone(TimeConfig.KST).toOffsetDateTime()
+            TimeConfig.toKstOffset(member.getCreatedAt())
         );
     }
 
