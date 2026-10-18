@@ -44,13 +44,15 @@ public abstract class PollWebApiDocs {
 
     @Operation(
         summary = "투표 상세",
-        description = "선택지·마감·참여 수를 내린다. myChoice와 result는 참여 기능 전까지 null이다. 숨김·삭제 투표는 404다."
+        description = "선택지·마감·참여 수·노출 상태(status)를 내린다. myChoice와 result는 참여 기능 전까지 null이다. "
+            + "숨김·삭제 투표는 작성자와 관리자(DB의 role이 ADMIN)에게만 200이고 그 밖에는 404다."
     )
     @ApiResponse(responseCode = "200", description = "상세")
     @ApiResponse(responseCode = "400", description = "MALFORMED_REQUEST: 공개 ID 형식 오류")
-    @ApiResponse(responseCode = "404", description = "POLL_NOT_FOUND: 없거나 숨김·삭제된 투표")
+    @ApiResponse(responseCode = "404", description = "POLL_NOT_FOUND: 없거나 작성자·관리자가 볼 수 없는 숨김·삭제된 투표")
     public abstract ResponseEntity<PollDetailResponse> getPoll(
-        @Parameter(description = "투표 공개 ID(12자 영숫자)", example = "aB3dE5fG7hJk") String pollId
+        @Parameter(description = "투표 공개 ID(12자 영숫자)", example = "aB3dE5fG7hJk") String pollId,
+        @Parameter(hidden = true) Long memberId
     );
 
 }

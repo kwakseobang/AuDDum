@@ -9,19 +9,26 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.kwakmunsu.auddum.IntegrationTestSupport;
 import org.kwakmunsu.auddum.member.domain.MemberFixture;
+import org.kwakmunsu.auddum.member.domain.MemberStatus;
+import org.kwakmunsu.auddum.member.domain.Role;
 import org.kwakmunsu.auddum.member.infrastructure.MemberJpaRepository;
 import org.kwakmunsu.auddum.poll.domain.Category;
 import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.poll.domain.PollErrorCode;
+import org.kwakmunsu.auddum.poll.domain.PollStatus;
 import org.kwakmunsu.auddum.poll.infrastructure.PollJpaRepository;
 import org.kwakmunsu.auddum.support.config.TimeConfig;
 import org.kwakmunsu.auddum.support.error.AuddumException;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 투표 목록·상세 조회 서비스의 통합 테스트(H2). 공개 범위, 최신순 커서 이어짐, 상세 선택지 순서와 404를 확인한다.
+ * 투표 목록·상세 조회 서비스의 통합 테스트(H2). 공개 범위, 최신순 커서 이어짐, 상세 선택지 순서와 404, 숨김·삭제 투표의 작성자·관리자 열람을 확인한다.
+ * 가정한 이름: PollQueryService#getPoll(String publicId, Long viewerId)(비회원은 null). 관리자는 DB의 role로만 판단한다(토큰 role은 서비스에 넘기지 않는다). 이슈 #48 brief의 확정 시그니처.
  * 커서 인코딩과 size 보정은 api 계층 코드(PollListRequest, PollCursor)가 맡는다.
  */
 @RequiredArgsConstructor
@@ -175,7 +182,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
         entityManager.flush();
         entityManager.clear();
 
-        var found = pollQueryService.getPoll(poll.getPublicId().value());
+        var found = pollQueryService.getPoll(poll.getPublicId().value(), null);
 
         assertThat(found.getId()).isEqualTo(poll.getId());
         assertThat(found.getOptions()).extracting(o -> o.getPosition().value()).containsExactly(1, 2, 3);
@@ -188,38 +195,106 @@ class PollQueryServiceTest extends IntegrationTestSupport {
         var poll = savePoll("마감된 투표");
         closePoll(poll.getId());
 
-        var found = pollQueryService.getPoll(poll.getPublicId().value());
+        var found = pollQueryService.getPoll(poll.getPublicId().value(), null);
 
         assertThat(found.isClosed(LocalDateTime.now(TimeConfig.KST))).isTrue();
     }
 
+    // ---- 상세: 숨김·삭제 투표의 열람 권한 (API-명세 §3, §6, 인증-중복-참여 §1) ----
+
     @Test
-    void 숨김_투표_상세는_POLL_NOT_FOUND다() {
-        var poll = savePoll("숨김 투표");
-        poll.hide();
+    void 공개_투표는_로그인한_타인도_조회한다() {
+        var poll = savePoll("공개 투표");
+        var otherId = saveMember(Role.MEMBER);
         entityManager.flush();
         entityManager.clear();
 
-        assertThatThrownBy(() -> pollQueryService.getPoll(poll.getPublicId().value()))
-            .isInstanceOf(AuddumException.class)
-            .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
+        var found = pollQueryService.getPoll(poll.getPublicId().value(), otherId);
+
+        assertThat(found.getId()).isEqualTo(poll.getId());
+        assertThat(found.getStatus()).isEqualTo(PollStatus.PUBLIC);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = PollStatus.class, names = {"HIDDEN", "DELETED"})
+    void 숨김_삭제_투표는_작성자가_조회한다(PollStatus status) {
+        var poll = savePoll(status);
+
+        var found = pollQueryService.getPoll(poll.getPublicId().value(), getAuthorId());
+
+        assertThat(found.getId()).isEqualTo(poll.getId());
+        assertThat(found.getStatus()).isEqualTo(status);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = PollStatus.class, names = {"HIDDEN", "DELETED"})
+    void 숨김_삭제_투표는_DB의_role이_ADMIN인_관리자가_조회한다(PollStatus status) {
+        var poll = savePoll(status);
+        var adminId = saveMember(Role.ADMIN);
+
+        var found = pollQueryService.getPoll(poll.getPublicId().value(), adminId);
+
+        assertThat(found.getId()).isEqualTo(poll.getId());
+        assertThat(found.getStatus()).isEqualTo(status);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = PollStatus.class, names = {"HIDDEN", "DELETED"})
+    void 숨김_삭제_투표는_작성자가_아닌_회원에게_404_POLL_NOT_FOUND다(PollStatus status) {
+        var poll = savePoll(status);
+        var otherId = saveMember(Role.MEMBER);
+
+        assertThatThrownBy(() -> pollQueryService.getPoll(poll.getPublicId().value(), otherId))
+            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(PollErrorCode.POLL_NOT_FOUND));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = PollStatus.class, names = {"HIDDEN", "DELETED"})
+    void 숨김_삭제_투표는_비회원에게_404_POLL_NOT_FOUND다(PollStatus status) {
+        var poll = savePoll(status);
+
+        assertThatThrownBy(() -> pollQueryService.getPoll(poll.getPublicId().value(), null))
+            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(PollErrorCode.POLL_NOT_FOUND));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = PollStatus.class, names = {"HIDDEN", "DELETED"})
+    void 숨김_삭제_투표는_탈퇴한_ADMIN이면_404_POLL_NOT_FOUND다(PollStatus status) {
+        var poll = savePoll(status);
+        var member = MemberFixture.createMember();
+        ReflectionTestUtils.setField(member, "role", Role.ADMIN);
+        member.withdraw(LocalDateTime.now());
+        var withdrawnAdminId = memberJpaRepository.saveAndFlush(member).getId();
+
+        assertThatThrownBy(() -> pollQueryService.getPoll(poll.getPublicId().value(), withdrawnAdminId))
+            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(PollErrorCode.POLL_NOT_FOUND));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = PollStatus.class, names = {"HIDDEN", "DELETED"})
+    void 정지_회원인_작성자도_자기_숨김_삭제_투표를_조회한다(PollStatus status) {
+        var poll = savePoll(status);
+        var author = memberJpaRepository.findById(getAuthorId()).orElseThrow();
+        ReflectionTestUtils.setField(author, "status", MemberStatus.SUSPENDED);
+        memberJpaRepository.saveAndFlush(author);
+
+        var found = pollQueryService.getPoll(poll.getPublicId().value(), getAuthorId());
+
+        assertThat(found.getId()).isEqualTo(poll.getId());
+        assertThat(found.getStatus()).isEqualTo(status);
     }
 
     @Test
-    void 삭제_투표_상세는_POLL_NOT_FOUND다() {
-        var poll = savePoll("삭제 투표");
-        poll.deleteByAdmin();
-        entityManager.flush();
-        entityManager.clear();
+    void 관리자여도_없는_ID는_404_POLL_NOT_FOUND다() {
+        var adminId = saveMember(Role.ADMIN);
 
-        assertThatThrownBy(() -> pollQueryService.getPoll(poll.getPublicId().value()))
-            .isInstanceOf(AuddumException.class)
-            .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
+        assertThatThrownBy(() -> pollQueryService.getPoll("zzzzzzzzzzzz", adminId))
+            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(PollErrorCode.POLL_NOT_FOUND));
     }
 
     @Test
     void 없는_공개_ID_상세는_POLL_NOT_FOUND다() {
-        assertThatThrownBy(() -> pollQueryService.getPoll("zzzzzzzzzzzz"))
+        assertThatThrownBy(() -> pollQueryService.getPoll("zzzzzzzzzzzz", null))
             .isInstanceOf(AuddumException.class)
             .extracting(e -> ((AuddumException) e).getErrorCode())
             .isEqualTo(PollErrorCode.POLL_NOT_FOUND);
@@ -235,6 +310,27 @@ class PollQueryServiceTest extends IntegrationTestSupport {
         }
 
         return authorId;
+    }
+
+    private Long saveMember(Role role) {
+        var member = MemberFixture.createMember();
+        ReflectionTestUtils.setField(member, "role", role);
+
+        return memberJpaRepository.saveAndFlush(member).getId();
+    }
+
+    /** 작성자의 투표를 만들고 상태를 바꾼 뒤 영속성 컨텍스트를 비운다. */
+    private Poll savePoll(PollStatus status) {
+        var poll = savePoll("상태별 투표");
+        switch (status) {
+            case HIDDEN -> poll.hide();
+            case DELETED -> poll.deleteByAdmin();
+            case PUBLIC -> { }
+        }
+        entityManager.flush();
+        entityManager.clear();
+
+        return poll;
     }
 
     private Poll savePoll(String question) {

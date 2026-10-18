@@ -14,6 +14,7 @@ import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.support.config.TimeConfig;
 import org.kwakmunsu.auddum.support.stereotype.WebApi;
 import org.kwakmunsu.auddum.support.web.CurrentMemberId;
+import org.kwakmunsu.auddum.support.web.OptionalMemberId;
 import org.springframework.data.domain.Slice;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -57,8 +58,11 @@ public class PollWebApi extends PollWebApiDocs {
 
     @Override
     @GetMapping("/{pollId}")
-    public ResponseEntity<PollDetailResponse> getPoll(@PathVariable String pollId) {
-        Poll poll = pollQueryService.getPoll(pollId);
+    public ResponseEntity<PollDetailResponse> getPoll(
+        @PathVariable String pollId,
+        @OptionalMemberId Long memberId
+    ) {
+        Poll poll = pollQueryService.getPoll(pollId, memberId);
 
         return ResponseEntity.ok(PollDetailResponse.of(poll, LocalDateTime.now(TimeConfig.KST)));
     }

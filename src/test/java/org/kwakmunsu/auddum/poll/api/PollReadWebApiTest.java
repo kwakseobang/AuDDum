@@ -119,7 +119,7 @@ class PollReadWebApiTest extends WebApiTestSupport {
     void 인증_없이_상세를_조회하면_200과_명세_필드를_내린다() {
         var poll = createPoll(CLOSES_AT);
         var id = poll.getPublicId().value();
-        given(pollQueryService.getPoll(id)).willReturn(poll);
+        given(pollQueryService.getPoll(id, null)).willReturn(poll);
 
         mvcTester.get()
             .uri("/api/v1/polls/" + id)
@@ -143,7 +143,7 @@ class PollReadWebApiTest extends WebApiTestSupport {
     void 상세의_myChoice와_result는_키가_있고_값은_null이다() {
         var poll = createPoll(CLOSES_AT);
         var id = poll.getPublicId().value();
-        given(pollQueryService.getPoll(id)).willReturn(poll);
+        given(pollQueryService.getPoll(id, null)).willReturn(poll);
 
         var body = readBody("/api/v1/polls/" + id);
 
@@ -153,22 +153,90 @@ class PollReadWebApiTest extends WebApiTestSupport {
     }
 
     @Test
-    void 상세_응답은_내부_id와_status를_담지_않는다() {
+    void 상세_응답은_내부_id를_담지_않고_status를_담는다() {
         var poll = createPoll(CLOSES_AT);
         var id = poll.getPublicId().value();
-        given(pollQueryService.getPoll(id)).willReturn(poll);
+        given(pollQueryService.getPoll(id, null)).willReturn(poll);
 
         var body = readBody("/api/v1/polls/" + id);
 
         assertThat(body.keySet()).containsExactlyInAnyOrder(
-            "id", "question", "category", "options", "closesAt", "closed", "participantCount", "myChoice", "result");
+            "id", "question", "category", "status", "options", "closesAt", "closed", "participantCount", "myChoice", "result");
+    }
+
+    @Test
+    void 공개_투표_상세도_status가_PUBLIC이다() {
+        var poll = createPoll(CLOSES_AT);
+        var id = poll.getPublicId().value();
+        given(pollQueryService.getPoll(id, null)).willReturn(poll);
+
+        mvcTester.get()
+            .uri("/api/v1/polls/" + id)
+            .assertThat()
+            .hasStatus(HttpStatus.OK)
+            .bodyJson()
+            .hasPathSatisfying("$.status", v -> v.assertThat().isEqualTo("PUBLIC"));
+    }
+
+    @Test
+    void 서비스가_숨김_투표를_돌려주면_200이고_status가_HIDDEN이다() {
+        var poll = createPoll(CLOSES_AT);
+        poll.hide();
+        var id = poll.getPublicId().value();
+        given(pollQueryService.getPoll(id, 7L)).willReturn(poll);
+
+        mvcTester.get()
+            .uri("/api/v1/polls/" + id)
+            .with(loginAs(7L))
+            .assertThat()
+            .hasStatus(HttpStatus.OK)
+            .bodyJson()
+            .hasPathSatisfying("$.status", v -> v.assertThat().isEqualTo("HIDDEN"));
+    }
+
+    @Test
+    void 서비스가_삭제_투표를_돌려주면_200이고_status가_DELETED다() {
+        var poll = createPoll(CLOSES_AT);
+        poll.deleteByAdmin();
+        var id = poll.getPublicId().value();
+        given(pollQueryService.getPoll(id, 9L)).willReturn(poll);
+
+        mvcTester.get()
+            .uri("/api/v1/polls/" + id)
+            .with(loginAs(9L))
+            .assertThat()
+            .hasStatus(HttpStatus.OK)
+            .bodyJson()
+            .hasPathSatisfying("$.status", v -> v.assertThat().isEqualTo("DELETED"));
+    }
+
+    @Test
+    void 로그인하지_않은_요청은_서비스에_viewerId_null을_넘긴다() {
+        var poll = createPoll(CLOSES_AT);
+        var id = poll.getPublicId().value();
+        given(pollQueryService.getPoll(id, null)).willReturn(poll);
+
+        mvcTester.get().uri("/api/v1/polls/" + id).assertThat().hasStatus(HttpStatus.OK);
+
+        verify(pollQueryService).getPoll(id, null);
+    }
+
+    @Test
+    void 로그인한_회원의_memberId를_viewerId로_서비스에_넘긴다() {
+        var poll = createPoll(CLOSES_AT);
+        var id = poll.getPublicId().value();
+        given(pollQueryService.getPoll(id, 7L)).willReturn(poll);
+
+        mvcTester.get().uri("/api/v1/polls/" + id).with(loginAs(7L)).assertThat().hasStatus(HttpStatus.OK);
+
+        verify(pollQueryService).getPoll(id, 7L);
     }
 
     @Test
     void 마감된_투표_상세는_200이고_closed가_true다() {
         var poll = createClosedPoll();
         var id = poll.getPublicId().value();
-        given(pollQueryService.getPoll(id)).willReturn(poll);
+        given(pollQueryService.getPoll(id, null)).willReturn(poll);
 
         mvcTester.get()
             .uri("/api/v1/polls/" + id)
