@@ -32,6 +32,9 @@ spring:
 auddum:
   frontend:
     base-url: ${FRONTEND_BASE_URL}
+  cors:
+    # 프런트 주소 말고 더 허용할 Origin(쉼표 구분, 선택). 비어 있어도 기동한다.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
   auth:
     cookie-secure: true
     jwt:

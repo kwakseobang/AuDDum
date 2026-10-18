@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -120,6 +121,56 @@ class OriginCheckFilterTest {
         filter.doFilter(request, response, new MockFilterChain());
 
         assertThat(response.getContentAsString()).contains("\"instance\":\"/api/v1/polls/7/votes\"");
+    }
+
+    @Test
+    void 허용_목록에_있는_Origin은_모두_통과한다() throws Exception {
+        var listFilter = new OriginCheckFilter(List.of("https://auddum.example.com", "https://www.auddum.example.com"));
+
+        assertThat(passThrough(listFilter, "POST", "https://auddum.example.com").getRequest()).isNotNull();
+        assertThat(passThrough(listFilter, "POST", "https://www.auddum.example.com").getRequest()).isNotNull();
+    }
+
+    @Test
+    void 허용_목록에_없는_Origin의_쓰기_요청은_403_FORBIDDEN이다() throws Exception {
+        var listFilter = new OriginCheckFilter(List.of("https://auddum.example.com", "https://www.auddum.example.com"));
+        var request = new MockHttpServletRequest("POST", "/api/v1/polls");
+        request.addHeader("Origin", "https://evil.example.com");
+        var response = new MockHttpServletResponse();
+        var chain = new MockFilterChain();
+
+        listFilter.doFilter(request, response, chain);
+
+        assertThat(chain.getRequest()).isNull();
+        assertThat(response.getStatus()).isEqualTo(403);
+        assertThat(response.getContentAsString()).contains("\"code\":\"FORBIDDEN\"");
+    }
+
+    @Test
+    void 목록이_여럿이어도_Origin이_없는_쓰기_요청은_403이다() throws Exception {
+        var listFilter = new OriginCheckFilter(List.of("https://auddum.example.com", "https://www.auddum.example.com"));
+        var response = new MockHttpServletResponse();
+        var chain = new MockFilterChain();
+
+        listFilter.doFilter(new MockHttpServletRequest("POST", "/api/v1/polls"), response, chain);
+
+        assertThat(chain.getRequest()).isNull();
+        assertThat(response.getStatus()).isEqualTo(403);
+    }
+
+    @Test
+    void 목록의_각_항목도_소문자_기본_포트_경로를_정규화해_비교한다() throws Exception {
+        var listFilter = new OriginCheckFilter(List.of("https://App.Example.com:443/path", "http://localhost:3000"));
+
+        assertThat(passThrough(listFilter, "POST", "https://app.example.com").getRequest()).isNotNull();
+        assertThat(passThrough(listFilter, "POST", "http://localhost:3000").getRequest()).isNotNull();
+        assertThat(passThrough(listFilter, "POST", "http://localhost").getRequest()).isNull();
+    }
+
+    @Test
+    void 와일드카드_항목은_스킴과_호스트가_없어_생성할_수_없다() {
+        assertThatThrownBy(() -> new OriginCheckFilter(List.of("*")))
+            .isInstanceOf(IllegalArgumentException.class);
     }
 
     private MockFilterChain passThrough(OriginCheckFilter target, String method, String origin) throws Exception {
