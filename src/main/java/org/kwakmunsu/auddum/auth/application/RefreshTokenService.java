@@ -55,8 +55,7 @@ public class RefreshTokenService {
         replace(stored, now);
         // 회원이 없어 아래에서 401이 되어도 위의 폐기는 커밋된다(noRollbackFor). 결과가 같아 의도한 동작이다.
 
-        Member member = memberReader.getMember(stored.getMemberId());
-        member.ensureNotWithdrawn();
+        Member member = memberReader.getNotWithdrawnMember(stored.getMemberId());
 
         return issue(member.getId(), member.getRole(), now);
     }

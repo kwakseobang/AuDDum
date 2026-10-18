@@ -6,6 +6,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import org.kwakmunsu.auddum.poll.domain.Category;
 import org.kwakmunsu.auddum.poll.domain.Poll;
+import org.kwakmunsu.auddum.support.config.TimeConfig;
 
 /** 투표 상세. 참여 정보가 필요한 myChoice·result는 참여 기능(#15·#16) 전까지 항상 null이다. */
 @Schema(description = "투표 상세")
@@ -44,7 +45,7 @@ public record PollDetailResponse(
             poll.getQuestion().value(),
             poll.getCategory(),
             options,
-            PollTimes.toKstOffset(poll.getClosesAt() == null ? null : poll.getClosesAt().value()),
+            TimeConfig.toKstOffset(poll.getClosesAt() == null ? null : poll.getClosesAt().value()),
             poll.isClosed(now),
             0,
             null,
