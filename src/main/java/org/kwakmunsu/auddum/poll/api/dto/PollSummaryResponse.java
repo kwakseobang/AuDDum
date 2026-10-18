@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import org.kwakmunsu.auddum.poll.domain.Category;
 import org.kwakmunsu.auddum.poll.domain.Poll;
+import org.kwakmunsu.auddum.support.config.TimeConfig;
 
 /** 목록의 투표 한 건. 내부 id는 담지 않고 공개 ID만 내린다. */
 @Schema(description = "투표 목록 항목")
@@ -35,8 +36,8 @@ public record PollSummaryResponse(
             poll.getCategory(),
             0,
             poll.isClosed(now),
-            PollTimes.toKstOffset(poll.getClosesAt() == null ? null : poll.getClosesAt().value()),
-            PollTimes.toKstOffset(poll.getCreatedAt())
+            TimeConfig.toKstOffset(poll.getClosesAt() == null ? null : poll.getClosesAt().value()),
+            TimeConfig.toKstOffset(poll.getCreatedAt())
         );
     }
 
