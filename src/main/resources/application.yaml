@@ -39,3 +39,6 @@ auddum:
     cookie-secure: true
     jwt:
       secret: ${JWT_SECRET}
+  vote:
+    anon-cookie:
+      secret: ${ANON_COOKIE_SECRET}
