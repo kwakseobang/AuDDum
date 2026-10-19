@@ -25,4 +25,26 @@ class MemberTest {
         assertThat(member.getWithdrawnAt()).isNull();
     }
 
+    @Test
+    void role이_ADMIN이고_탈퇴하지_않았으면_관리자_권한이_있다() {
+        var admin = MemberFixture.createMember(Role.ADMIN);
+
+        assertThat(admin.hasAdminAuthority()).isTrue();
+    }
+
+    @Test
+    void 일반_회원은_관리자_권한이_없다() {
+        var member = MemberFixture.createMember(Role.MEMBER);
+
+        assertThat(member.hasAdminAuthority()).isFalse();
+    }
+
+    @Test
+    void 탈퇴한_ADMIN은_관리자_권한이_없다() {
+        var withdrawnAdmin = MemberFixture.createWithdrawnAdmin();
+
+        assertThat(withdrawnAdmin.isAdmin()).isTrue();
+        assertThat(withdrawnAdmin.hasAdminAuthority()).isFalse();
+    }
+
 }

@@ -37,12 +37,8 @@ public class PollQueryService {
         }
 
         return pollRepository.findByPublicId(publicId)
-            .filter(poll -> isReadable(viewerId, poll))
+            .filter(poll -> poll.isReadableBy(viewerId, () -> memberReader.isAdmin(viewerId)))
             .orElseThrow(() -> new AuddumException(PollErrorCode.POLL_NOT_FOUND));
-    }
-
-    private boolean isReadable(Long viewerId, Poll poll) {
-        return poll.isPublic() || poll.isAuthor(viewerId) || memberReader.isAdmin(viewerId);
     }
 
 }
