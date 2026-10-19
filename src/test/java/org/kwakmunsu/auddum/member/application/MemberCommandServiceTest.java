@@ -8,11 +8,11 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.kwakmunsu.auddum.IntegrationTestSupport;
 import org.kwakmunsu.auddum.member.domain.AuthProvider;
+import org.kwakmunsu.auddum.member.domain.MemberFixture;
 import org.kwakmunsu.auddum.member.domain.MemberStatus;
 import org.kwakmunsu.auddum.member.domain.Role;
 import org.kwakmunsu.auddum.member.infrastructure.MemberAuthJpaRepository;
 import org.kwakmunsu.auddum.member.infrastructure.MemberJpaRepository;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -84,7 +84,7 @@ class MemberCommandServiceTest extends IntegrationTestSupport {
     @Test
     void 정지_회원도_로그인할_수_있고_정지_상태는_유지된다() {
         var memberId = memberCommandService.login(AuthProvider.KAKAO, KAKAO_ID).getId();
-        ReflectionTestUtils.setField(memberJpaRepository.findById(memberId).orElseThrow(), "status", MemberStatus.SUSPENDED);
+        MemberFixture.changeStatus(memberJpaRepository.findById(memberId).orElseThrow(), MemberStatus.SUSPENDED);
         flushAndClear();
 
         var loggedIn = memberCommandService.login(AuthProvider.KAKAO, KAKAO_ID);
@@ -114,7 +114,7 @@ class MemberCommandServiceTest extends IntegrationTestSupport {
     private void withdraw(Long memberId) {
         var auth = memberAuthJpaRepository.findByProviderAndProviderUserId(AuthProvider.KAKAO, KAKAO_ID).orElseThrow();
         memberAuthJpaRepository.delete(auth);
-        ReflectionTestUtils.setField(memberJpaRepository.findById(memberId).orElseThrow(), "status", MemberStatus.WITHDRAWN);
+        MemberFixture.changeStatus(memberJpaRepository.findById(memberId).orElseThrow(), MemberStatus.WITHDRAWN);
     }
 
     private void flushAndClear() {

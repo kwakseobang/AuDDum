@@ -18,7 +18,6 @@ import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.poll.infrastructure.PollJpaRepository;
 import org.kwakmunsu.auddum.support.config.TimeConfig;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -149,10 +148,7 @@ class HiddenPollViewChainTest extends IntegrationTestSupport {
     }
 
     private Long saveMember(Role role) {
-        var member = MemberFixture.createMember();
-        ReflectionTestUtils.setField(member, "role", role);
-
-        return memberJpaRepository.saveAndFlush(member).getId();
+        return memberJpaRepository.saveAndFlush(MemberFixture.createMember(role)).getId();
     }
 
     private Poll savePoll(Long authorId) {

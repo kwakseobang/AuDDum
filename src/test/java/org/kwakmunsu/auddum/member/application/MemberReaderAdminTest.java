@@ -2,14 +2,12 @@ package org.kwakmunsu.auddum.member.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.kwakmunsu.auddum.IntegrationTestSupport;
 import org.kwakmunsu.auddum.member.domain.MemberFixture;
 import org.kwakmunsu.auddum.member.domain.Role;
 import org.kwakmunsu.auddum.member.infrastructure.MemberJpaRepository;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -57,18 +55,11 @@ class MemberReaderAdminTest extends IntegrationTestSupport {
     }
 
     private Long saveWithdrawnAdmin() {
-        var member = MemberFixture.createMember();
-        ReflectionTestUtils.setField(member, "role", Role.ADMIN);
-        member.withdraw(LocalDateTime.now());
-
-        return memberJpaRepository.saveAndFlush(member).getId();
+        return memberJpaRepository.saveAndFlush(MemberFixture.createWithdrawnAdmin()).getId();
     }
 
     private Long saveMember(Role role) {
-        var member = MemberFixture.createMember();
-        ReflectionTestUtils.setField(member, "role", role);
-
-        return memberJpaRepository.saveAndFlush(member).getId();
+        return memberJpaRepository.saveAndFlush(MemberFixture.createMember(role)).getId();
     }
 
 }

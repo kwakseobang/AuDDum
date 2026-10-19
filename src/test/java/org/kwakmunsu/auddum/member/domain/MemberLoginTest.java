@@ -5,7 +5,6 @@ import static org.kwakmunsu.auddum.member.domain.MemberFixture.createMember;
 
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.util.ReflectionTestUtils;
 
 /** 도메인-모델 §3 Member 행위 recordLogin(now)와 가입 직후 상태. */
 class MemberLoginTest {
@@ -34,7 +33,7 @@ class MemberLoginTest {
     @Test
     void 로그인을_기록해도_정지_회원의_상태는_바뀌지_않는다() {
         var member = createMember();
-        ReflectionTestUtils.setField(member, "status", MemberStatus.SUSPENDED);
+        MemberFixture.changeStatus(member, MemberStatus.SUSPENDED);
 
         member.recordLogin(NOW.plusHours(1));
 

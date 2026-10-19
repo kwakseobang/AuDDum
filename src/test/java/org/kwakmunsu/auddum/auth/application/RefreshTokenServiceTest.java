@@ -17,13 +17,13 @@ import org.kwakmunsu.auddum.IntegrationTestSupport;
 import org.kwakmunsu.auddum.auth.domain.RefreshToken;
 import org.kwakmunsu.auddum.auth.infrastructure.RefreshTokenJpaRepository;
 import org.kwakmunsu.auddum.member.domain.Member;
+import org.kwakmunsu.auddum.member.domain.MemberFixture;
 import org.kwakmunsu.auddum.member.domain.MemberStatus;
 import org.kwakmunsu.auddum.member.domain.Role;
 import org.kwakmunsu.auddum.member.infrastructure.MemberJpaRepository;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * 인증-중복-참여 §1 교체·폐기·재발급 판단 순서, ERD refresh_token(해시만 저장, 회원당 여러 건), 예외-정책 P-20·27(동시 로그인 허용).
@@ -214,7 +214,7 @@ class RefreshTokenServiceTest extends IntegrationTestSupport {
         var memberId = createMember();
         var token = service.issue(memberId, Role.MEMBER, NOW);
         var member = memberJpaRepository.findById(memberId).orElseThrow();
-        ReflectionTestUtils.setField(member, "status", MemberStatus.WITHDRAWN);
+        MemberFixture.changeStatus(member, MemberStatus.WITHDRAWN);
         memberJpaRepository.save(member);
 
         assertThatThrownBy(() -> service.reissue(token.refreshToken(), NOW.plusMinutes(1)))
@@ -226,7 +226,7 @@ class RefreshTokenServiceTest extends IntegrationTestSupport {
         var memberId = createMember();
         var token = service.issue(memberId, Role.MEMBER, NOW);
         var member = memberJpaRepository.findById(memberId).orElseThrow();
-        ReflectionTestUtils.setField(member, "status", MemberStatus.SUSPENDED);
+        MemberFixture.changeStatus(member, MemberStatus.SUSPENDED);
         memberJpaRepository.save(member);
 
         var renewed = service.reissue(token.refreshToken(), NOW.plusMinutes(1));

@@ -15,6 +15,7 @@ import org.kwakmunsu.auddum.IntegrationTestSupport;
 import org.kwakmunsu.auddum.auth.application.RefreshTokenService;
 import org.kwakmunsu.auddum.auth.infrastructure.RefreshTokenJpaRepository;
 import org.kwakmunsu.auddum.member.domain.AuthProvider;
+import org.kwakmunsu.auddum.member.domain.MemberFixture;
 import org.kwakmunsu.auddum.member.domain.MemberStatus;
 import org.kwakmunsu.auddum.member.domain.Role;
 import org.kwakmunsu.auddum.member.infrastructure.MemberAuthJpaRepository;
@@ -26,7 +27,6 @@ import org.kwakmunsu.auddum.support.config.TimeConfig;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 import org.kwakmunsu.auddum.support.config.TimeConfig;
 import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -71,7 +71,7 @@ class MemberWithdrawTest extends IntegrationTestSupport {
     @Test
     void 정지_회원도_탈퇴하면_WITHDRAWN이_된다() {
         var memberId = memberCommandService.login(AuthProvider.KAKAO, KAKAO_ID).getId();
-        ReflectionTestUtils.setField(memberJpaRepository.findById(memberId).orElseThrow(), "status", MemberStatus.SUSPENDED);
+        MemberFixture.changeStatus(memberJpaRepository.findById(memberId).orElseThrow(), MemberStatus.SUSPENDED);
         flushAndClear();
 
         var before = LocalDateTime.now(TimeConfig.KST).truncatedTo(ChronoUnit.MICROS);

@@ -23,7 +23,6 @@ import org.kwakmunsu.auddum.poll.domain.PollStatus;
 import org.kwakmunsu.auddum.poll.infrastructure.PollJpaRepository;
 import org.kwakmunsu.auddum.support.config.TimeConfig;
 import org.kwakmunsu.auddum.support.error.AuddumException;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -261,10 +260,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
     @EnumSource(value = PollStatus.class, names = {"HIDDEN", "DELETED"})
     void 숨김_삭제_투표는_탈퇴한_ADMIN이면_404_POLL_NOT_FOUND다(PollStatus status) {
         var poll = savePoll(status);
-        var member = MemberFixture.createMember();
-        ReflectionTestUtils.setField(member, "role", Role.ADMIN);
-        member.withdraw(LocalDateTime.now());
-        var withdrawnAdminId = memberJpaRepository.saveAndFlush(member).getId();
+        var withdrawnAdminId = memberJpaRepository.saveAndFlush(MemberFixture.createWithdrawnAdmin()).getId();
 
         assertThatThrownBy(() -> pollQueryService.getPoll(poll.getPublicId().value(), withdrawnAdminId))
             .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(PollErrorCode.POLL_NOT_FOUND));
@@ -275,8 +271,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
     void 정지_회원인_작성자도_자기_숨김_삭제_투표를_조회한다(PollStatus status) {
         var poll = savePoll(status);
         var author = memberJpaRepository.findById(getAuthorId()).orElseThrow();
-        ReflectionTestUtils.setField(author, "status", MemberStatus.SUSPENDED);
-        memberJpaRepository.saveAndFlush(author);
+        memberJpaRepository.saveAndFlush(MemberFixture.changeStatus(author, MemberStatus.SUSPENDED));
 
         var found = pollQueryService.getPoll(poll.getPublicId().value(), getAuthorId());
 
@@ -313,10 +308,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
     }
 
     private Long saveMember(Role role) {
-        var member = MemberFixture.createMember();
-        ReflectionTestUtils.setField(member, "role", role);
-
-        return memberJpaRepository.saveAndFlush(member).getId();
+        return memberJpaRepository.saveAndFlush(MemberFixture.createMember(role)).getId();
     }
 
     /** 작성자의 투표를 만들고 상태를 바꾼 뒤 영속성 컨텍스트를 비운다. */
