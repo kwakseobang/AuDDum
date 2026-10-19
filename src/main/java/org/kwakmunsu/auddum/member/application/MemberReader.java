@@ -47,7 +47,7 @@ public class MemberReader {
         }
 
         return memberRepository.findById(memberId)
-            .map(member -> member.isAdmin() && !member.isWithdrawn())
+            .map(Member::hasAdminAuthority)
             .orElse(false);
     }
 

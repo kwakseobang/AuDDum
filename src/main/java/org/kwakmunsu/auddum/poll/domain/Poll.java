@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -145,6 +146,14 @@ public class Poll extends BaseEntity {
 
     public boolean isAuthor(Long memberId) {
         return authorId.equals(memberId);
+    }
+
+    /**
+     * 조회자가 이 투표를 볼 수 있는지 본다. 공개 투표는 누구나, 숨김·삭제 투표는 작성자와 관리자만 볼 수 있다.
+     * 관리자 여부는 DB 조회가 필요하므로 앞 조건으로 결정되지 않을 때만 평가한다.
+     */
+    public boolean isReadableBy(Long viewerId, BooleanSupplier isAdmin) {
+        return isPublic() || isAuthor(viewerId) || isAdmin.getAsBoolean();
     }
 
     /** 참여 가능 상태(공개이면서 마감 전)를 보장한다. 공개가 아니면 404, 마감되었으면 409다. */

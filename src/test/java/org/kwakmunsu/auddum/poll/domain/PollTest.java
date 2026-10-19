@@ -9,6 +9,7 @@ import static org.kwakmunsu.auddum.poll.domain.PollFixture.OTHER_MEMBER_ID;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.Test;
@@ -706,6 +707,52 @@ class PollTest {
         assertThatThrownBy(() -> poll.ensureCreatableAfter(latest, NOW))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage(PollErrorCode.DUPLICATE_POLL.getMessage());
+    }
+
+    @Test
+    void 공개_투표는_누구나_볼_수_있고_관리자_여부는_확인하지_않는다() {
+        var poll = PollFixture.pollWithoutCloses();
+        var adminChecks = new AtomicInteger();
+
+        var readable = poll.isReadableBy(null, () -> countAndReturn(adminChecks, false));
+
+        assertThat(readable).isTrue();
+        assertThat(adminChecks.get()).isZero();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void 숨김_투표는_작성자가_볼_수_있고_관리자_여부는_확인하지_않는다(boolean hidden) {
+        var poll = hidden ? PollFixture.hiddenPoll() : PollFixture.deletedPoll();
+        var adminChecks = new AtomicInteger();
+
+        var readable = poll.isReadableBy(AUTHOR_ID, () -> countAndReturn(adminChecks, false));
+
+        assertThat(readable).isTrue();
+        assertThat(adminChecks.get()).isZero();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void 숨김_삭제_투표는_작성자가_아니어도_관리자면_볼_수_있다(boolean hidden) {
+        var poll = hidden ? PollFixture.hiddenPoll() : PollFixture.deletedPoll();
+
+        assertThat(poll.isReadableBy(OTHER_MEMBER_ID, () -> true)).isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void 숨김_삭제_투표는_작성자도_관리자도_아니면_볼_수_없다(boolean hidden) {
+        var poll = hidden ? PollFixture.hiddenPoll() : PollFixture.deletedPoll();
+
+        assertThat(poll.isReadableBy(OTHER_MEMBER_ID, () -> false)).isFalse();
+        assertThat(poll.isReadableBy(null, () -> false)).isFalse();
+    }
+
+    private boolean countAndReturn(AtomicInteger counter, boolean value) {
+        counter.incrementAndGet();
+
+        return value;
     }
 
     private Poll pollCreatedAt(String question, LocalDateTime createdAt) {
