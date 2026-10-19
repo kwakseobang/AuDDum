@@ -26,3 +26,7 @@ auddum:
     # 로컬 전용 기본 서명 키(32바이트 이상). 운영(prod)에는 기본값이 없어 JWT_SECRET이 없으면 기동하지 못한다.
     jwt:
       secret: ${JWT_SECRET:local-only-jwt-secret-key-change-me-0123456789}
+  vote:
+    # 로컬 전용 기본 서명 키(32바이트 이상). 운영(prod)에는 기본값이 없어 ANON_COOKIE_SECRET이 없으면 기동하지 못한다.
+    anon-cookie:
+      secret: ${ANON_COOKIE_SECRET:local-only-anon-cookie-key-change-me-0123456789}
