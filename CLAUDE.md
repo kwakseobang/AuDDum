@@ -13,6 +13,7 @@
 | 패키지 구조, 서비스·응답 규칙 | `docs/아키텍처.md` |
 | 테이블·제약·인덱스 | `docs/ERD.md` |
 | 브랜치·커밋·PR·로컬 환경 | `docs/개발-가이드.md` |
+| 다른 docs에 없는 확정 결정·코드 관행(리뷰에서 다시 지적하지 않음) | `docs/설계-결정.md` |
 | 마일스톤과 완료 기준 | `docs/로드맵.md` |
 
 문서는 필요한 **절만** 읽는다. 전체를 통째로 읽지 않는다. 절 색인은 `.claude/skills/auddum-conventions/SKILL.md` §1에 있다.
@@ -28,7 +29,7 @@
 - 이슈 시작("#12 시작하자"), 테스트 먼저 써 달라는 요청, 브랜치 리뷰 요청, 커밋·push·PR 요청 → `auddum-team`
 - "리뷰 다시", "이 테스트만 다시", "PR 본문만 다시" 같은 부분 재실행도 `auddum-team`
 
-팀은 **테스트와 리뷰만** 한다(test-writer, domain-reviewer). 서비스·컨트롤러·도메인 모델 코드·마이그레이션 같은 구현은 전부 사용자가 쓴다.
+팀은 **테스트와 리뷰만** 한다(test-writer, domain-reviewer, code-reviewer). 서비스·컨트롤러·도메인 모델 코드·마이그레이션 같은 구현은 전부 사용자가 쓴다.
 
 비발동: 구현 코드(서비스·컨트롤러·도메인 모델 코드·마이그레이션) 대신 작성, docs에 없는 정책·행위 추가, 요청 없는 선작성, main/develop 직접 커밋·push, PR 머지, 배포, 개념 질문, 오타·한 줄 수정. 그냥 답한다.
 
@@ -44,8 +45,8 @@
 | 종류 | 위치 | 개수 |
 |---|---|---|
 | 오케스트레이터 스킬 | `.claude/skills/auddum-team/` | 1 |
-| 지원 스킬 | `.claude/skills/auddum-conventions/` | 1 |
-| 에이전트 | `.claude/agents/` (test-writer, domain-reviewer) | 2 |
+| 지원 스킬 | `.claude/skills/auddum-conventions/`(공유 기준 ID), `.claude/skills/auddum-code-review/`(코드 리뷰 레시피) | 2 |
+| 에이전트 | `.claude/agents/` (test-writer, domain-reviewer, code-reviewer) | 3 |
 | 중간 산출물 | `_workspace/<run-id>/` | 실행마다 (run-id = 현재 브랜치 이름에서 `feature/`를 뗀 것, `/`는 `-`로) |
 | 최종 산출물 | 레포 작업 트리(기능 브랜치 커밋) + GitHub PR | 실행마다 |
 
@@ -53,6 +54,8 @@
 
 ## 변경 이력
 
+- 2026-10-18 — 이슈 #54. 설계·품질을 보는 code-reviewer를 추가했다(높음 위험도, domain-reviewer 뒤). 에이전트는 역할과 프로토콜만, 점검 항목과 예시는 `auddum-code-review` 스킬에 둔다. 다른 docs에 없는 확정 결정과 코드 관행은 `docs/설계-결정.md`에 모아 리뷰어가 다시 지적하지 않게 했다(이미 있는 규칙은 옮기지 않고 포인터만 둔다). 내장 `/code-review`는 필수에서 선택으로 바꿨다.
+
 - 2026-10-13 — M1 문서 동기화. 이슈 #1·#2·#3·#7·#8을 병합한 뒤 개발 가이드(PR 템플릿·CI·포맷·로컬 환경·의존성), 테스트·배포 설계서(프로파일), git-workflow(`application-local.yaml` 커밋 허용)를 실제 구현에 맞췄다. 앞으로 이슈를 끝낼 때 같은 PR에서 어긋난 문서를 함께 고친다.
 
-- 2026-10-12 — 이슈 #26. 팀의 역할을 테스트 작성과 리뷰로 한정했다(구현·도메인 모델 코드·마이그레이션은 사용자). 토큰 예산 때문에 작게 시작: 에이전트 2(test-writer, domain-reviewer), 오케스트레이터 1, 지원 스킬 1. 코드 리뷰어는 만들지 않고 고위험 이슈에서 내장 `/code-review`를 쓴다. elcom-server 하네스의 구조(산출물 계약, 고정 지점, 책임 분리)를 줄여서 따랐다.
+- 2026-10-12 — 이슈 #26. 팀의 역할을 테스트 작성과 리뷰로 한정했다(구현·도메인 모델 코드·마이그레이션은 사용자). 토큰 예산 때문에 작게 시작: 에이전트 2(test-writer, domain-reviewer), 오케스트레이터 1, 지원 스킬 1. (당시에는 코드 리뷰어를 만들지 않고 고위험 이슈에서 내장 `/code-review`를 쓰기로 했으나 #54에서 code-reviewer를 추가했다.) elcom-server 하네스의 구조(산출물 계약, 고정 지점, 책임 분리)를 줄여서 따랐다.

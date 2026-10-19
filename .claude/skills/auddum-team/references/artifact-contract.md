@@ -10,7 +10,8 @@
 | `00_diff-r<k>.patch` | 오케스트레이터 | 리뷰 대상 diff(`git diff develop...HEAD`) |
 | `20_test-writer_note_q<k>.md` | test-writer | 테스트 작성 결과 |
 | `20_test-writer_bug-report_q<k>.md` | test-writer | 버그 보고(있을 때만) |
-| `30_domain-reviewer_report_r<k>.md` | domain-reviewer | 리뷰 판정 |
+| `30_domain-reviewer_report_r<k>.md` | domain-reviewer | 정책·docs 리뷰 판정 |
+| `30_code-reviewer_report_r<k>.md` | code-reviewer | 설계·품질 리뷰 판정과 설계 제안(높음 위험도만) |
 | `40_delivery.md` | 오케스트레이터 | 커밋·push·PR 결과 |
 
 `q<k>`는 요청 순번, `r<k>`는 리뷰 라운드다. 둘 다 1부터 센다. 같은 이름 파일이 있으면 덮어쓰지 않고 순번을 올린다.
