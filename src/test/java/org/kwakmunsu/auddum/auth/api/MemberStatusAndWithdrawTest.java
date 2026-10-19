@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.kwakmunsu.auddum.IntegrationTestSupport;
 import org.kwakmunsu.auddum.auth.infrastructure.JwtTokenProvider;
 import org.kwakmunsu.auddum.member.domain.Member;
+import org.kwakmunsu.auddum.member.domain.MemberFixture;
 import org.kwakmunsu.auddum.member.domain.MemberStatus;
 import org.kwakmunsu.auddum.member.domain.Role;
 import org.kwakmunsu.auddum.member.infrastructure.MemberJpaRepository;
@@ -16,7 +17,6 @@ import org.kwakmunsu.auddum.support.config.TimeConfig;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -185,7 +185,7 @@ class MemberStatusAndWithdrawTest extends IntegrationTestSupport {
 
     private Long createMember(MemberStatus status) {
         var member = Member.signUp();
-        ReflectionTestUtils.setField(member, "status", status);
+        MemberFixture.changeStatus(member, status);
 
         return memberJpaRepository.saveAndFlush(member).getId();
     }

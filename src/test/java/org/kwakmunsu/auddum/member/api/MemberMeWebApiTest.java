@@ -85,7 +85,7 @@ class MemberMeWebApiTest extends WebApiTestSupport {
     private Member createMember(MemberStatus status) {
         var member = MemberFixture.createMember();
         ReflectionTestUtils.setField(member, "id", 1L);
-        ReflectionTestUtils.setField(member, "status", status);
+        MemberFixture.changeStatus(member, status);
         ReflectionTestUtils.setField(member, "createdAt", CREATED_AT);
 
         return member;

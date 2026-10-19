@@ -13,7 +13,6 @@ import org.kwakmunsu.auddum.member.domain.Role;
 import org.kwakmunsu.auddum.member.infrastructure.MemberJpaRepository;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -66,7 +65,7 @@ class MemberQueryServiceTest extends IntegrationTestSupport {
 
     private Member saveMember(MemberStatus status) {
         var member = MemberFixture.createMember();
-        ReflectionTestUtils.setField(member, "status", status);
+        MemberFixture.changeStatus(member, status);
 
         return memberJpaRepository.saveAndFlush(member);
     }
