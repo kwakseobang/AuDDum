@@ -43,9 +43,9 @@ test-writer, domain-reviewer, code-reviewer가 **같은 기준**을 쓰기 위�
 | 종류 | 대상 | 도구 | 확인하는 것 |
 |---|---|---|---|
 | 도메인 단위 | `Poll`, `Member`, `Vote`, `Report` 등 | JUnit, 스프링 없이 순수 자바 | 마감 판단, 상태 전이, 선택지 소속, 값 객체 검증 |
-| 서비스 통합 | Command·Query 서비스 | `@SpringBootTest` 또는 `@DataJpaTest`, H2 | 트랜잭션 경계, 유니크 제약, 재조회 |
+| 서비스 통합 | Command·Query 서비스 | `@SpringBootTest` 또는 `@DataJpaTest`, H2 | 트랜잭션 경계, 유니크 제약, 동시 요청에서 진 쪽 409 |
 | API | controller, 인증·인가, 오류 응답 | `MockMvcTester`, H2 | 상태 코드, ProblemDetail 형식, 쿠키 |
-| 동시성 | 같은 신원의 동시 참여 | 실제 MySQL(컨테이너) | 기록 1건, 응답 201·200·409 |
+| 동시성 | 같은 신원의 동시 참여 | 실제 MySQL(컨테이너) | 기록 1건, 응답 201·409 |
 | 구조 | 패키지 의존 | ArchUnit | 순환·다른 도메인 repository·`common` |
 
 - 테스트 메서드(`@Test`) 이름만 한글 서술이다. 예: `마감된_투표에는_참여할_수_없다`. `@DisplayName`은 쓰지 않는다. 내부 헬퍼 메서드, 지역 변수, 상수, 픽스처 이름은 영어로 쓴다(`savePoll`, `closedPoll`, `QUESTION`).

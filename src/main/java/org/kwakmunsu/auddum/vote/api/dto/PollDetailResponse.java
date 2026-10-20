@@ -1,15 +1,15 @@
-package org.kwakmunsu.auddum.poll.api.dto;
+package org.kwakmunsu.auddum.vote.api.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.kwakmunsu.auddum.poll.domain.Category;
 import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.poll.domain.PollStatus;
 import org.kwakmunsu.auddum.support.config.TimeConfig;
+import org.kwakmunsu.auddum.vote.application.dto.PollDetail;
 
-/** 투표 상세. 참여 정보가 필요한 myChoice·result는 참여 기능(#15·#16) 전까지 항상 null이다. */
+/** 투표 상세. 참여 정보(participantCount, myChoice, result)를 포함한다. */
 @Schema(description = "투표 상세")
 public record PollDetailResponse(
     @Schema(description = "공개 ID", example = "aB3dE5fG7hJk")
@@ -29,17 +29,18 @@ public record PollDetailResponse(
 
     boolean closed,
 
-    @Schema(description = "참여 수. 참여 기능(#15) 전까지 0", example = "0")
+    @Schema(description = "전체 참여 수. 결과를 공개하지 않아도 내려간다", example = "42")
     long participantCount,
 
-    @Schema(description = "내가 고른 선택지 position. 참여 기능 전까지 null", nullable = true)
+    @Schema(description = "내가 고른 선택지 position. 참여하지 않았으면 null", nullable = true)
     Integer myChoice,
 
-    @Schema(description = "결과. 참여 기능 전까지 null", nullable = true)
-    Object result
+    @Schema(description = "결과. 마감되었거나 내가 참여했을 때만 내려가고 아니면 null", nullable = true)
+    PollResultResponse result
 ) {
 
-    public static PollDetailResponse of(Poll poll, LocalDateTime now) {
+    public static PollDetailResponse from(PollDetail detail) {
+        Poll poll = detail.poll();
         List<OptionResponse> options = poll.getOptions().stream()
             .map(option -> new OptionResponse(option.getPosition().value(), option.getContent().value()))
             .toList();
@@ -51,10 +52,10 @@ public record PollDetailResponse(
             poll.getStatus(),
             options,
             TimeConfig.toKstOffset(poll.getClosesAt() == null ? null : poll.getClosesAt().value()),
-            poll.isClosed(now),
-            0,
-            null,
-            null
+            detail.closed(),
+            detail.participantCount(),
+            detail.myChoice(),
+            detail.result() == null ? null : PollResultResponse.from(detail.result())
         );
     }
 

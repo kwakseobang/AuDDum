@@ -20,8 +20,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 
 /**
- * GET /api/v1/polls, GET /api/v1/polls/{pollId} 웹 계층(서비스는 목). API 명세 §1·§3.
+ * GET /api/v1/polls 목록 웹 계층(서비스는 목). API 명세 §1.
  * 정상 응답의 모양만 본다. 조회 규칙은 PollQueryServiceTest가 맡는다.
+ * GET /api/v1/polls/{pollId} 상세는 컨트롤러가 VoteWebApi로 옮겨졌으므로 vote.api의 PollDetailWebApiTest가 맡는다.
  */
 class PollReadWebApiTest extends WebApiTestSupport {
 
@@ -113,145 +114,11 @@ class PollReadWebApiTest extends WebApiTestSupport {
         verify(pollQueryService).getPolls(5L, 10);
     }
 
-    // ---- 상세 ----
-
-    @Test
-    void 인증_없이_상세를_조회하면_200과_명세_필드를_내린다() {
-        var poll = createPoll(CLOSES_AT);
-        var id = poll.getPublicId().value();
-        given(pollQueryService.getPoll(id, null)).willReturn(poll);
-
-        mvcTester.get()
-            .uri("/api/v1/polls/" + id)
-            .assertThat()
-            .hasStatus(HttpStatus.OK)
-            .apply(print())
-            .bodyJson()
-            .hasPathSatisfying("$.id", v -> v.assertThat().isEqualTo(id))
-            .hasPathSatisfying("$.question", v -> v.assertThat().isEqualTo("읽씹 3시간 뒤 답장, 이거 관심 없는 걸까요?"))
-            .hasPathSatisfying("$.category", v -> v.assertThat().isEqualTo("SOME"))
-            .hasPathSatisfying("$.options[0].position", v -> v.assertThat().isEqualTo(1))
-            .hasPathSatisfying("$.options[0].content", v -> v.assertThat().isEqualTo("관심 없음"))
-            .hasPathSatisfying("$.options[2].position", v -> v.assertThat().isEqualTo(3))
-            .hasPathSatisfying("$.options[2].content", v -> v.assertThat().isEqualTo("더 지켜봐야 함"))
-            .hasPathSatisfying("$.closesAt", v -> v.assertThat().isEqualTo("2099-10-19T23:59:00+09:00"))
-            .hasPathSatisfying("$.closed", v -> v.assertThat().isEqualTo(false))
-            .hasPathSatisfying("$.participantCount", v -> v.assertThat().isEqualTo(0));
-    }
-
-    @Test
-    void 상세의_myChoice와_result는_키가_있고_값은_null이다() {
-        var poll = createPoll(CLOSES_AT);
-        var id = poll.getPublicId().value();
-        given(pollQueryService.getPoll(id, null)).willReturn(poll);
-
-        var body = readBody("/api/v1/polls/" + id);
-
-        assertThat(body).containsKeys("myChoice", "result");
-        assertThat(body.get("myChoice")).isNull();
-        assertThat(body.get("result")).isNull();
-    }
-
-    @Test
-    void 상세_응답은_내부_id를_담지_않고_status를_담는다() {
-        var poll = createPoll(CLOSES_AT);
-        var id = poll.getPublicId().value();
-        given(pollQueryService.getPoll(id, null)).willReturn(poll);
-
-        var body = readBody("/api/v1/polls/" + id);
-
-        assertThat(body.keySet()).containsExactlyInAnyOrder(
-            "id", "question", "category", "status", "options", "closesAt", "closed", "participantCount", "myChoice", "result");
-    }
-
-    @Test
-    void 공개_투표_상세도_status가_PUBLIC이다() {
-        var poll = createPoll(CLOSES_AT);
-        var id = poll.getPublicId().value();
-        given(pollQueryService.getPoll(id, null)).willReturn(poll);
-
-        mvcTester.get()
-            .uri("/api/v1/polls/" + id)
-            .assertThat()
-            .hasStatus(HttpStatus.OK)
-            .bodyJson()
-            .hasPathSatisfying("$.status", v -> v.assertThat().isEqualTo("PUBLIC"));
-    }
-
-    @Test
-    void 서비스가_숨김_투표를_돌려주면_200이고_status가_HIDDEN이다() {
-        var poll = createPoll(CLOSES_AT);
-        poll.hide();
-        var id = poll.getPublicId().value();
-        given(pollQueryService.getPoll(id, 7L)).willReturn(poll);
-
-        mvcTester.get()
-            .uri("/api/v1/polls/" + id)
-            .with(loginAs(7L))
-            .assertThat()
-            .hasStatus(HttpStatus.OK)
-            .bodyJson()
-            .hasPathSatisfying("$.status", v -> v.assertThat().isEqualTo("HIDDEN"));
-    }
-
-    @Test
-    void 서비스가_삭제_투표를_돌려주면_200이고_status가_DELETED다() {
-        var poll = createPoll(CLOSES_AT);
-        poll.deleteByAdmin();
-        var id = poll.getPublicId().value();
-        given(pollQueryService.getPoll(id, 9L)).willReturn(poll);
-
-        mvcTester.get()
-            .uri("/api/v1/polls/" + id)
-            .with(loginAs(9L))
-            .assertThat()
-            .hasStatus(HttpStatus.OK)
-            .bodyJson()
-            .hasPathSatisfying("$.status", v -> v.assertThat().isEqualTo("DELETED"));
-    }
-
-    @Test
-    void 로그인하지_않은_요청은_서비스에_viewerId_null을_넘긴다() {
-        var poll = createPoll(CLOSES_AT);
-        var id = poll.getPublicId().value();
-        given(pollQueryService.getPoll(id, null)).willReturn(poll);
-
-        mvcTester.get().uri("/api/v1/polls/" + id).assertThat().hasStatus(HttpStatus.OK);
-
-        verify(pollQueryService).getPoll(id, null);
-    }
-
-    @Test
-    void 로그인한_회원의_memberId를_viewerId로_서비스에_넘긴다() {
-        var poll = createPoll(CLOSES_AT);
-        var id = poll.getPublicId().value();
-        given(pollQueryService.getPoll(id, 7L)).willReturn(poll);
-
-        mvcTester.get().uri("/api/v1/polls/" + id).with(loginAs(7L)).assertThat().hasStatus(HttpStatus.OK);
-
-        verify(pollQueryService).getPoll(id, 7L);
-    }
-
-    @Test
-    void 마감된_투표_상세는_200이고_closed가_true다() {
-        var poll = createClosedPoll();
-        var id = poll.getPublicId().value();
-        given(pollQueryService.getPoll(id, null)).willReturn(poll);
-
-        mvcTester.get()
-            .uri("/api/v1/polls/" + id)
-            .assertThat()
-            .hasStatus(HttpStatus.OK)
-            .bodyJson()
-            .hasPathSatisfying("$.closed", v -> v.assertThat().isEqualTo(true));
-    }
-
     // ---- 보조 ----
 
     private Slice<Poll> slice(List<Poll> polls, boolean hasNext) {
         return new SliceImpl<>(polls, PageRequest.ofSize(20), hasNext);
     }
-
 
     private Map<String, Object> readBody(String uri) {
         var result = mvcTester.get().uri(uri).exchange();

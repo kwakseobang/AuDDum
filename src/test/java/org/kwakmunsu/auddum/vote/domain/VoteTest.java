@@ -107,22 +107,6 @@ class VoteTest {
                 .doesNotThrowAnyException();
     }
 
-    // ---- isSameChoice ----
-
-    @Test
-    void 같은_선택지면_같은_선택이다() {
-        var vote = Vote.cast(VoteFixture.pollWithoutCloses(), 1, memberVoter(), NOW);
-
-        assertThat(vote.isSameChoice(FIRST_OPTION_ID)).isTrue();
-    }
-
-    @Test
-    void 다른_선택지면_같은_선택이_아니다() {
-        var vote = Vote.cast(VoteFixture.pollWithoutCloses(), 1, memberVoter(), NOW);
-
-        assertThat(vote.isSameChoice(SECOND_OPTION_ID)).isFalse();
-    }
-
     // ---- 불변성 ----
 
     @Test
@@ -130,7 +114,7 @@ class VoteTest {
         var mutators = Arrays.stream(Vote.class.getDeclaredMethods())
                 .filter(m -> Modifier.isPublic(m.getModifiers()) && !Modifier.isStatic(m.getModifiers()))
                 .map(Method::getName)
-                .filter(name -> !name.startsWith("get") && !name.equals("isSameChoice"))
+                .filter(name -> !name.startsWith("get"))
                 .toList();
 
         assertThat(mutators).isEmpty();

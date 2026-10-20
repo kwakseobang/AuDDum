@@ -9,6 +9,9 @@ import org.kwakmunsu.auddum.member.application.MemberQueryService;
 import org.kwakmunsu.auddum.member.domain.Role;
 import org.kwakmunsu.auddum.poll.application.PollCommandService;
 import org.kwakmunsu.auddum.poll.application.PollQueryService;
+import org.kwakmunsu.auddum.vote.api.AnonCookies;
+import org.kwakmunsu.auddum.vote.application.VoteCommandService;
+import org.kwakmunsu.auddum.vote.application.VoteQueryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.security.oauth2.client.autoconfigure.OAuth2ClientAutoConfiguration;
 import org.springframework.boot.security.oauth2.client.autoconfigure.servlet.OAuth2ClientWebSecurityAutoConfiguration;
@@ -25,7 +28,7 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * 컨트롤러(웹 계층) 테스트의 공통 설정. 슬라이스에는 로그인(oauth2Login) 설정이 필요 없어 OAuth2 클라이언트 자동 설정은 뺀다. 컨트롤러가 의존하는 서비스는 여기서 {@code @MockitoBean}으로 대체한다.
  */
-@Import(AuthCookies.class)
+@Import({AuthCookies.class, AnonCookies.class})
 @WebMvcTest(excludeAutoConfiguration = {OAuth2ClientAutoConfiguration.class, OAuth2ClientWebSecurityAutoConfiguration.class})
 public abstract class WebApiTestSupport {
 
@@ -55,6 +58,12 @@ public abstract class WebApiTestSupport {
 
     @MockitoBean
     protected PollQueryService pollQueryService;
+
+    @MockitoBean
+    protected VoteCommandService voteCommandService;
+
+    @MockitoBean
+    protected VoteQueryService voteQueryService;
 
     @MockitoBean
     protected RefreshTokenService refreshTokenService;
