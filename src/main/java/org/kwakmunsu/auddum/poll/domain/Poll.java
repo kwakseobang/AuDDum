@@ -140,6 +140,11 @@ public class Poll extends BaseEntity {
         return closesAt != null && closesAt.isReachedAt(now);
     }
 
+    /** 결과를 보여 줄 수 있는지 본다. 마감되었거나 조회자가 이미 참여했으면 공개이고, 마감 전 미참여자에게는 비공개다(P-03·P-25). */
+    public boolean isResultOpen(boolean participated, LocalDateTime now) {
+        return participated || isClosed(now);
+    }
+
     public boolean isPublic() {
         return status == PollStatus.PUBLIC;
     }
@@ -172,6 +177,16 @@ public class Poll extends BaseEntity {
             .filter(option -> option.isAt(position))
             .findFirst()
             .orElseThrow(() -> new AuddumException(PollErrorCode.INVALID_OPTION));
+    }
+
+    /** 선택지 id의 순번을 돌려준다. 이 투표의 선택지가 아니면 예외다(참여 기록은 항상 이 투표의 선택지를 가리킨다). */
+    public int positionOf(Long optionId) {
+        return options.stream()
+            .filter(option -> option.getId().equals(optionId))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("이 투표의 선택지가 아닙니다. optionId=" + optionId))
+            .getPosition()
+            .value();
     }
 
     /** 관리자 숨김. 공개 투표만 숨길 수 있고, 이미 숨겨진 투표는 그대로 둔다. 삭제된 투표는 404다. */

@@ -749,10 +749,105 @@ class PollTest {
         assertThat(poll.isReadableBy(null, () -> false)).isFalse();
     }
 
+    // ---- 결과 공개 판단 (API-명세 §4 결과 공개 규칙, 예외-정책 P-03·P-25) ----
+
+    @Test
+    void 마감_전에_참여하지_않은_사람에게는_결과를_공개하지_않는다() {
+        var poll = PollFixture.pollWithCloses(NOW.plusHours(1));
+
+        assertThat(poll.isResultOpen(false, NOW)).isFalse();
+    }
+
+    @Test
+    void 마감_전이어도_참여한_사람에게는_결과를_공개한다() {
+        var poll = PollFixture.pollWithCloses(NOW.plusHours(1));
+
+        assertThat(poll.isResultOpen(true, NOW)).isTrue();
+    }
+
+    @Test
+    void 마감_후에는_참여하지_않은_사람에게도_결과를_공개한다() {
+        var poll = PollFixture.pollWithCloses(NOW.plusHours(1));
+
+        assertThat(poll.isResultOpen(false, NOW.plusHours(2))).isTrue();
+    }
+
+    @Test
+    void 마감_후에도_참여한_사람에게는_결과를_공개한다() {
+        var poll = PollFixture.pollWithCloses(NOW.plusHours(1));
+
+        assertThat(poll.isResultOpen(true, NOW.plusHours(2))).isTrue();
+    }
+
+    @Test
+    void 마감_시각_직전에는_미참여자에게_결과를_공개하지_않는다() {
+        var closesAt = NOW.plusHours(1);
+        var poll = PollFixture.pollWithCloses(closesAt);
+
+        assertThat(poll.isResultOpen(false, closesAt.minusNanos(1))).isFalse();
+    }
+
+    @Test
+    void 마감_시각과_정확히_같으면_미참여자에게도_결과를_공개한다() {
+        var closesAt = NOW.plusHours(1);
+        var poll = PollFixture.pollWithCloses(closesAt);
+
+        assertThat(poll.isResultOpen(false, closesAt)).isTrue();
+    }
+
+    @Test
+    void 마감_시각_직후에는_미참여자에게도_결과를_공개한다() {
+        var closesAt = NOW.plusHours(1);
+        var poll = PollFixture.pollWithCloses(closesAt);
+
+        assertThat(poll.isResultOpen(false, closesAt.plusNanos(1))).isTrue();
+    }
+
+    @Test
+    void 마감_시각이_없는_투표는_미참여자에게_언제나_결과를_공개하지_않는다() {
+        var poll = PollFixture.pollWithoutCloses();
+
+        assertThat(poll.isResultOpen(false, NOW.plusYears(100))).isFalse();
+    }
+
+    @Test
+    void 마감_시각이_없는_투표도_참여한_사람에게는_결과를_공개한다() {
+        var poll = PollFixture.pollWithoutCloses();
+
+        assertThat(poll.isResultOpen(true, NOW)).isTrue();
+    }
+
+    // ---- 선택지 id로 순번 찾기 ----
+
+    @Test
+    void 선택지_id의_순번을_돌려준다() {
+        var poll = pollWithOptionIds();
+
+        assertThat(poll.positionOf(101L)).isEqualTo(1);
+        assertThat(poll.positionOf(102L)).isEqualTo(2);
+    }
+
+    @Test
+    void 이_투표의_선택지가_아닌_id면_IllegalArgumentException이다() {
+        var poll = pollWithOptionIds();
+
+        assertThatThrownBy(() -> poll.positionOf(999L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("999");
+    }
+
     private boolean countAndReturn(AtomicInteger counter, boolean value) {
         counter.incrementAndGet();
 
         return value;
+    }
+
+    private Poll pollWithOptionIds() {
+        var poll = PollFixture.pollWithoutCloses();
+        ReflectionTestUtils.setField(poll.getOptions().get(0), "id", 101L);
+        ReflectionTestUtils.setField(poll.getOptions().get(1), "id", 102L);
+
+        return poll;
     }
 
     private Poll pollCreatedAt(String question, LocalDateTime createdAt) {

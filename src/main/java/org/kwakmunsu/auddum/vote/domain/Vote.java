@@ -54,9 +54,4 @@ public class Vote extends BaseEntity {
         return vote;
     }
 
-    /** 같은 선택지를 다시 보낸 것인지(재전송) 판단한다. */
-    public boolean isSameChoice(Long optionId) {
-        return this.optionId.equals(optionId);
-    }
-
 }
