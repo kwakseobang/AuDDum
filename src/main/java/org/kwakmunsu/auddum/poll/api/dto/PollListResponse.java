@@ -3,9 +3,12 @@ package org.kwakmunsu.auddum.poll.api.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.AccessLevel;
+import lombok.Builder;
 import org.kwakmunsu.auddum.poll.application.dto.PollSummary;
 import org.springframework.data.domain.Slice;
 
+@Builder(access = AccessLevel.PRIVATE)
 @Schema(description = "투표 목록 한 페이지")
 public record PollListResponse(
     List<PollSummaryResponse> items,
@@ -22,7 +25,10 @@ public record PollListResponse(
         // 다음 페이지 커서를 계산한다. 마지막 페이지면 null이다.
         String nextCursor = slice.hasNext() ? PollListRequest.nextCursor(slice.getContent().getLast().poll().getId()) : null;
 
-        return new PollListResponse(items, nextCursor);
+        return PollListResponse.builder()
+            .items(items)
+            .nextCursor(nextCursor)
+            .build();
     }
 
 }

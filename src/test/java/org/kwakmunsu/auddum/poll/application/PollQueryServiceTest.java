@@ -28,8 +28,8 @@ import org.kwakmunsu.auddum.support.error.AuddumException;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 투표 목록·상세 조회 서비스의 통합 테스트(H2). 공개 범위, 최신순 커서 이어짐, 상세 선택지 순서와 404, 숨김·삭제 투표의 작성자·관리자 열람을 확인한다.
- * 가정한 이름: PollQueryService#getPoll(String publicId, Long viewerId)(비회원은 null). 관리자는 DB의 role로만 판단한다(토큰 role은 서비스에 넘기지 않는다). 이슈 #48 brief의 확정 시그니처.
+ * 투표 목록·상세 조회(PollQueryService, PollReader)의 통합 테스트(H2). 공개 범위, 최신순 커서 이어짐, 상세 선택지 순서와 404, 숨김·삭제 투표의 작성자·관리자 열람을 확인한다.
+ * 가정한 이름: PollReader#getReadable(String publicId, Long viewerId)(비회원은 null). 관리자는 DB의 role로만 판단한다(토큰 role은 서비스에 넘기지 않는다). 이슈 #48 brief의 확정 시그니처.
  * 커서 인코딩과 size 보정은 api 계층 코드(PollListRequest, PollCursor)가 맡는다.
  */
 @RequiredArgsConstructor
@@ -216,7 +216,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
         entityManager.flush();
         entityManager.clear();
 
-        var found = pollQueryService.getPoll(poll.getPublicId().value(), null);
+        var found = pollReader.getReadable(poll.getPublicId().value(), null);
 
         assertThat(found.getId()).isEqualTo(poll.getId());
         assertThat(found.getOptions()).extracting(o -> o.getPosition().value()).containsExactly(1, 2, 3);
@@ -229,7 +229,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
         var poll = savePoll("마감된 투표");
         closePoll(poll.getId());
 
-        var found = pollQueryService.getPoll(poll.getPublicId().value(), null);
+        var found = pollReader.getReadable(poll.getPublicId().value(), null);
 
         assertThat(found.isClosed(LocalDateTime.now(TimeConfig.KST))).isTrue();
     }
@@ -243,7 +243,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
         entityManager.flush();
         entityManager.clear();
 
-        var found = pollQueryService.getPoll(poll.getPublicId().value(), otherId);
+        var found = pollReader.getReadable(poll.getPublicId().value(), otherId);
 
         assertThat(found.getId()).isEqualTo(poll.getId());
         assertThat(found.getStatus()).isEqualTo(PollStatus.PUBLIC);
@@ -254,7 +254,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
     void 숨김_삭제_투표는_작성자가_조회한다(PollStatus status) {
         var poll = savePoll(status);
 
-        var found = pollQueryService.getPoll(poll.getPublicId().value(), getAuthorId());
+        var found = pollReader.getReadable(poll.getPublicId().value(), getAuthorId());
 
         assertThat(found.getId()).isEqualTo(poll.getId());
         assertThat(found.getStatus()).isEqualTo(status);
@@ -266,7 +266,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
         var poll = savePoll(status);
         var adminId = saveMember(Role.ADMIN);
 
-        var found = pollQueryService.getPoll(poll.getPublicId().value(), adminId);
+        var found = pollReader.getReadable(poll.getPublicId().value(), adminId);
 
         assertThat(found.getId()).isEqualTo(poll.getId());
         assertThat(found.getStatus()).isEqualTo(status);
@@ -278,7 +278,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
         var poll = savePoll(status);
         var otherId = saveMember(Role.MEMBER);
 
-        assertThatThrownBy(() -> pollQueryService.getPoll(poll.getPublicId().value(), otherId))
+        assertThatThrownBy(() -> pollReader.getReadable(poll.getPublicId().value(), otherId))
             .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(PollErrorCode.POLL_NOT_FOUND));
     }
 
@@ -287,7 +287,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
     void 숨김_삭제_투표는_비회원에게_404_POLL_NOT_FOUND다(PollStatus status) {
         var poll = savePoll(status);
 
-        assertThatThrownBy(() -> pollQueryService.getPoll(poll.getPublicId().value(), null))
+        assertThatThrownBy(() -> pollReader.getReadable(poll.getPublicId().value(), null))
             .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(PollErrorCode.POLL_NOT_FOUND));
     }
 
@@ -297,7 +297,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
         var poll = savePoll(status);
         var withdrawnAdminId = memberJpaRepository.saveAndFlush(MemberFixture.createWithdrawnAdmin()).getId();
 
-        assertThatThrownBy(() -> pollQueryService.getPoll(poll.getPublicId().value(), withdrawnAdminId))
+        assertThatThrownBy(() -> pollReader.getReadable(poll.getPublicId().value(), withdrawnAdminId))
             .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(PollErrorCode.POLL_NOT_FOUND));
     }
 
@@ -308,7 +308,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
         var author = memberJpaRepository.findById(getAuthorId()).orElseThrow();
         memberJpaRepository.saveAndFlush(MemberFixture.changeStatus(author, MemberStatus.SUSPENDED));
 
-        var found = pollQueryService.getPoll(poll.getPublicId().value(), getAuthorId());
+        var found = pollReader.getReadable(poll.getPublicId().value(), getAuthorId());
 
         assertThat(found.getId()).isEqualTo(poll.getId());
         assertThat(found.getStatus()).isEqualTo(status);
@@ -318,13 +318,13 @@ class PollQueryServiceTest extends IntegrationTestSupport {
     void 관리자여도_없는_ID는_404_POLL_NOT_FOUND다() {
         var adminId = saveMember(Role.ADMIN);
 
-        assertThatThrownBy(() -> pollQueryService.getPoll("zzzzzzzzzzzz", adminId))
+        assertThatThrownBy(() -> pollReader.getReadable("zzzzzzzzzzzz", adminId))
             .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(PollErrorCode.POLL_NOT_FOUND));
     }
 
     @Test
     void 없는_공개_ID_상세는_POLL_NOT_FOUND다() {
-        assertThatThrownBy(() -> pollQueryService.getPoll("zzzzzzzzzzzz", null))
+        assertThatThrownBy(() -> pollReader.getReadable("zzzzzzzzzzzz", null))
             .isInstanceOf(AuddumException.class)
             .extracting(e -> ((AuddumException) e).getErrorCode())
             .isEqualTo(PollErrorCode.POLL_NOT_FOUND);

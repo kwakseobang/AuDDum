@@ -1,5 +1,7 @@
 package org.kwakmunsu.auddum.vote.application.dto;
 
+import org.kwakmunsu.auddum.poll.application.dto.PollTally;
+
 /**
  * 참여 결과.
  *

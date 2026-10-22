@@ -1,4 +1,4 @@
-package org.kwakmunsu.auddum.vote.application;
+package org.kwakmunsu.auddum.poll.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -21,12 +21,17 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.kwakmunsu.auddum.member.domain.Role;
+import org.kwakmunsu.auddum.poll.application.dto.PollDetail;
+import org.kwakmunsu.auddum.poll.application.dto.Viewer;
 import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.poll.domain.PollErrorCode;
 import org.kwakmunsu.auddum.poll.domain.PollStatus;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
 import org.kwakmunsu.auddum.vote.VoteIntegrationTestSupport;
+import org.kwakmunsu.auddum.vote.application.VoteCommandService;
+import org.kwakmunsu.auddum.vote.application.VoteFixture;
+import org.kwakmunsu.auddum.vote.application.dto.VoterCredential;
 import org.kwakmunsu.auddum.vote.domain.AnonId;
 import org.kwakmunsu.auddum.vote.domain.Voter;
 import org.kwakmunsu.auddum.vote.infrastructure.AnonCookieProvider;
@@ -34,17 +39,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 투표 상세 조회 서비스의 통합 테스트(H2). 기준은 API-명세 §3 GET /polls/{pollId}, §4 결과 공개 규칙,
+ * 투표 상세 조회(poll의 PollQueryService#getPollDetail)가 vote의 참여 정보와 이어지는 통합 테스트(H2). 기준은 API-명세 §3 GET /polls/{pollId}, §4 결과 공개 규칙,
  * 인증-중복-참여 §2 발급과 읽기, 예외-정책 P-03·P-11·P-25, 설계-결정 §3.
+ * vote의 실제 구현과 이어 보려고 vote의 테스트 지원(VoteIntegrationTestSupport, VoteFixture)을 쓴다.
  * 조회는 읽기 전용이라 쿠키를 발급하지 않고 투표 기록도 만들지 않는다.
  * 결과 공개·마감 판단의 진리표와 경계는 PollTest(isResultOpen, isClosed)가 검증한다. 이 클래스는 신원(회원·쿠키)이 참여 여부로
  * 이어지고 그 값이 공개 판단과 응답 조립에 연결되는지만 본다.
  */
 @RequiredArgsConstructor
 @Transactional
-class VoteQueryServiceTest extends VoteIntegrationTestSupport {
+class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
 
-    final VoteQueryService voteQueryService;
+    final PollQueryService pollQueryService;
     final VoteCommandService voteCommandService;
     final AnonCookieProvider anonCookieProvider;
 
@@ -76,7 +82,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         saveVote(poll, 2, Voter.member(memberId));
         saveVote(poll, 1, Voter.member(saveMember()));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), member(memberId));
+        var detail = getPollDetail(publicIdOf(poll), member(memberId));
 
         assertThat(detail.myChoice()).isEqualTo(2);
         assertThat(detail.result().total()).isEqualTo(2);
@@ -91,7 +97,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         saveVote(poll, 2, Voter.member(saveMember()));
         saveVote(poll, 2, Voter.anonymous(new AnonId(UUID.randomUUID())));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), member(saveMember()));
+        var detail = getPollDetail(publicIdOf(poll), member(saveMember()));
 
         assertThat(detail.myChoice()).isNull();
         assertThat(detail.result()).isNull();
@@ -104,7 +110,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
         saveVote(poll, 1, Voter.member(saveMember()));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), noCredential());
+        var detail = getPollDetail(publicIdOf(poll), noCredential());
 
         assertThat(detail.myChoice()).isNull();
         assertThat(detail.result()).isNull();
@@ -117,7 +123,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         var cookie = anonCookieProvider.issue();
         saveVote(poll, 2, Voter.anonymous(cookie.anonId()));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), anonymous(cookie.value()));
+        var detail = getPollDetail(publicIdOf(poll), anonymous(cookie.value()));
 
         assertThat(detail.myChoice()).isEqualTo(2);
         assertThat(detail.result().total()).isEqualTo(1);
@@ -129,7 +135,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         saveVote(poll, 1, Voter.member(saveMember()));
         var cookie = anonCookieProvider.issue();
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), anonymous(cookie.value()));
+        var detail = getPollDetail(publicIdOf(poll), anonymous(cookie.value()));
 
         assertThat(detail.myChoice()).isNull();
         assertThat(detail.result()).isNull();
@@ -145,7 +151,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         saveVote(poll, 2, Voter.member(saveMember()));
         savePoll(VoteFixture.expire(poll));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), member(saveMember()));
+        var detail = getPollDetail(publicIdOf(poll), member(saveMember()));
 
         assertThat(detail.closed()).isTrue();
         assertThat(detail.myChoice()).isNull();
@@ -161,7 +167,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         var poll = savePoll(VoteFixture.openPoll(saveMember(), VoteFixture.fiveOptions()));
         saveVote(poll, 3, Voter.member(memberId));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), member(memberId));
+        var detail = getPollDetail(publicIdOf(poll), member(memberId));
 
         assertThat(detail.result().options()).extracting("position", "count")
             .containsExactly(tuple(1, 0L), tuple(2, 0L), tuple(3, 1L), tuple(4, 0L), tuple(5, 0L));
@@ -171,7 +177,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
     void 참여가_하나도_없는_마감_투표는_득표_0의_result와_participantCount_0이다() {
         var poll = savePoll(VoteFixture.expire(VoteFixture.openPoll(saveMember())));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), noCredential());
+        var detail = getPollDetail(publicIdOf(poll), noCredential());
 
         assertThat(detail.participantCount()).isZero();
         assertThat(detail.result().total()).isZero();
@@ -187,7 +193,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         saveVote(poll, 4, Voter.member(saveMember()));
         saveVote(poll, 4, Voter.anonymous(new AnonId(UUID.randomUUID())));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), member(memberId));
+        var detail = getPollDetail(publicIdOf(poll), member(memberId));
 
         assertThat(detail.participantCount()).isEqualTo(3);
         assertThat(detail.result().total()).isEqualTo(detail.participantCount());
@@ -203,7 +209,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         saveVote(poll, 1, Voter.member(firstId));
         saveVote(poll, 2, Voter.member(saveMember()));
 
-        assertThat(voteQueryService.getPollDetail(publicIdOf(poll), member(firstId)).myChoice()).isEqualTo(1);
+        assertThat(getPollDetail(publicIdOf(poll), member(firstId)).myChoice()).isEqualTo(1);
     }
 
     @Test
@@ -211,7 +217,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
         saveVote(poll, 1, Voter.member(saveMember()));
 
-        assertThat(voteQueryService.getPollDetail(publicIdOf(poll), member(saveMember())).myChoice()).isNull();
+        assertThat(getPollDetail(publicIdOf(poll), member(saveMember())).myChoice()).isNull();
     }
 
     @Test
@@ -220,7 +226,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
         saveVote(poll, 2, Voter.anonymous(anonCookieProvider.issue().anonId()));
 
-        assertThat(voteQueryService.getPollDetail(publicIdOf(poll), member(memberId)).myChoice()).isNull();
+        assertThat(getPollDetail(publicIdOf(poll), member(memberId)).myChoice()).isNull();
     }
 
     @Test
@@ -230,7 +236,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         saveVote(poll, 2, Voter.anonymous(outsider.anonId()));
         saveVote(poll, 1, Voter.member(saveMember()));
 
-        assertThat(voteQueryService.getPollDetail(
+        assertThat(getPollDetail(
             publicIdOf(poll),
             anonymous(outsider.value())).myChoice()).isEqualTo(2);
     }
@@ -242,7 +248,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         var cookie = anonCookieProvider.issue();
         saveVote(poll, 1, Voter.anonymous(cookie.anonId()));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), memberWithCookie(memberId, cookie.value()));
+        var detail = getPollDetail(publicIdOf(poll), memberWithCookie(memberId, cookie.value()));
 
         assertThat(detail.myChoice()).isNull();
         assertThat(detail.result()).isNull();
@@ -255,7 +261,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         saveVote(poll, 1, Voter.member(memberId));
         var cookie = anonCookieProvider.issue();
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), anonymous(cookie.value()));
+        var detail = getPollDetail(publicIdOf(poll), anonymous(cookie.value()));
 
         assertThat(detail.myChoice()).isNull();
     }
@@ -267,7 +273,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         var cookie = anonCookieProvider.issue();
         saveVote(other, 1, Voter.anonymous(cookie.anonId()));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), anonymous(cookie.value()));
+        var detail = getPollDetail(publicIdOf(poll), anonymous(cookie.value()));
 
         assertThat(detail.myChoice()).isNull();
     }
@@ -280,7 +286,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         var cookie = anonCookieProvider.issue();
         saveVote(poll, 1, Voter.anonymous(cookie.anonId()));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), anonymous(tamperSignature(cookie.value())));
+        var detail = getPollDetail(publicIdOf(poll), anonymous(tamperSignature(cookie.value())));
 
         assertThat(detail.myChoice()).isNull();
         assertThat(detail.result()).isNull();
@@ -291,7 +297,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
     void 형식이_깨진_쿠키는_오류_없이_미참여로_본다() {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), anonymous("not-a-cookie"));
+        var detail = getPollDetail(publicIdOf(poll), anonymous("not-a-cookie"));
 
         assertThat(detail.myChoice()).isNull();
         assertThat(detail.result()).isNull();
@@ -301,7 +307,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
     void 빈_문자열_쿠키는_쿠키_없음과_같이_미참여다() {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), anonymous(""));
+        var detail = getPollDetail(publicIdOf(poll), anonymous(""));
 
         assertThat(detail.myChoice()).isNull();
         assertThat(detail.result()).isNull();
@@ -312,7 +318,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
         var before = voteJpaRepository.count();
 
-        voteQueryService.getPollDetail(publicIdOf(poll), anonymous("not-a-cookie"));
+        getPollDetail(publicIdOf(poll), anonymous("not-a-cookie"));
 
         assertThat(voteJpaRepository.count()).isEqualTo(before);
     }
@@ -322,7 +328,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
         var before = voteJpaRepository.count();
 
-        voteQueryService.getPollDetail(
+        getPollDetail(
             publicIdOf(poll),
             anonymous(tamperSignature(anonCookieProvider.issue().value())));
 
@@ -334,7 +340,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
         var before = voteJpaRepository.count();
 
-        voteQueryService.getPollDetail(publicIdOf(poll), noCredential());
+        getPollDetail(publicIdOf(poll), noCredential());
 
         assertThat(voteJpaRepository.count()).isEqualTo(before);
     }
@@ -345,7 +351,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         saveVote(poll, 1, Voter.member(saveMember()));
         savePoll(VoteFixture.expire(poll));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), anonymous("not-a-cookie"));
+        var detail = getPollDetail(publicIdOf(poll), anonymous("not-a-cookie"));
 
         assertThat(detail.myChoice()).isNull();
         assertThat(detail.result().total()).isEqualTo(1);
@@ -360,7 +366,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         saveVote(poll, 1, Voter.member(saveMember()));
 
         var cast = voteCommandService.castVote(choice(publicIdOf(poll), 2), member(memberId));
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), member(memberId));
+        var detail = getPollDetail(publicIdOf(poll), member(memberId));
 
         assertThat(detail.myChoice()).isEqualTo(cast.myChoice());
         assertThat(detail.result()).isEqualTo(cast.result());
@@ -371,9 +377,9 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
     void 비회원이_참여해_받은_쿠키로_조회하면_참여_응답과_같은_myChoice와_result다() {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
 
-        var before = voteQueryService.getPollDetail(publicIdOf(poll), noCredential());
+        var before = getPollDetail(publicIdOf(poll), noCredential());
         var cast = voteCommandService.castVote(choice(publicIdOf(poll), 1), noCredential());
-        var after = voteQueryService.getPollDetail(publicIdOf(poll), anonymous(cast.newCookieValue()));
+        var after = getPollDetail(publicIdOf(poll), anonymous(cast.newCookieValue()));
 
         assertThat(before.myChoice()).isNull();
         assertThat(before.result()).isNull();
@@ -388,7 +394,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         voteCommandService.castVote(choice(publicIdOf(poll), 2), member(memberId));
         savePoll(VoteFixture.expire(poll));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), member(memberId));
+        var detail = getPollDetail(publicIdOf(poll), member(memberId));
 
         assertThat(detail.closed()).isTrue();
         assertThat(detail.myChoice()).isEqualTo(2);
@@ -403,7 +409,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         var votesBefore = voteJpaRepository.count();
         var membersBefore = memberJpaRepository.count();
 
-        voteQueryService.getPollDetail(publicIdOf(poll), noCredential());
+        getPollDetail(publicIdOf(poll), noCredential());
 
         assertThat(voteJpaRepository.count()).isEqualTo(votesBefore);
         assertThat(memberJpaRepository.count()).isEqualTo(membersBefore);
@@ -413,14 +419,14 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
 
     @Test
     void 공개_ID_형식이_틀리면_MALFORMED_REQUEST다() {
-        assertThatThrownBy(() -> voteQueryService.getPollDetail("short", noCredential()))
+        assertThatThrownBy(() -> getPollDetail("short", noCredential()))
             .isInstanceOf(AuddumException.class)
             .hasMessage(DefaultErrorCode.MALFORMED_REQUEST.getMessage());
     }
 
     @Test
     void 없는_투표는_POLL_NOT_FOUND다() {
-        assertThatThrownBy(() -> voteQueryService.getPollDetail("abcdefghijkl", noCredential()))
+        assertThatThrownBy(() -> getPollDetail("abcdefghijkl", noCredential()))
             .isInstanceOf(AuddumException.class)
             .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
     }
@@ -431,7 +437,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
     void 숨김_투표는_비회원에게_POLL_NOT_FOUND다() {
         var poll = savePoll(hidden(VoteFixture.openPoll(saveMember())));
 
-        assertThatThrownBy(() -> voteQueryService.getPollDetail(publicIdOf(poll), noCredential()))
+        assertThatThrownBy(() -> getPollDetail(publicIdOf(poll), noCredential()))
             .isInstanceOf(AuddumException.class)
             .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
     }
@@ -444,7 +450,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         poll.hide();
         pollJpaRepository.saveAndFlush(poll);
 
-        assertThatThrownBy(() -> voteQueryService.getPollDetail(publicIdOf(poll), member(memberId)))
+        assertThatThrownBy(() -> getPollDetail(publicIdOf(poll), member(memberId)))
             .isInstanceOf(AuddumException.class)
             .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
     }
@@ -453,7 +459,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
     void 마감된_숨김_투표도_일반_사용자에게는_POLL_NOT_FOUND다() {
         var poll = savePoll(hidden(VoteFixture.expire(VoteFixture.openPoll(saveMember()))));
 
-        assertThatThrownBy(() -> voteQueryService.getPollDetail(publicIdOf(poll), member(saveMember())))
+        assertThatThrownBy(() -> getPollDetail(publicIdOf(poll), member(saveMember())))
             .isInstanceOf(AuddumException.class)
             .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
     }
@@ -465,7 +471,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         poll.deleteByAuthor(authorId);
         savePoll(poll);
 
-        assertThatThrownBy(() -> voteQueryService.getPollDetail(publicIdOf(poll), member(saveMember())))
+        assertThatThrownBy(() -> getPollDetail(publicIdOf(poll), member(saveMember())))
             .isInstanceOf(AuddumException.class)
             .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
     }
@@ -475,7 +481,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         var authorId = saveMember();
         var poll = savePoll(hidden(VoteFixture.openPoll(authorId)));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), member(authorId));
+        var detail = getPollDetail(publicIdOf(poll), member(authorId));
 
         assertThat(detail.poll().getStatus()).isEqualTo(PollStatus.HIDDEN);
         assertThat(detail.poll().getPublicId().value()).isEqualTo(publicIdOf(poll));
@@ -488,7 +494,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         poll.deleteByAuthor(authorId);
         savePoll(poll);
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), member(authorId));
+        var detail = getPollDetail(publicIdOf(poll), member(authorId));
 
         assertThat(detail.poll().getStatus()).isEqualTo(PollStatus.DELETED);
     }
@@ -498,7 +504,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         var adminId = saveMember(Role.ADMIN);
         var poll = savePoll(hidden(VoteFixture.openPoll(saveMember())));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), member(adminId));
+        var detail = getPollDetail(publicIdOf(poll), member(adminId));
 
         assertThat(detail.poll().getStatus()).isEqualTo(PollStatus.HIDDEN);
     }
@@ -510,7 +516,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         poll.deleteByAdmin();
         savePoll(poll);
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), member(adminId));
+        var detail = getPollDetail(publicIdOf(poll), member(adminId));
 
         assertThat(detail.poll().getStatus()).isEqualTo(PollStatus.DELETED);
     }
@@ -519,7 +525,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
     void 공개_투표의_status는_PUBLIC이다() {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), noCredential());
+        var detail = getPollDetail(publicIdOf(poll), noCredential());
 
         assertThat(detail.poll().getStatus()).isEqualTo(PollStatus.PUBLIC);
     }
@@ -533,7 +539,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         saveVote(poll, 2, Voter.member(memberId));
         suspend(memberId);
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), member(memberId));
+        var detail = getPollDetail(publicIdOf(poll), member(memberId));
 
         assertThat(detail.myChoice()).isEqualTo(2);
         assertThat(detail.result()).isNotNull();
@@ -544,7 +550,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         var suspendedId = saveSuspendedMember();
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), member(suspendedId));
+        var detail = getPollDetail(publicIdOf(poll), member(suspendedId));
 
         assertThat(detail.myChoice()).isNull();
         assertThat(detail.result()).isNull();
@@ -555,7 +561,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         var authorId = saveSuspendedMember();
         var poll = savePoll(hidden(VoteFixture.openPoll(authorId)));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), member(authorId));
+        var detail = getPollDetail(publicIdOf(poll), member(authorId));
 
         assertThat(detail.poll().getStatus()).isEqualTo(PollStatus.HIDDEN);
     }
@@ -571,7 +577,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         saveVote(poll, 2, Voter.member(saveMember()));
         savePoll(hidden(poll));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), member(authorId));
+        var detail = getPollDetail(publicIdOf(poll), member(authorId));
 
         assertThat(detail.poll().getStatus()).isEqualTo(PollStatus.HIDDEN);
         assertThat(detail.myChoice()).isNull();
@@ -587,7 +593,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         saveVote(poll, 1, Voter.member(saveMember()));
         savePoll(hidden(poll));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), member(authorId));
+        var detail = getPollDetail(publicIdOf(poll), member(authorId));
 
         assertThat(detail.myChoice()).isEqualTo(2);
         assertThat(detail.result().total()).isEqualTo(2);
@@ -602,7 +608,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         saveVote(poll, 2, Voter.member(saveMember()), CREATED_AT);
         savePoll(hidden(VoteFixture.expire(poll)));
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), member(adminId));
+        var detail = getPollDetail(publicIdOf(poll), member(adminId));
 
         assertThat(detail.closed()).isTrue();
         assertThat(detail.myChoice()).isNull();
@@ -619,7 +625,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         poll.deleteByAuthor(authorId);
         savePoll(poll);
 
-        var detail = voteQueryService.getPollDetail(publicIdOf(poll), member(authorId));
+        var detail = getPollDetail(publicIdOf(poll), member(authorId));
 
         assertThat(detail.myChoice()).isEqualTo(1);
         assertThat(detail.result().total()).isEqualTo(2);
@@ -634,7 +640,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
         var cookie = anonCookieProvider.issue();
 
-        voteQueryService.getPollDetail(publicIdOf(poll), anonymous(tamperSignature(cookie.value())));
+        getPollDetail(publicIdOf(poll), anonymous(tamperSignature(cookie.value())));
 
         assertNoWarnOrAbove();
     }
@@ -643,7 +649,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
     void 형식이_깨진_쿠키로_조회해도_WARN_이상의_로그가_없다() {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
 
-        voteQueryService.getPollDetail(publicIdOf(poll), anonymous("garbage-cookie"));
+        getPollDetail(publicIdOf(poll), anonymous("garbage-cookie"));
 
         assertNoWarnOrAbove();
     }
@@ -653,7 +659,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
         var forged = "v1." + UUID.randomUUID() + ".forgedsig";
 
-        voteQueryService.getPollDetail(publicIdOf(poll), anonymous(forged));
+        getPollDetail(publicIdOf(poll), anonymous(forged));
 
         assertNoWarnOrAbove();
         assertThat(appender.list).extracting(ILoggingEvent::getFormattedMessage)
@@ -665,7 +671,7 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         var memberId = saveMember();
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
 
-        voteQueryService.getPollDetail(publicIdOf(poll), memberWithCookie(memberId, "garbage-cookie"));
+        getPollDetail(publicIdOf(poll), memberWithCookie(memberId, "garbage-cookie"));
 
         assertNoWarnOrAbove();
     }
@@ -684,6 +690,11 @@ class VoteQueryServiceTest extends VoteIntegrationTestSupport {
         poll.hide();
 
         return poll;
+    }
+
+    /** 참여 쪽 신원 단서(VoterCredential)를 조회 쪽 Viewer로 바꿔 상세를 조회한다. */
+    private PollDetail getPollDetail(String publicId, VoterCredential credential) {
+        return pollQueryService.getPollDetail(publicId, new Viewer(credential.memberId(), credential.anonCookieValue()));
     }
 
 }

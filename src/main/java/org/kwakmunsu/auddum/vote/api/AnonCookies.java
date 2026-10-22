@@ -2,6 +2,7 @@ package org.kwakmunsu.auddum.vote.api;
 
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.Duration;
+import org.kwakmunsu.auddum.support.web.AnonCookieName;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -14,7 +15,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class AnonCookies {
 
-    public static final String ANON_COOKIE = "auddum_anon";
+    /** 컨트롤러가 쓰는 이름은 {@link AnonCookieName}이고, 이 별칭은 vote 쪽 코드와 테스트가 쓴다(쿠키 위치는 #60에서 정한다). */
+    public static final String ANON_COOKIE = AnonCookieName.VALUE;
 
     private static final Duration MAX_AGE = Duration.ofDays(365);
 

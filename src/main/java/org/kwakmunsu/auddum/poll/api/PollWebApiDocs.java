@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.kwakmunsu.auddum.poll.api.dto.PollCreateRequest;
+import org.kwakmunsu.auddum.poll.api.dto.PollDetailResponse;
 import org.kwakmunsu.auddum.poll.api.dto.PollListResponse;
 import org.springframework.http.ResponseEntity;
 
@@ -39,6 +40,21 @@ public abstract class PollWebApiDocs {
     public abstract ResponseEntity<PollListResponse> getPolls(
         @Parameter(description = "이전 응답의 nextCursor. 없으면 첫 페이지") String cursor,
         @Parameter(description = "한 페이지 개수. 기본 20, 1보다 작으면 1, 50을 넘으면 50으로 보정") Integer size
+    );
+
+    @Operation(
+        summary = "투표 상세",
+        description = "선택지·마감·참여 수·노출 상태(status)와 내 선택(myChoice), 결과(result)를 내린다. "
+            + "result는 마감되었거나 내가 참여했을 때만 내려가고 아니면 null이다. 참여 여부는 회원 ID 또는 익명 쿠키로 판단하며 쿠키는 읽기만 한다. "
+            + "숨김·삭제 투표는 작성자와 관리자(DB의 role이 ADMIN)에게만 200이고 그 밖에는 404다."
+    )
+    @ApiResponse(responseCode = "200", description = "상세")
+    @ApiResponse(responseCode = "400", description = "MALFORMED_REQUEST: 공개 ID 형식 오류")
+    @ApiResponse(responseCode = "404", description = "POLL_NOT_FOUND: 없거나 작성자·관리자가 볼 수 없는 숨김·삭제된 투표")
+    public abstract ResponseEntity<PollDetailResponse> getPoll(
+        @Parameter(description = "투표 공개 ID(12자 영숫자)", example = "aB3dE5fG7hJk") String pollId,
+        @Parameter(hidden = true) Long memberId,
+        @Parameter(hidden = true) String anonCookieValue
     );
 
 }
