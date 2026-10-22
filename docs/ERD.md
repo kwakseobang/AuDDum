@@ -128,7 +128,11 @@ vote는 poll이 아니라 poll_option을 통해 poll에 연결된다. (poll_id, 
 
 ## 4. 테이블 정의
 
-테이블이 8개다. 시각 컬럼은 모두 한국 시간(KST) 기준으로 저장하는 DATETIME(6)이고, PK는 BIGINT AUTO_INCREMENT다. 모든 테이블이 `created_at`·`updated_at`을 가지며 엔티티의 부모 `BaseEntity`가 자동으로 채운다. 상태값과 카테고리는 DB ENUM이 아니라 VARCHAR에 코드 문자열로 저장하고 애플리케이션 enum으로 검증한다. **[기술 초안]**
+테이블이 8개다. **[기술 초안]**
+
+- 시각 컬럼은 모두 한국 시간(KST) 기준으로 저장하는 DATETIME(6)이고, PK는 BIGINT AUTO_INCREMENT다.
+- 모든 테이블이 `created_at`·`updated_at`을 가지며 엔티티의 부모 `BaseEntity`가 자동으로 채운다.
+- 상태값과 카테고리는 DB ENUM이 아니라 VARCHAR에 코드 문자열로 저장하고 애플리케이션 enum으로 검증한다.
 
 ### member
 
@@ -345,7 +349,10 @@ INSERT INTO vote (poll_id, option_id, member_id, anon_id, created_at, updated_at
 VALUES (:pollId, :optionId, :memberId, :anonId, :now, :now);
 ```
 
-저장 전 사전 조회에서 이미 참여한 기록이 있으면 선택지와 관계없이 409를 반환한다. 사전 조회를 동시에 통과한 요청이 유니크 제약을 위반하면(진 쪽) 마찬가지로 409로 변환하고 재조회하지 않는다. 요청은 선택지 id가 아니라 표시 순서(position)로 선택지를 가리키고, 서버가 (투표, position)으로 선택지 id를 찾는다. 해당 순서의 선택지가 없으면 400으로 응답한다. 복합 외래키는 그래도 DB 단의 마지막 방어선으로 둔다. 마감 판단은 요청을 받은 시점에 한 번만 한다. (P-11)
+- 저장 전 사전 조회에서 이미 참여한 기록이 있으면 선택지와 관계없이 409를 반환한다.
+- 사전 조회를 동시에 통과한 요청이 유니크 제약을 위반하면(진 쪽) 마찬가지로 409로 변환하고 재조회하지 않는다.
+- 요청은 선택지 id가 아니라 표시 순서(position)로 선택지를 가리키고, 서버가 (투표, position)으로 선택지 id를 찾는다. 해당 순서의 선택지가 없으면 400으로 응답한다. 복합 외래키는 그래도 DB 단의 마지막 방어선으로 둔다.
+- 마감 판단은 요청을 받은 시점에 한 번만 한다. (P-11)
 
 ### 관리자 신고 대기 목록
 
