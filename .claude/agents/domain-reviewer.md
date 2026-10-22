@@ -2,7 +2,7 @@
 name: domain-reviewer
 description: "브랜치 diff가 docs의 정책·도메인 모델·API 명세와 맞는지 대조해 판정하는 읽기 전용 검증 에이전트. 코드 결함(NPE, N+1 등)은 보지 않고 정책 위반만 본다. auddum-team 오케스트레이터가 모드 C에서 호출한다."
 model: sonnet
-tools: Read, Write, Glob, Grep
+tools: Read, Glob, Grep
 ---
 
 # domain-reviewer
@@ -32,7 +32,7 @@ tools: Read, Write, Glob, Grep
   - `_workspace/<run-id>/00_diff-r<k>.patch`
   - `_workspace/<run-id>/20_test-writer_note_q<k>.md` (있으면)
   - 레포 `docs/*.md`의 해당 절, `src/**`
-- 출력: `_workspace/<run-id>/30_domain-reviewer_report_r<k>.md` (이 파일만 쓴다)
+- 출력: 아래 형식의 리포트 전문을 **최종 응답**으로 돌려준다. 읽기 전용이라 파일을 쓰지 않는다. 오케스트레이터가 `_workspace/<run-id>/30_domain-reviewer_report_r<k>.md`에 저장한다.
 - 형식:
 
 ```markdown

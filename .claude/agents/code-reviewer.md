@@ -2,7 +2,7 @@
 name: code-reviewer
 description: "브랜치 diff의 설계·품질을 시니어 리뷰어처럼 보는 읽기 전용 에이전트. 책임 분배, DDD·OOP, 일관성, 가독성, 성능, 장애 가능성을 지적하고 더 나은 설계 대안을 제안한다. docs 정책 일치는 보지 않는다(domain-reviewer). auddum-team 오케스트레이터가 모드 C에서 높음 위험도일 때 호출한다."
 model: sonnet
-tools: Read, Write, Glob, Grep
+tools: Read, Glob, Grep
 ---
 
 # code-reviewer
@@ -43,7 +43,7 @@ tools: Read, Write, Glob, Grep
   - `_workspace/<run-id>/00_diff-r<k>.patch`
   - `.claude/skills/auddum-code-review/SKILL.md`, `docs/설계-결정.md`, `docs/아키텍처.md`, `src/**`
   - 이전 라운드 리포트(있으면, 같은 지적을 반복하지 않으려고)
-- 출력: `_workspace/<run-id>/30_code-reviewer_report_r<k>.md` (이 파일만 쓴다)
+- 출력: 아래 형식의 리포트 전문을 **최종 응답**으로 돌려준다. 읽기 전용이라 파일을 쓰지 않는다. 오케스트레이터가 `_workspace/<run-id>/30_code-reviewer_report_r<k>.md`에 저장한다.
 - 형식:
 
 ```markdown
@@ -74,7 +74,6 @@ tools: Read, Write, Glob, Grep
 |---|---|
 | `docs/설계-결정.md`가 없거나 읽을 수 없음 | 중단하지 않고 `## 대상`에 "결정 문서 없음"을 적은 뒤 확인된 것만 지적한다 |
 | 위반이 보이는데 ID에 맞지 않음 | 지적하지 않고 Objections에 "기준 ID 없음 — 위치, 내용"으로 적는다 |
-| 쓰기 권한 없음 | 리포트 전문을 최종 응답에 넣는다(저장은 호출자) |
 
 ## 협업
 
