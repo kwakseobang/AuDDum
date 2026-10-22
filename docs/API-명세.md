@@ -150,7 +150,7 @@
 
 - 작성한 투표는 익명화해 유지하고 투표 기록은 보존한다. 카카오 연동 정보와 리프레시 토큰을 삭제하고 쿠키를 지운다. 정지 중에도 탈퇴할 수 있다.
 - 되돌릴 수 없다. 같은 소셜 계정으로 다시 가입하면 새 회원이다.
-- 삭제할 개인정보의 정확한 범위는 개인정보 처리방침 작성 때 정한다.
+- 삭제할 개인정보의 정확한 범위는 미정(개인정보 처리방침 작성 때 정한다).
 
 ## 3. 투표 API
 
@@ -309,8 +309,8 @@
 | 6 | 저장 | 유니크 제약 위반(같은 신원의 동시 요청에서 진 쪽)이면 선택과 관계없이 409 `ALREADY_VOTED`, 그 밖의 DB 오류는 500과 전체 롤백 |
 
 - 이미 참여한 사람은 마감 후에도 3단계가 먼저 적용되어 `POLL_CLOSED`가 아니라 `ALREADY_VOTED`(409)를 받는다. 마감 여부의 판정은 P-11을 따른다(요청을 받은 시점의 서버 시각으로 한 번만 판단한다).
-- 같은 신원의 동시 요청은 한 건만 201이다. 진 쪽도 409다(재조회하지 않는다). 6단계의 유니크 제약이 최종 방어선이다.
-  - 이미 끝난 요청의 재전송(응답 유실 후 재시도 등)은 3단계에서 409로 응답하므로, 겹치는 구간은 두 요청이 같은 순간에 3단계를 통과한 경우뿐이다.
+- 같은 신원의 동시 요청은 한 건만 201이고 진 쪽도 409다. 6단계의 유니크 제약이 최종 방어선이다. 동시성 설계는 `인증-중복-참여.md` §3이 기준이다.
+  - 이미 끝난 요청의 재전송(응답 유실 후 재시도 등)은 3단계에서 409로 응답한다.
   - 클라이언트는 `ALREADY_VOTED`를 받으면 투표 상세(`GET /polls/{pollId}`)의 `myChoice`로 화면을 맞춘다.
 - 비회원 참여 기록과 회원 ID는 연결하지 않는다. 비회원으로 참여한 뒤 로그인해 다시 참여하는 것은 막을 수 없는 한계다.
 
@@ -353,7 +353,7 @@
 **POST /polls/{pollId}/reports**
 
 - 요청: `{ reason, detail }`
-- `reason`은 `ABUSE_HATE`, `SEXUAL_HARASSMENT`, `PERSONAL_INFO`, `SPAM`, `ETC` 중 하나다. `ETC`일 때만 `detail`을 받고 필수다. 글자 수 상한은 구현 때 확정한다(임시 200자). 다른 사유에 담긴 `detail`은 무시한다.
+- `reason`은 `ABUSE_HATE`, `SEXUAL_HARASSMENT`, `PERSONAL_INFO`, `SPAM`, `ETC` 중 하나다. `ETC`일 때만 `detail`을 받고 필수다. 글자 수 상한은 미정(구현 때 확정, 임시 200자). 다른 사유에 담긴 `detail`은 무시한다.
 - 신고자는 회원 ID 또는 익명 식별 쿠키로 식별한다. 비회원이 쿠키가 없으면 이 요청에서 발급한다.
 - 성공 시 `201`이고 본문은 없다. 신고자에게 처리 결과를 알리는 API는 없다.
 - 신고는 투표당 신고자당 1회다. 중복 신고는 409 `REPORT_ALREADY_SUBMITTED`이고 한 건만 인정한다.
@@ -382,7 +382,7 @@
 **GET /admin/reports**
 
 - 요청 파라미터 `status`(`PENDING`, `RESOLVED`, `DISMISSED`, 기본 `PENDING`), `cursor`, `size`.
-- 항목: `{ id, poll: { id, question, status }, reason, status, createdAt, pollReportCount }`. `pollReportCount`는 같은 투표에 쌓인 신고 수다. 정렬 기준은 구현 때 정한다(기본은 접수 순).
+- 항목: `{ id, poll: { id, question, status }, reason, status, createdAt, pollReportCount }`. `pollReportCount`는 같은 투표에 쌓인 신고 수다. 정렬 기준은 미정(구현 때 정한다, 기본은 접수 순).
 
 `GET /admin/reports` 응답 예시
 
