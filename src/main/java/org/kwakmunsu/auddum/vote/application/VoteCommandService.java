@@ -2,7 +2,7 @@ package org.kwakmunsu.auddum.vote.application;
 
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
-import org.kwakmunsu.auddum.poll.application.PollQueryService;
+import org.kwakmunsu.auddum.poll.application.PollReader;
 import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.support.config.TimeConfig;
 import org.kwakmunsu.auddum.support.stereotype.CommandService;
@@ -15,7 +15,7 @@ import org.kwakmunsu.auddum.vote.application.dto.VoterCredential;
 @CommandService
 public class VoteCommandService {
 
-    private final PollQueryService pollQueryService;
+    private final PollReader pollReader;
     private final VoterResolver voterResolver;
     private final VoteParticipator voteParticipator;
 
@@ -27,12 +27,16 @@ public class VoteCommandService {
      * @param credential 참여하려는 사람의 신원 단서(회원 ID, 익명 쿠키)
      */
     public CastResult castVote(PollChoice choice, VoterCredential credential) {
-        LocalDateTime now = LocalDateTime.now(TimeConfig.KST);
+        Poll poll = pollReader.getReadable(choice.pollPublicId(), null);
 
-        Poll poll = pollQueryService.getPoll(choice.pollPublicId(), null);
         ResolvedVoter voter = voterResolver.resolve(credential);
 
-        return voteParticipator.participate(poll, voter, choice.position(), now);
+        return voteParticipator.participate(
+            poll,
+            voter,
+            choice.position(),
+            LocalDateTime.now(TimeConfig.KST)
+        );
     }
 
 }

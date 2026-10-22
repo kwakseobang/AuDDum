@@ -70,7 +70,7 @@ class ArchitectureTest {
                 .check(classes);
     }
 
-    /** admin도 예외가 아니다. 다른 도메인은 서비스의 공개 진입점으로만 부른다. */
+    /** admin도 예외가 아니다. 다른 도메인은 서비스 진입점이나 구현 계층 클래스(`MemberReader`, `PollReader`)로만 부른다. */
     @ArchTest
     static void 다른_도메인의_repository를_직접_쓰지_않는다(JavaClasses classes) {
         for (String domain : DOMAINS) {
