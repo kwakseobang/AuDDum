@@ -4,6 +4,8 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
+import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
@@ -34,6 +36,12 @@ class ArchitectureTest {
             "report", Set.of("poll", "member"),
             "admin", Set.of("report", "poll", "member")
     );
+
+    /** 서비스: {@code @CommandService}·{@code @QueryService}처럼 {@code @ApplicationService}가 붙은 클래스. 역할 어노테이션 타입 자신은 서비스가 아니다. */
+    private static final DescribedPredicate<JavaClass> SERVICE = DescribedPredicate.describe(
+            "서비스(@ApplicationService가 붙은 클래스)",
+            javaClass -> !javaClass.isAnnotation()
+                    && (javaClass.isAnnotatedWith(ApplicationService.class) || javaClass.isMetaAnnotatedWith(ApplicationService.class)));
 
     @ArchTest
     static void 패키지_사이에_순환_의존이_없다(JavaClasses classes) {
@@ -107,6 +115,26 @@ class ArchitectureTest {
                 .and().areNotAnnotations()
                 .should().resideInAPackage(ROOT + ".*.application..")
                 .because("역할 어노테이션과 패키지가 어긋나면 안 된다")
+                .allowEmptyShould(true)
+                .check(classes);
+    }
+
+    /** 서비스는 흐름만 잇고 저장소 접근은 구현 계층 클래스에 시킨다(아키텍처 §2). 구현 계층의 이름은 정해져 있지 않아 이름이 아니라 서비스 쪽을 검사한다. */
+    @ArchTest
+    static void 서비스는_JpaRepository를_직접_쓰지_않는다(JavaClasses classes) {
+        noClasses().that(SERVICE)
+                .should().dependOnClassesThat().haveSimpleNameEndingWith("JpaRepository")
+                .because("서비스는 repository를 직접 쓰지 않고 구현 계층 클래스(Reader, Writer 등)에 시킨다")
+                .allowEmptyShould(true)
+                .check(classes);
+    }
+
+    /** 다른 도메인의 서비스도 부르지 않고 상대의 구현 계층 클래스(MemberReader, PollReader)를 부른다. */
+    @ArchTest
+    static void 서비스는_다른_서비스에_의존하지_않는다(JavaClasses classes) {
+        noClasses().that(SERVICE)
+                .should().dependOnClassesThat(SERVICE)
+                .because("서비스끼리 호출하면 레이어가 섞인다. 필요한 로직은 구현 계층 클래스로 둔다")
                 .allowEmptyShould(true)
                 .check(classes);
     }
