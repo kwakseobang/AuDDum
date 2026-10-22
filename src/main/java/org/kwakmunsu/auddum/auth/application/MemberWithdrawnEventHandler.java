@@ -1,7 +1,6 @@
 package org.kwakmunsu.auddum.auth.application;
 
 import lombok.RequiredArgsConstructor;
-import org.kwakmunsu.auddum.auth.infrastructure.RefreshTokenJpaRepository;
 import org.kwakmunsu.auddum.member.domain.MemberWithdrawnEvent;
 import org.kwakmunsu.auddum.support.stereotype.CommandService;
 import org.springframework.context.event.EventListener;
@@ -11,11 +10,11 @@ import org.springframework.context.event.EventListener;
 @CommandService
 public class MemberWithdrawnEventHandler {
 
-    private final RefreshTokenJpaRepository refreshTokenRepository;
+    private final RefreshTokenWriter refreshTokenWriter;
 
     @EventListener
     public void deleteRefreshTokens(MemberWithdrawnEvent event) {
-        refreshTokenRepository.deleteAllByMemberId(event.memberId());
+        refreshTokenWriter.deleteAllByMemberId(event.memberId());
     }
 
 }

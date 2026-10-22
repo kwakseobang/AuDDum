@@ -25,6 +25,7 @@ import org.kwakmunsu.auddum.member.application.MemberReader;
 import org.kwakmunsu.auddum.member.domain.MemberErrorCode;
 import org.kwakmunsu.auddum.member.domain.MemberFixture;
 import org.kwakmunsu.auddum.member.domain.MemberStatus;
+import org.kwakmunsu.auddum.member.infrastructure.MemberAuthJpaRepository;
 import org.kwakmunsu.auddum.member.infrastructure.MemberJpaRepository;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
@@ -47,7 +48,7 @@ class VoterResolverTest {
 
     private final AnonCookieProvider anonCookieProvider = new AnonCookieProvider(new AnonCookieProperties(SECRET));
     private final MemberJpaRepository memberRepository = mock(MemberJpaRepository.class);
-    private final MemberReader memberReader = new MemberReader(memberRepository);
+    private final MemberReader memberReader = new MemberReader(memberRepository, mock(MemberAuthJpaRepository.class));
     private final VoterResolver resolver = new VoterResolver(anonCookieProvider, memberReader);
 
     private final Logger voteLogger = (Logger) LoggerFactory.getLogger("org.kwakmunsu.auddum.vote");

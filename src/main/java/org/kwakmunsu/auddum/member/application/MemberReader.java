@@ -1,7 +1,11 @@
 package org.kwakmunsu.auddum.member.application;
 
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.kwakmunsu.auddum.member.domain.AuthProvider;
 import org.kwakmunsu.auddum.member.domain.Member;
+import org.kwakmunsu.auddum.member.domain.MemberAuth;
+import org.kwakmunsu.auddum.member.infrastructure.MemberAuthJpaRepository;
 import org.kwakmunsu.auddum.member.infrastructure.MemberJpaRepository;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
@@ -17,6 +21,7 @@ import org.springframework.stereotype.Component;
 public class MemberReader {
 
     private final MemberJpaRepository memberRepository;
+    private final MemberAuthJpaRepository memberAuthRepository;
 
     /** 요청한 회원을 가져온다. 없는 회원이면 401이다. */
     public Member getMember(Long memberId) {
@@ -49,6 +54,12 @@ public class MemberReader {
         return memberRepository.findById(memberId)
             .map(Member::hasAdminAuthority)
             .orElse(false);
+    }
+
+    /** 소셜 계정에 연동된 회원. 연동된 회원이 없으면(처음이거나 탈퇴한 계정) 비어 있다. */
+    Optional<Member> findByAuth(AuthProvider provider, String providerUserId) {
+        return memberAuthRepository.findByProviderAndProviderUserId(provider, providerUserId)
+            .map(MemberAuth::getMember);
     }
 
 }

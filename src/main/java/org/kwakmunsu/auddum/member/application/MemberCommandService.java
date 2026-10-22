@@ -4,10 +4,7 @@ import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.kwakmunsu.auddum.member.domain.AuthProvider;
 import org.kwakmunsu.auddum.member.domain.Member;
-import org.kwakmunsu.auddum.member.domain.MemberAuth;
 import org.kwakmunsu.auddum.member.domain.MemberWithdrawnEvent;
-import org.kwakmunsu.auddum.member.infrastructure.MemberAuthJpaRepository;
-import org.kwakmunsu.auddum.member.infrastructure.MemberJpaRepository;
 import org.kwakmunsu.auddum.support.config.TimeConfig;
 import org.kwakmunsu.auddum.support.stereotype.CommandService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -16,9 +13,8 @@ import org.springframework.context.ApplicationEventPublisher;
 @CommandService
 public class MemberCommandService {
 
-    private final MemberJpaRepository memberRepository;
-    private final MemberAuthJpaRepository memberAuthRepository;
     private final MemberReader memberReader;
+    private final MemberWriter memberWriter;
     private final ApplicationEventPublisher eventPublisher;
 
     /**
@@ -27,9 +23,8 @@ public class MemberCommandService {
      * 정지 회원도 로그인할 수 있다. 마지막 로그인 시각을 기록한다.
      */
     public Member login(AuthProvider provider, String providerUserId) {
-        Member member = memberAuthRepository.findByProviderAndProviderUserId(provider, providerUserId)
-            .map(MemberAuth::getMember)
-            .orElseGet(() -> signUp(provider, providerUserId));
+        Member member = memberReader.findByAuth(provider, providerUserId)
+            .orElseGet(() -> memberWriter.signUp(provider, providerUserId));
 
         member.recordLogin(LocalDateTime.now(TimeConfig.KST));
 
@@ -45,16 +40,9 @@ public class MemberCommandService {
 
         member.withdraw(LocalDateTime.now(TimeConfig.KST));
 
-        memberAuthRepository.deleteByMemberId(memberId);
+        memberWriter.removeAuth(memberId);
 
         eventPublisher.publishEvent(new MemberWithdrawnEvent(memberId));
-    }
-
-    private Member signUp(AuthProvider provider, String providerUserId) {
-        Member member = memberRepository.save(Member.signUp());
-        memberAuthRepository.save(MemberAuth.of(member, provider, providerUserId));
-
-        return member;
     }
 
 }
