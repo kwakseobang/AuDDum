@@ -180,7 +180,7 @@
 - 응답: `{ items: [{ id, question, category, participantCount, closed, closesAt, createdAt }], nextCursor }`
 - `cursor`나 `size` 형식 오류는 400 `MALFORMED_REQUEST`이다. `size`가 상한을 넘으면 상한(50)으로, 1보다 작으면 1로 보정한다. `cursor`가 없거나 비어 있으면 첫 페이지다.
 - 투표가 없으면 빈 `items`로 200이다.
-- 목록의 `participantCount`는 아직 항상 0이다. 목록에 참여 수를 담는 일은 후속 이슈에서 한다(상세는 실제 참여 수를 내려준다).
+- 목록의 `participantCount`는 상세와 같은 전체 참여 수다. 그 페이지의 투표들을 한 번에 집계하고, 결과 공개 여부와 무관하게 내려준다.
 
 `GET /polls` 응답 예시
 

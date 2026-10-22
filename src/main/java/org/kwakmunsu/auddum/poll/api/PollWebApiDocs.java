@@ -31,7 +31,7 @@ public abstract class PollWebApiDocs {
 
     @Operation(
         summary = "투표 목록",
-        description = "공개(PUBLIC) 투표를 최신순으로 내린다. 마감된 투표도 closed=true로 포함한다. "
+        description = "공개(PUBLIC) 투표를 최신순으로 내린다. 마감된 투표도 closed=true로 포함하고, 각 투표의 전체 참여 수(participantCount)를 담는다. "
             + "cursor는 이전 응답의 nextCursor를 그대로 넘기는 불투명한 값이다."
     )
     @ApiResponse(responseCode = "200", description = "목록. 투표가 없으면 빈 items")

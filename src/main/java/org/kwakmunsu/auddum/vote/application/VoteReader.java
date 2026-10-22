@@ -1,11 +1,14 @@
 package org.kwakmunsu.auddum.vote.application;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.kwakmunsu.auddum.poll.application.ParticipantCounter;
 import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.vote.application.dto.OptionTally;
 import org.kwakmunsu.auddum.vote.application.dto.PollDetail;
@@ -14,6 +17,7 @@ import org.kwakmunsu.auddum.vote.domain.Vote;
 import org.kwakmunsu.auddum.vote.domain.Voter;
 import org.kwakmunsu.auddum.vote.infrastructure.VoteJpaRepository;
 import org.kwakmunsu.auddum.vote.infrastructure.VoteJpaRepository.OptionCount;
+import org.kwakmunsu.auddum.vote.infrastructure.VoteJpaRepository.PollCount;
 import org.springframework.stereotype.Component;
 
 /**
@@ -22,7 +26,7 @@ import org.springframework.stereotype.Component;
  */
 @RequiredArgsConstructor
 @Component
-public class VoteReader {
+public class VoteReader implements ParticipantCounter {
 
     private final VoteJpaRepository voteRepository;
 
@@ -48,6 +52,19 @@ public class VoteReader {
         PollTally openedResult = poll.isResultOpen(myChoice.isPresent(), now) ? tally : null;
 
         return new PollDetail(poll, poll.isClosed(now), tally.total(), myChoice.orElse(null), openedResult);
+    }
+
+    /** 투표별 참여 수를 한 번에 센다(투표 목록용, poll의 {@link ParticipantCounter}). 참여가 없는 투표는 0이다. */
+    @Override
+    public Map<Long, Long> countByPollIds(Collection<Long> pollIds) {
+        if (pollIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, Long> counts = voteRepository.countByPollIds(pollIds).stream()
+            .collect(Collectors.toMap(PollCount::getPollId, PollCount::getVotes));
+
+        return pollIds.stream().collect(Collectors.toMap(Function.identity(), id -> counts.getOrDefault(id, 0L), (a, b) -> a));
     }
 
     /** 선택지별 득표 수. 득표가 없는 선택지도 0으로 포함하고 순번 오름차순이다. */

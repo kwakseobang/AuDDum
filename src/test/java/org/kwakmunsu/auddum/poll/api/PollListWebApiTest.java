@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.kwakmunsu.auddum.WebApiTestSupport;
+import org.kwakmunsu.auddum.poll.application.dto.PollSummary;
 import org.kwakmunsu.auddum.poll.domain.Category;
 import org.kwakmunsu.auddum.poll.domain.ClosesAt;
 import org.kwakmunsu.auddum.poll.domain.Poll;
@@ -20,11 +21,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 
 /**
- * GET /api/v1/polls 목록 웹 계층(서비스는 목). API 명세 §1.
- * 정상 응답의 모양만 본다. 조회 규칙은 PollQueryServiceTest가 맡는다.
- * GET /api/v1/polls/{pollId} 상세는 컨트롤러가 VoteWebApi로 옮겨졌으므로 vote.api의 PollDetailWebApiTest가 맡는다.
+ * GET /api/v1/polls 목록 웹 계층(서비스는 목). API 명세 §3.
+ * 정상 응답의 모양만 본다. 조회 규칙은 PollQueryServiceTest가, 참여 수 집계는 PollListParticipantCountChainTest가 맡는다.
+ * GET /api/v1/polls/{pollId} 상세는 PollDetailWebApiTest가 맡는다.
  */
-class PollReadWebApiTest extends WebApiTestSupport {
+class PollListWebApiTest extends WebApiTestSupport {
 
     private static final LocalDateTime CREATED_AT = LocalDateTime.of(2026, 10, 12, 13, 0);
     /** {"id":1}을 URL-safe base64로 감싼 값. 테스트 투표의 내부 id가 1이다. */
@@ -36,7 +37,7 @@ class PollReadWebApiTest extends WebApiTestSupport {
     @Test
     void 인증_없이_목록을_조회하면_200과_items_nextCursor를_내린다() {
         var poll = createPoll(CLOSES_AT);
-        given(pollQueryService.getPolls(null, 20)).willReturn(slice(List.of(poll), true));
+        given(pollQueryService.getPollSummaries(null, 20)).willReturn(slice(List.of(summary(poll, 42)), true));
 
         mvcTester.get()
             .uri("/api/v1/polls")
@@ -47,7 +48,7 @@ class PollReadWebApiTest extends WebApiTestSupport {
             .hasPathSatisfying("$.items[0].id", v -> v.assertThat().isEqualTo(poll.getPublicId().value()))
             .hasPathSatisfying("$.items[0].question", v -> v.assertThat().isEqualTo("읽씹 3시간 뒤 답장, 이거 관심 없는 걸까요?"))
             .hasPathSatisfying("$.items[0].category", v -> v.assertThat().isEqualTo("SOME"))
-            .hasPathSatisfying("$.items[0].participantCount", v -> v.assertThat().isEqualTo(0))
+            .hasPathSatisfying("$.items[0].participantCount", v -> v.assertThat().isEqualTo(42))
             .hasPathSatisfying("$.items[0].closed", v -> v.assertThat().isEqualTo(false))
             .hasPathSatisfying("$.items[0].closesAt", v -> v.assertThat().isEqualTo("2099-10-19T23:59:00+09:00"))
             .hasPathSatisfying("$.items[0].createdAt", v -> v.assertThat().isEqualTo("2026-10-12T13:00:00+09:00"))
@@ -56,7 +57,7 @@ class PollReadWebApiTest extends WebApiTestSupport {
 
     @Test
     void 목록_항목은_내부_id를_노출하지_않는다() {
-        given(pollQueryService.getPolls(null, 20)).willReturn(slice(List.of(createPoll(CLOSES_AT)), false));
+        given(pollQueryService.getPollSummaries(null, 20)).willReturn(slice(List.of(summary(createPoll(CLOSES_AT), 0)), false));
 
         var body = readBody("/api/v1/polls");
 
@@ -68,7 +69,7 @@ class PollReadWebApiTest extends WebApiTestSupport {
 
     @Test
     void 마감_시각이_없는_투표는_closesAt이_null이고_closed가_false다() {
-        given(pollQueryService.getPolls(null, 20)).willReturn(slice(List.of(createPoll(null)), false));
+        given(pollQueryService.getPollSummaries(null, 20)).willReturn(slice(List.of(summary(createPoll(null), 0)), false));
 
         var body = readBody("/api/v1/polls");
 
@@ -81,7 +82,7 @@ class PollReadWebApiTest extends WebApiTestSupport {
 
     @Test
     void 마감된_투표는_목록에서_closed가_true다() {
-        given(pollQueryService.getPolls(null, 20)).willReturn(slice(List.of(createClosedPoll()), false));
+        given(pollQueryService.getPollSummaries(null, 20)).willReturn(slice(List.of(summary(createClosedPoll(), 0)), false));
 
         mvcTester.get()
             .uri("/api/v1/polls")
@@ -93,7 +94,7 @@ class PollReadWebApiTest extends WebApiTestSupport {
 
     @Test
     void 투표가_없으면_빈_items와_null_nextCursor로_200이다() {
-        given(pollQueryService.getPolls(null, 20)).willReturn(slice(List.of(), false));
+        given(pollQueryService.getPollSummaries(null, 20)).willReturn(slice(List.of(), false));
 
         var body = readBody("/api/v1/polls");
 
@@ -104,19 +105,23 @@ class PollReadWebApiTest extends WebApiTestSupport {
 
     @Test
     void cursor를_해석하고_size를_서비스에_넘긴다() {
-        given(pollQueryService.getPolls(5L, 10)).willReturn(slice(List.of(), false));
+        given(pollQueryService.getPollSummaries(5L, 10)).willReturn(slice(List.of(), false));
 
         mvcTester.get()
             .uri("/api/v1/polls?cursor=eyJpZCI6NX0&size=10")
             .assertThat()
             .hasStatus(HttpStatus.OK);
 
-        verify(pollQueryService).getPolls(5L, 10);
+        verify(pollQueryService).getPollSummaries(5L, 10);
     }
 
     // ---- 보조 ----
 
-    private Slice<Poll> slice(List<Poll> polls, boolean hasNext) {
+    private PollSummary summary(Poll poll, long participantCount) {
+        return new PollSummary(poll, participantCount);
+    }
+
+    private Slice<PollSummary> slice(List<PollSummary> polls, boolean hasNext) {
         return new SliceImpl<>(polls, PageRequest.ofSize(20), hasNext);
     }
 

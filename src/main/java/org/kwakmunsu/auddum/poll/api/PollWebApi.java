@@ -9,6 +9,7 @@ import org.kwakmunsu.auddum.poll.api.dto.PollListRequest;
 import org.kwakmunsu.auddum.poll.api.dto.PollListResponse;
 import org.kwakmunsu.auddum.poll.application.PollCommandService;
 import org.kwakmunsu.auddum.poll.application.PollQueryService;
+import org.kwakmunsu.auddum.poll.application.dto.PollSummary;
 import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.support.config.TimeConfig;
 import org.kwakmunsu.auddum.support.stereotype.WebApi;
@@ -48,7 +49,7 @@ public class PollWebApi extends PollWebApiDocs {
         @RequestParam(required = false) Integer size
     ) {
         PollListRequest request = new PollListRequest(cursor, size);
-        Slice<Poll> slice = pollQueryService.getPolls(request.cursorId(), request.pageSize());
+        Slice<PollSummary> slice = pollQueryService.getPollSummaries(request.cursorId(), request.pageSize());
 
         return ResponseEntity.ok(PollListResponse.of(slice, LocalDateTime.now(TimeConfig.KST)));
     }

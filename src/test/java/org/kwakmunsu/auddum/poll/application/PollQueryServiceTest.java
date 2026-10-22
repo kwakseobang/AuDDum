@@ -2,6 +2,7 @@ package org.kwakmunsu.auddum.poll.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
@@ -16,6 +17,7 @@ import org.kwakmunsu.auddum.member.domain.MemberFixture;
 import org.kwakmunsu.auddum.member.domain.MemberStatus;
 import org.kwakmunsu.auddum.member.domain.Role;
 import org.kwakmunsu.auddum.member.infrastructure.MemberJpaRepository;
+import org.kwakmunsu.auddum.poll.application.dto.PollSummary;
 import org.kwakmunsu.auddum.poll.domain.Category;
 import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.poll.domain.PollErrorCode;
@@ -54,6 +56,38 @@ class PollQueryServiceTest extends IntegrationTestSupport {
         var slice = pollQueryService.getPolls(null, 20);
 
         assertThat(slice.getContent()).extracting(Poll::getId).containsExactly(publicPoll.getId());
+    }
+
+    @Test
+    void 투표가_없으면_참여_수_목록도_비어_있다() {
+        var slice = pollQueryService.getPollSummaries(null, 20);
+
+        assertThat(slice.getContent()).isEmpty();
+        assertThat(slice.hasNext()).isFalse();
+    }
+
+    @Test
+    void 참여가_없는_투표의_참여_수는_0이다() {
+        var first = savePoll("첫째");
+        var second = savePoll("둘째");
+
+        var slice = pollQueryService.getPollSummaries(null, 20);
+
+        assertThat(slice.getContent()).extracting(summary -> summary.poll().getId(), PollSummary::participantCount)
+            .containsExactly(tuple(second.getId(), 0L), tuple(first.getId(), 0L));
+    }
+
+    @Test
+    void 참여_수를_붙여도_다음_페이지_여부가_유지된다() {
+        savePoll("첫째");
+        var second = savePoll("둘째");
+        var third = savePoll("셋째");
+
+        var slice = pollQueryService.getPollSummaries(null, 2);
+
+        assertThat(slice.getContent()).extracting(summary -> summary.poll().getId())
+            .containsExactly(third.getId(), second.getId());
+        assertThat(slice.hasNext()).isTrue();
     }
 
     @Test
