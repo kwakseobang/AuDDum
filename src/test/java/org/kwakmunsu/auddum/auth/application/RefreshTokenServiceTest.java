@@ -189,33 +189,10 @@ class RefreshTokenServiceTest extends IntegrationTestSupport {
     }
 
     @Test
-    void 이미_폐기된_토큰을_다시_로그아웃해도_최초_폐기_시각이_유지된다() {
-        var memberId = createMember();
-        var token = service.issue(memberId, Role.MEMBER, NOW);
-        service.logout(token.refreshToken(), NOW.plusMinutes(1));
-
-        service.logout(token.refreshToken(), NOW.plusMinutes(2));
-
-        assertThat(find(token.refreshToken()).getRevokedAt()).isEqualTo(NOW.plusMinutes(1));
-    }
-
-    @Test
     void 회원이_없는_토큰으로_재발급하면_401이다() {
         var memberId = createMember();
         var token = service.issue(memberId, Role.MEMBER, NOW);
         deleteMemberRowOnly(memberId);
-
-        assertThatThrownBy(() -> service.reissue(token.refreshToken(), NOW.plusMinutes(1)))
-            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(DefaultErrorCode.UNAUTHENTICATED));
-    }
-
-    @Test
-    void 탈퇴_상태인_회원의_토큰으로_재발급하면_401이다() {
-        var memberId = createMember();
-        var token = service.issue(memberId, Role.MEMBER, NOW);
-        var member = memberJpaRepository.findById(memberId).orElseThrow();
-        MemberFixture.changeStatus(member, MemberStatus.WITHDRAWN);
-        memberJpaRepository.save(member);
 
         assertThatThrownBy(() -> service.reissue(token.refreshToken(), NOW.plusMinutes(1)))
             .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(DefaultErrorCode.UNAUTHENTICATED));

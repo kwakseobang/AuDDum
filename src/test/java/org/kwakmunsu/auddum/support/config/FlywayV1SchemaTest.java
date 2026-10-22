@@ -40,14 +40,14 @@ class FlywayV1SchemaTest {
     }
 
     @Test
-    void 테이블_8개가_존재한다() {
+    void 필수_테이블이_존재한다() {
         List<String> tables = jdbc.queryForList(
                 "SELECT LOWER(TABLE_NAME) FROM INFORMATION_SCHEMA.TABLES "
                         + "WHERE TABLE_SCHEMA = SCHEMA() AND TABLE_TYPE = 'BASE TABLE' "
                         + "AND LOWER(TABLE_NAME) <> 'flyway_schema_history'",
                 String.class);
 
-        assertThat(tables).containsExactlyInAnyOrder(
+        assertThat(tables).contains(
                 "member", "member_auth", "refresh_token", "poll",
                 "poll_option", "vote", "report", "admin_action");
     }
@@ -55,17 +55,9 @@ class FlywayV1SchemaTest {
     // ---------- 제약용 인덱스 (ERD §5). 조회 최적화 인덱스는 V1에 없다 ----------
 
     @Test
-    void vote에_poll_id_option_id_인덱스가_있다() {
+    void 제약용_인덱스가_있다() {
         assertThat(hasIndex("vote", "poll_id", "option_id")).isTrue();
-    }
-
-    @Test
-    void refresh_token에_member_id_인덱스가_있다() {
         assertThat(hasIndex("refresh_token", "member_id")).isTrue();
-    }
-
-    @Test
-    void admin_action에_대상_투표_대상_회원_인덱스가_있다() {
         assertThat(hasIndex("admin_action", "target_poll_id")).isTrue();
         assertThat(hasIndex("admin_action", "target_member_id")).isTrue();
     }

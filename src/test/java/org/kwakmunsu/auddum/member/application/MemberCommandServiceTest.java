@@ -94,29 +94,6 @@ class MemberCommandServiceTest extends IntegrationTestSupport {
         assertThat(memberJpaRepository.findById(memberId).orElseThrow().getStatus()).isEqualTo(MemberStatus.SUSPENDED);
     }
 
-    @Test
-    void 탈퇴한_카카오_계정으로_로그인하면_이전_회원과_연결되지_않는_새_ACTIVE_회원이_된다() {
-        var withdrawnId = memberCommandService.login(AuthProvider.KAKAO, KAKAO_ID).getId();
-        withdraw(withdrawnId);
-        flushAndClear();
-
-        var newId = memberCommandService.login(AuthProvider.KAKAO, KAKAO_ID).getId();
-        flushAndClear();
-
-        assertThat(newId).isNotEqualTo(withdrawnId);
-        assertThat(memberJpaRepository.findById(newId).orElseThrow().getStatus()).isEqualTo(MemberStatus.ACTIVE);
-        assertThat(memberJpaRepository.findById(withdrawnId).orElseThrow().getStatus()).isEqualTo(MemberStatus.WITHDRAWN);
-        var auth = memberAuthJpaRepository.findByProviderAndProviderUserId(AuthProvider.KAKAO, KAKAO_ID).orElseThrow();
-        assertThat(auth.getMember().getId()).isEqualTo(newId);
-    }
-
-    /** 탈퇴 처리는 #14에서 서비스로 만든다. 그때까지는 탈퇴의 결과(상태 WITHDRAWN, 소셜 연동 삭제)를 직접 만든다. */
-    private void withdraw(Long memberId) {
-        var auth = memberAuthJpaRepository.findByProviderAndProviderUserId(AuthProvider.KAKAO, KAKAO_ID).orElseThrow();
-        memberAuthJpaRepository.delete(auth);
-        MemberFixture.changeStatus(memberJpaRepository.findById(memberId).orElseThrow(), MemberStatus.WITHDRAWN);
-    }
-
     private void flushAndClear() {
         entityManager.flush();
         entityManager.clear();

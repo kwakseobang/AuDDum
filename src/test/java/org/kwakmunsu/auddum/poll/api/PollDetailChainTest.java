@@ -159,35 +159,6 @@ class PollDetailChainTest extends VoteIntegrationTestSupport {
     }
 
     @Test
-    void 일반_사용자에게_참여자가_있는_숨김_투표는_404이고_결과를_담지_않는다() {
-        var memberId = saveMember();
-        var poll = savePoll(saveMember());
-        voteCommandService.castVote(choice(poll, 1), member(memberId));
-        poll.hide();
-        pollJpaRepository.saveAndFlush(poll);
-
-        var result = mvcTester.get().uri(uri(poll)).cookie(accessCookie(memberId)).exchange();
-
-        assertThat(result).hasStatus(404);
-        assertThat(result).bodyJson().extractingPath("$.code").isEqualTo("POLL_NOT_FOUND");
-        assertThat(result).bodyJson().doesNotHavePath("$.result");
-        assertThat(result).bodyJson().doesNotHavePath("$.myChoice");
-    }
-
-    @Test
-    void 작성자는_숨김_투표를_200으로_조회하고_status가_HIDDEN이다() {
-        var authorId = saveMember();
-        var poll = savePoll(authorId);
-        poll.hide();
-        pollJpaRepository.saveAndFlush(poll);
-
-        var result = mvcTester.get().uri(uri(poll)).cookie(accessCookie(authorId)).exchange();
-
-        assertThat(result).hasStatus(200);
-        assertThat(result).bodyJson().extractingPath("$.status").isEqualTo("HIDDEN");
-    }
-
-    @Test
     void ID_형식_오류는_400이다() {
         assertThat(mvcTester.get().uri("/api/v1/polls/short").exchange()).hasStatus(400);
     }

@@ -2,8 +2,6 @@ package org.kwakmunsu.auddum.poll.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.kwakmunsu.auddum.vote.api.AnonCookies.ANON_COOKIE;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -12,20 +10,19 @@ import jakarta.servlet.http.Cookie;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.kwakmunsu.auddum.WebApiTestSupport;
 import org.kwakmunsu.auddum.poll.domain.Category;
 import org.kwakmunsu.auddum.poll.domain.Poll;
-import org.kwakmunsu.auddum.poll.domain.PollErrorCode;
-import org.kwakmunsu.auddum.support.error.AuddumException;
 import org.kwakmunsu.auddum.support.config.TimeConfig;
-import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
 import org.kwakmunsu.auddum.poll.application.dto.OptionTally;
 import org.kwakmunsu.auddum.poll.application.dto.PollDetail;
 import org.kwakmunsu.auddum.poll.application.dto.PollTally;
 import org.kwakmunsu.auddum.poll.application.dto.Viewer;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
@@ -35,7 +32,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
  * API-명세 §3·§4 결과 공개 규칙, 인증-중복-참여 §2 읽기 전용 경로.
  * 공개 여부 판단은 서비스의 몫이라 여기서는 서비스가 준 값을 그대로 내리는지, 신원(회원 ID, 쿠키)을 서비스에 넘기는지만 본다.
  * 조회가 Set-Cookie를 내리지 않는 보장은 서비스가 목이면 어떤 구현에서도 통과하므로 PollDetailChainTest(실제 체인)가 한다.
- * 이 클래스는 이전 PollReadWebApiTest의 상세 테스트도 모은 곳이다(응답 필드, status, 신원 전달).
+ * 컨트롤러 슬라이스라서 응답 모양과 신원 전달만 본다. 열람 규칙·status·오류 응답은 PollDetailChainTest, HiddenPollViewChainTest와 서비스 테스트가 확인한다.
  */
 class PollDetailWebApiTest extends WebApiTestSupport {
 
@@ -161,145 +158,32 @@ class PollDetailWebApiTest extends WebApiTestSupport {
             .hasPathSatisfying("$.closed", v -> v.assertThat().isEqualTo(false));
     }
 
-    @Test
-    void 공개_투표_상세의_status는_PUBLIC이다() {
-        given(pollQueryService.getPollDetail(eq(ID), eq(noCredential())))
-            .willReturn(detailOf(poll(CLOSES_AT)));
-
-        mvcTester.get()
-            .uri(URI)
-            .assertThat()
-            .hasStatus(HttpStatus.OK)
-            .bodyJson()
-            .hasPathSatisfying("$.status", v -> v.assertThat().isEqualTo("PUBLIC"));
-    }
-
-    @Test
-    void 서비스가_숨김_투표를_돌려주면_200이고_status가_HIDDEN이다() {
-        var poll = poll(CLOSES_AT);
-        poll.hide();
-        given(pollQueryService.getPollDetail(eq(ID), eq(member(7L))))
-            .willReturn(detailOf(poll));
-
-        mvcTester.get()
-            .uri(URI)
-            .with(loginAs(7L))
-            .assertThat()
-            .hasStatus(HttpStatus.OK)
-            .bodyJson()
-            .hasPathSatisfying("$.status", v -> v.assertThat().isEqualTo("HIDDEN"));
-    }
-
-    @Test
-    void 서비스가_삭제_투표를_돌려주면_200이고_status가_DELETED다() {
-        var poll = poll(CLOSES_AT);
-        poll.deleteByAdmin();
-        given(pollQueryService.getPollDetail(eq(ID), eq(member(9L))))
-            .willReturn(detailOf(poll));
-
-        mvcTester.get()
-            .uri(URI)
-            .with(loginAs(9L))
-            .assertThat()
-            .hasStatus(HttpStatus.OK)
-            .bodyJson()
-            .hasPathSatisfying("$.status", v -> v.assertThat().isEqualTo("DELETED"));
-    }
-
     // ---- 신원 입력: 회원 ID, 익명 쿠키 ----
 
-    @Test
-    void auddum_anon_쿠키_값을_그대로_서비스에_넘긴다() {
-        given(pollQueryService.getPollDetail(eq(ID), eq(anonymous("v1.cookie-value"))))
-            .willReturn(detail(1, tally()));
+    @ParameterizedTest
+    @MethodSource("신원_입력")
+    void 회원_ID와_익명_쿠키_값을_해석하지_않고_그대로_서비스에_넘긴다(Long memberId, String cookieValue, Viewer expected) {
+        given(pollQueryService.getPollDetail(eq(ID), eq(expected))).willReturn(detail(null, null));
 
-        mvcTester.get().uri(URI).cookie(new Cookie(ANON_COOKIE, "v1.cookie-value")).assertThat().hasStatus(HttpStatus.OK);
+        var request = mvcTester.get().uri(URI);
+        if (cookieValue != null) {
+            request = request.cookie(new Cookie(ANON_COOKIE, cookieValue));
+        }
+        if (memberId != null) {
+            request = request.with(loginAs(memberId));
+        }
+        request.assertThat().hasStatus(HttpStatus.OK);
 
-        verify(pollQueryService).getPollDetail(eq(ID), eq(anonymous("v1.cookie-value")));
+        verify(pollQueryService).getPollDetail(eq(ID), eq(expected));
     }
 
-    @Test
-    void 쿠키가_없으면_쿠키_값_null로_서비스를_부른다() {
-        given(pollQueryService.getPollDetail(eq(ID), eq(noCredential())))
-            .willReturn(detail(null, null));
-
-        mvcTester.get().uri(URI).assertThat().hasStatus(HttpStatus.OK);
-
-        verify(pollQueryService).getPollDetail(eq(ID), eq(noCredential()));
-    }
-
-    @Test
-    void 로그인한_회원의_ID를_서비스에_넘긴다() {
-        given(pollQueryService.getPollDetail(eq(ID), argThat(x -> Objects.equals(x.memberId(), 7L))))
-            .willReturn(detail(1, tally()));
-
-        mvcTester.get().uri(URI).with(loginAs(7L)).assertThat().hasStatus(HttpStatus.OK);
-
-        verify(pollQueryService).getPollDetail(eq(ID), argThat(x -> Objects.equals(x.memberId(), 7L)));
-    }
-
-    @Test
-    void 빈_문자열_쿠키도_서비스가_판단하도록_그대로_넘기고_오류가_아니다() {
-        given(pollQueryService.getPollDetail(eq(ID), eq(anonymous(""))))
-            .willReturn(detail(null, null));
-
-        mvcTester.get().uri(URI).cookie(new Cookie(ANON_COOKIE, "")).assertThat().hasStatus(HttpStatus.OK);
-
-        verify(pollQueryService).getPollDetail(eq(ID), eq(anonymous("")));
-    }
-
-    // ---- 오류 매핑 (API-명세 §3, §7) ----
-
-    @Test
-    void ID_형식_오류는_400_MALFORMED_REQUEST다() {
-        given(pollQueryService.getPollDetail(eq("bad"), any(Viewer.class)))
-            .willThrow(new AuddumException(DefaultErrorCode.MALFORMED_REQUEST));
-
-        mvcTester.get()
-            .uri("/api/v1/polls/bad")
-            .assertThat()
-            .hasStatus(HttpStatus.BAD_REQUEST)
-            .bodyJson()
-            .hasPathSatisfying("$.code", v -> v.assertThat().isEqualTo("MALFORMED_REQUEST"));
-    }
-
-    @Test
-    void 없는_투표는_404_POLL_NOT_FOUND다() {
-        given(pollQueryService.getPollDetail(eq(ID), any(Viewer.class)))
-            .willThrow(new AuddumException(PollErrorCode.POLL_NOT_FOUND));
-
-        mvcTester.get()
-            .uri(URI)
-            .assertThat()
-            .hasStatus(HttpStatus.NOT_FOUND)
-            .bodyJson()
-            .hasPathSatisfying("$.code", v -> v.assertThat().isEqualTo("POLL_NOT_FOUND"));
-    }
-
-    @Test
-    void 일반_사용자에게_숨김_투표의_404는_결과나_내_선택을_담지_않는다() {
-        given(pollQueryService.getPollDetail(eq(ID), any(Viewer.class)))
-            .willThrow(new AuddumException(PollErrorCode.POLL_NOT_FOUND));
-
-        mvcTester.get()
-            .uri(URI)
-            .assertThat()
-            .hasStatus(HttpStatus.NOT_FOUND)
-            .bodyJson()
-            .doesNotHavePath("$.result")
-            .doesNotHavePath("$.myChoice")
-            .doesNotHavePath("$.participantCount");
-    }
-
-    @Test
-    void 서비스_내부_오류는_500이고_Set_Cookie를_내리지_않는다() {
-        given(pollQueryService.getPollDetail(eq(ID), any(Viewer.class)))
-            .willThrow(new IllegalStateException("boom"));
-
-        var result = mvcTester.get().uri(URI).exchange();
-
-        assertThat(result).hasStatus(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE)).isEmpty();
+    static Stream<Arguments> 신원_입력() {
+        return Stream.of(
+            Arguments.of(null, "v1.cookie-value", new Viewer(null, "v1.cookie-value")),
+            Arguments.of(null, null, new Viewer(null, null)),
+            Arguments.of(7L, null, new Viewer(7L, null)),
+            Arguments.of(null, "", new Viewer(null, ""))
+        );
     }
 
     // ---- 보조 ----

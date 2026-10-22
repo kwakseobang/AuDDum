@@ -34,51 +34,47 @@ class VoteCastChainTest extends VoteIntegrationTestSupport {
     final MockMvcTester mvcTester;
 
     @Test
-    void 쿠키_없는_새_익명이_존재하지_않는_선택지로_참여하면_400_INVALID_OPTION이다() {
+    void 쿠키_없는_새_익명이_존재하지_않는_선택지로_참여하면_400_INVALID_OPTION이고_쿠키와_기록이_남지_않는다() {
         var poll = saveOpenPoll();
+        var before = voteJpaRepository.count();
 
         var result = post(poll, 99);
 
         assertThat(result).hasStatus(400);
         assertThat(result).bodyJson().extractingPath("$.code").isEqualTo("INVALID_OPTION");
-    }
-
-    @Test
-    void 쿠키_없는_새_익명이_존재하지_않는_선택지로_참여해도_Set_Cookie가_없다() {
-        var poll = saveOpenPoll();
-
-        var result = post(poll, 99);
-
         assertThat(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE)).isEmpty();
-    }
-
-    @Test
-    void 존재하지_않는_선택지로_참여해도_투표_기록이_남지_않는다() {
-        var poll = saveOpenPoll();
-        var before = voteJpaRepository.count();
-
-        post(poll, 99);
-
         assertThat(voteJpaRepository.count()).isEqualTo(before);
     }
 
     @Test
-    void 쿠키_없는_새_익명이_마감된_투표에_참여하면_409_POLL_CLOSED다() {
+    void 쿠키_없는_새_익명이_마감된_투표에_참여하면_409_POLL_CLOSED이고_쿠키가_남지_않는다() {
         var poll = saveClosedPoll();
 
         var result = post(poll, 1);
 
         assertThat(result).hasStatus(409);
         assertThat(result).bodyJson().extractingPath("$.code").isEqualTo("POLL_CLOSED");
+        assertThat(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE)).isEmpty();
     }
 
     @Test
-    void 쿠키_없는_새_익명이_마감된_투표에_참여해도_Set_Cookie가_없다() {
-        var poll = saveClosedPoll();
+    void 받은_쿠키로_다시_참여하면_409_ALREADY_VOTED이고_쿠키를_다시_내리지_않는다() {
+        var poll = saveOpenPoll();
+        var first = post(poll, 1);
+        var cookie = first.getResponse().getCookie(ANON_COOKIE);
 
-        var result = post(poll, 1);
+        var second = mvcTester.post()
+            .uri("/api/v1/polls/" + poll.getPublicId().value() + "/votes")
+            .header("Origin", ALLOWED_ORIGIN)
+            .cookie(cookie)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"position\": 2}")
+            .exchange();
 
-        assertThat(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE)).isEmpty();
+        assertThat(second).hasStatus(409);
+        assertThat(second).bodyJson().extractingPath("$.code").isEqualTo("ALREADY_VOTED");
+        assertThat(second.getResponse().getHeaders(HttpHeaders.SET_COOKIE)).isEmpty();
+        assertThat(voteJpaRepository.count()).isEqualTo(1);
     }
 
     @Test

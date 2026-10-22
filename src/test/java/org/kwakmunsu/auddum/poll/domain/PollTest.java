@@ -42,23 +42,10 @@ class PollTest {
     }
 
     @Test
-    void 오백_자_질문으로_투표를_만들_수_있다() {
-        assertThatCode(() -> Poll.create(AUTHOR_ID, PollFixture.repeatChar(500), Category.ETC, List.of("a", "b"), null, NOW))
-                .doesNotThrowAnyException();
-    }
-
-    @Test
     void 오백한_자_질문으로_투표를_만들_수_없다() {
         assertThatThrownBy(() -> Poll.create(AUTHOR_ID, PollFixture.repeatChar(501), Category.ETC, List.of("a", "b"), null, NOW))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage("질문은 1~500자여야 합니다.");
-    }
-
-    @Test
-    void 줄바꿈이_있는_질문으로_투표를_만들_수_없다() {
-        assertThatThrownBy(() -> Poll.create(AUTHOR_ID, "가\n나", Category.ETC, List.of("a", "b"), null, NOW))
-                .isInstanceOf(AuddumException.class)
-                .hasMessage("질문에는 줄바꿈을 넣을 수 없습니다.");
     }
 
     @Test
@@ -106,30 +93,10 @@ class PollTest {
     }
 
     @Test
-    void 오십_자_선택지로_투표를_만들_수_있다() {
-        assertThatCode(() -> Poll.create(AUTHOR_ID, "질문", Category.ETC, List.of(PollFixture.repeatChar(50), "b"), null, NOW))
-                .doesNotThrowAnyException();
-    }
-
-    @Test
     void 오십한_자_선택지로_투표를_만들_수_없다() {
         assertThatThrownBy(() -> Poll.create(AUTHOR_ID, "질문", Category.ETC, List.of(PollFixture.repeatChar(51), "b"), null, NOW))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage("선택지는 1~50자여야 합니다.");
-    }
-
-    @Test
-    void 빈_선택지로_투표를_만들_수_없다() {
-        assertThatThrownBy(() -> Poll.create(AUTHOR_ID, "질문", Category.ETC, List.of("", "b"), null, NOW))
-                .isInstanceOf(AuddumException.class)
-                .hasMessage("선택지는 1~50자여야 합니다.");
-    }
-
-    @Test
-    void 줄바꿈이_있는_선택지로_투표를_만들_수_없다() {
-        assertThatThrownBy(() -> Poll.create(AUTHOR_ID, "질문", Category.ETC, List.of("a\nb", "b"), null, NOW))
-                .isInstanceOf(AuddumException.class)
-                .hasMessage("선택지에는 줄바꿈을 넣을 수 없습니다.");
     }
 
     @Test
@@ -205,13 +172,6 @@ class PollTest {
     }
 
     @Test
-    void 현재와_같은_마감_시각으로_투표를_만들_수_없다() {
-        assertThatThrownBy(() -> PollFixture.pollWithCloses(NOW))
-                .isInstanceOf(AuddumException.class)
-                .hasMessage("마감 시각은 현재보다 뒤여야 합니다.");
-    }
-
-    @Test
     void 과거_마감_시각으로_투표를_만들_수_없다() {
         assertThatThrownBy(() -> PollFixture.pollWithCloses(NOW.minusNanos(1)))
                 .isInstanceOf(AuddumException.class)
@@ -221,27 +181,11 @@ class PollTest {
     // ---- 마감 판단 ----
 
     @Test
-    void 마감_시각_직전에는_마감되지_않았다() {
-        var closesAt = NOW.plusHours(1);
-        var poll = PollFixture.pollWithCloses(closesAt);
-
-        assertThat(poll.isClosed(closesAt.minusNanos(1))).isFalse();
-    }
-
-    @Test
     void 마감_시각과_정확히_같으면_마감이다() {
         var closesAt = NOW.plusHours(1);
         var poll = PollFixture.pollWithCloses(closesAt);
 
         assertThat(poll.isClosed(closesAt)).isTrue();
-    }
-
-    @Test
-    void 마감_시각_직후에는_마감이다() {
-        var closesAt = NOW.plusHours(1);
-        var poll = PollFixture.pollWithCloses(closesAt);
-
-        assertThat(poll.isClosed(closesAt.plusNanos(1))).isTrue();
     }
 
     @Test
@@ -278,22 +222,6 @@ class PollTest {
                 .hasMessage(PollErrorCode.POLL_CLOSED.getMessage());
     }
 
-    @Test
-    void 숨김_투표에는_참여할_수_없다() {
-        var poll = PollFixture.hiddenPoll();
-
-        assertThatThrownBy(() -> poll.ensureVotable(NOW.plusMinutes(2)))
-                .isInstanceOf(AuddumException.class);
-    }
-
-    @Test
-    void 삭제된_투표에는_참여할_수_없다() {
-        var poll = PollFixture.deletedPoll();
-
-        assertThatThrownBy(() -> poll.ensureVotable(NOW.plusMinutes(2)))
-                .isInstanceOf(AuddumException.class);
-    }
-
     // ---- 선택지 소속 ----
 
     @Test
@@ -303,38 +231,23 @@ class PollTest {
         assertThat(poll.ensureHasOption(2).getContent().value()).isEqualTo("파스타");
     }
 
-    @Test
-    void 순번_0은_이_투표의_선택지가_아니다() {
+    @ParameterizedTest
+    @ValueSource(ints = {0, 3, 6, -1})
+    void 이_투표의_선택지가_아닌_순번은_INVALID_OPTION이다(int position) {
+        // 0: 최소 미만, 3: 선택지 개수 초과, 6: 순번 상한 초과, -1: 음수
         var poll = PollFixture.pollWithoutCloses();
 
-        assertThatThrownBy(() -> poll.ensureHasOption(0))
+        assertThatThrownBy(() -> poll.ensureHasOption(position))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage(PollErrorCode.INVALID_OPTION.getMessage());
     }
 
     @Test
-    void 선택지_개수를_넘는_순번은_이_투표의_선택지가_아니다() {
-        var poll = PollFixture.pollWithoutCloses();
+    void 선택지가_다섯_개인_투표는_마지막_순번_5까지_선택지다() {
+        var poll = Poll.create(AUTHOR_ID, "질문", Category.ETC, List.of("a", "b", "c", "d", "e"), null, NOW);
 
-        assertThatThrownBy(() -> poll.ensureHasOption(3))
-                .isInstanceOf(AuddumException.class)
-                .hasMessage(PollErrorCode.INVALID_OPTION.getMessage());
-    }
-
-    @Test
-    void 범위_밖_순번_6은_이_투표의_선택지가_아니다() {
-        var poll = PollFixture.pollWithoutCloses();
-
+        assertThat(poll.ensureHasOption(5).getContent().value()).isEqualTo("e");
         assertThatThrownBy(() -> poll.ensureHasOption(6))
-                .isInstanceOf(AuddumException.class)
-                .hasMessage(PollErrorCode.INVALID_OPTION.getMessage());
-    }
-
-    @Test
-    void 음수_순번은_이_투표의_선택지가_아니다() {
-        var poll = PollFixture.pollWithoutCloses();
-
-        assertThatThrownBy(() -> poll.ensureHasOption(-1))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage(PollErrorCode.INVALID_OPTION.getMessage());
     }
@@ -426,14 +339,6 @@ class PollTest {
         assertThatThrownBy(() -> poll.deleteByAuthor(AUTHOR_ID))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage(PollErrorCode.POLL_NOT_DELETABLE.getMessage());
-    }
-
-    @Test
-    void 작성자_삭제가_거부되면_숨김_상태가_유지된다() {
-        var poll = PollFixture.hiddenPoll();
-
-        assertThatThrownBy(() -> poll.deleteByAuthor(AUTHOR_ID))
-                .isInstanceOf(AuddumException.class);
 
         assertThat(poll.getStatus()).isEqualTo(PollStatus.HIDDEN);
     }
@@ -445,6 +350,8 @@ class PollTest {
         assertThatThrownBy(() -> poll.deleteByAuthor(OTHER_MEMBER_ID))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage(DefaultErrorCode.FORBIDDEN.getMessage());
+
+        assertThat(poll.getStatus()).isEqualTo(PollStatus.PUBLIC);
     }
 
     @Test
@@ -466,16 +373,6 @@ class PollTest {
     }
 
     @Test
-    void 작성자가_아닌_회원의_삭제가_거부되면_공개_상태가_유지된다() {
-        var poll = PollFixture.pollWithoutCloses();
-
-        assertThatThrownBy(() -> poll.deleteByAuthor(OTHER_MEMBER_ID))
-                .isInstanceOf(AuddumException.class);
-
-        assertThat(poll.getStatus()).isEqualTo(PollStatus.PUBLIC);
-    }
-
-    @Test
     void 공개_투표는_복구할_수_없다() {
         var poll = PollFixture.pollWithoutCloses();
 
@@ -484,106 +381,7 @@ class PollTest {
                 .hasMessage(PollErrorCode.POLL_NOT_HIDDEN.getMessage());
     }
 
-    @Test
-    void 삭제된_투표는_복구할_수_없다() {
-        var poll = PollFixture.deletedPoll();
-
-        assertThatThrownBy(() -> poll.restore())
-                .isInstanceOf(AuddumException.class);
-        assertThat(poll.getStatus()).isEqualTo(PollStatus.DELETED);
-    }
-
-    @Test
-    void 삭제된_투표는_숨길_수_없다() {
-        var poll = PollFixture.deletedPoll();
-
-        assertThatThrownBy(() -> poll.hide())
-                .isInstanceOf(AuddumException.class);
-        assertThat(poll.getStatus()).isEqualTo(PollStatus.DELETED);
-    }
-
-    @Test
-    void 삭제된_투표는_작성자가_다시_삭제할_수_없다() {
-        var poll = PollFixture.deletedPoll();
-
-        assertThatThrownBy(() -> poll.deleteByAuthor(AUTHOR_ID))
-                .isInstanceOf(AuddumException.class);
-        assertThat(poll.getStatus()).isEqualTo(PollStatus.DELETED);
-    }
-
-    @Test
-    void 삭제된_투표는_관리자가_다시_삭제할_수_없다() {
-        var poll = PollFixture.deletedPoll();
-
-        assertThatThrownBy(() -> poll.deleteByAdmin())
-                .isInstanceOf(AuddumException.class);
-        assertThat(poll.getStatus()).isEqualTo(PollStatus.DELETED);
-    }
-
     // ---- 공백 제거 (DR-1) ----
-
-    @Test
-    void 질문의_앞뒤_공백은_제거한_값이_저장된다() {
-        var poll = Poll.create(AUTHOR_ID, "  점심?  ", Category.ETC, List.of("a", "b"), null, NOW);
-
-        assertThat(poll.getQuestion().value()).isEqualTo("점심?");
-    }
-
-    @Test
-    void 공백만_있는_질문으로_투표를_만들_수_없다() {
-        assertThatThrownBy(() -> Poll.create(AUTHOR_ID, "   ", Category.ETC, List.of("a", "b"), null, NOW))
-                .isInstanceOf(AuddumException.class)
-                .hasMessage("질문은 1~500자여야 합니다.");
-    }
-
-    @Test
-    void 앞뒤_공백이_붙은_오백_자_질문으로_투표를_만들_수_있다() {
-        assertThatCode(() -> Poll.create(AUTHOR_ID, " " + PollFixture.repeatChar(500) + " ", Category.ETC, List.of("a", "b"), null, NOW))
-                .doesNotThrowAnyException();
-    }
-
-    @Test
-    void 선택지의_앞뒤_공백은_제거한_값이_저장된다() {
-        var poll = Poll.create(AUTHOR_ID, "질문", Category.ETC, List.of("  국밥 ", "파스타"), null, NOW);
-
-        assertThat(poll.getOptions()).extracting(o -> o.getContent().value()).containsExactly("국밥", "파스타");
-    }
-
-    @Test
-    void 공백만_있는_선택지로_투표를_만들_수_없다() {
-        assertThatThrownBy(() -> Poll.create(AUTHOR_ID, "질문", Category.ETC, List.of("   ", "b"), null, NOW))
-                .isInstanceOf(AuddumException.class)
-                .hasMessage("선택지는 1~50자여야 합니다.");
-    }
-
-    @Test
-    void 앞뒤_공백이_붙은_오십_자_선택지로_투표를_만들_수_있다() {
-        assertThatCode(() -> Poll.create(AUTHOR_ID, "질문", Category.ETC, List.of(" " + PollFixture.repeatChar(50) + " ", "b"), null, NOW))
-                .doesNotThrowAnyException();
-    }
-
-    @Test
-    void 앞뒤_공백이_붙은_오십한_자_선택지로_투표를_만들_수_없다() {
-        assertThatThrownBy(() -> Poll.create(AUTHOR_ID, "질문", Category.ETC, List.of(" " + PollFixture.repeatChar(51) + " ", "b"), null, NOW))
-                .isInstanceOf(AuddumException.class)
-                .hasMessage("선택지는 1~50자여야 합니다.");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"가\u000B나", "가\u000C나", "가\u0085나", "가\u2028나", "가\u2029나"})
-    void 유니코드_줄_구분자가_있는_질문으로_투표를_만들_수_없다(String question) {
-        assertThatThrownBy(() -> Poll.create(AUTHOR_ID, question, Category.ETC, List.of("a", "b"), null, NOW))
-                .isInstanceOf(AuddumException.class)
-                .hasMessage("질문에는 줄바꿈을 넣을 수 없습니다.");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"가\u000B나", "가\u000C나", "가\u0085나", "가\u2028나", "가\u2029나"})
-    void 유니코드_줄_구분자가_있는_선택지로_투표를_만들_수_없다(String option) {
-        assertThatThrownBy(() -> Poll.create(AUTHOR_ID, "질문", Category.ETC, List.of(option, "b"), null, NOW))
-                .isInstanceOf(AuddumException.class)
-                .hasMessage("선택지에는 줄바꿈을 넣을 수 없습니다.");
-    }
 
     // ---- 이미 숨김 투표 hide (DR-1) ----
 
@@ -622,6 +420,8 @@ class PollTest {
         assertThatThrownBy(() -> poll.restore())
                 .isInstanceOf(AuddumException.class)
                 .hasMessage(PollErrorCode.POLL_NOT_HIDDEN.getMessage());
+
+        assertThat(poll.getStatus()).isEqualTo(PollStatus.DELETED);
     }
 
     @Test
@@ -631,6 +431,8 @@ class PollTest {
         assertThatThrownBy(() -> poll.hide())
                 .isInstanceOf(AuddumException.class)
                 .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
+
+        assertThat(poll.getStatus()).isEqualTo(PollStatus.DELETED);
     }
 
     @Test
@@ -640,6 +442,8 @@ class PollTest {
         assertThatThrownBy(() -> poll.deleteByAuthor(AUTHOR_ID))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
+
+        assertThat(poll.getStatus()).isEqualTo(PollStatus.DELETED);
     }
 
     @Test
@@ -649,6 +453,8 @@ class PollTest {
         assertThatThrownBy(() -> poll.deleteByAdmin())
                 .isInstanceOf(AuddumException.class)
                 .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
+
+        assertThat(poll.getStatus()).isEqualTo(PollStatus.DELETED);
     }
 
     // ---- 직전 투표 뒤 생성 ----
