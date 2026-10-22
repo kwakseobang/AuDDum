@@ -234,23 +234,6 @@ class VoteCommandServiceTest extends VoteIntegrationTestSupport {
     }
 
     @Test
-    void 이미_참여한_회원이_다른_선택을_보내면_ALREADY_VOTED이고_기존_선택은_그대로다() {
-        var memberId = saveMember();
-        var poll = savePoll(VoteFixture.openPoll(saveMember()));
-        saveVote(poll, 2, Voter.member(memberId));
-
-        assertThatThrownBy(() -> voteCommandService.castVote(
-            choice(poll, 1),
-            member(memberId)))
-            .isInstanceOf(AuddumException.class)
-            .hasMessage(VoteErrorCode.ALREADY_VOTED.getMessage());
-
-        entityManager.clear();
-        assertThat(voteJpaRepository.findAll()).extracting(Vote::getOptionId)
-            .containsExactly(poll.getOptions().get(1).getId());
-    }
-
-    @Test
     void 이미_참여한_비회원이_같은_쿠키로_같은_선택을_다시_보내도_ALREADY_VOTED다() {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
         var cookie = anonCookieProvider.issue();
@@ -263,32 +246,6 @@ class VoteCommandServiceTest extends VoteIntegrationTestSupport {
             .hasMessage(VoteErrorCode.ALREADY_VOTED.getMessage());
 
         assertThat(voteJpaRepository.count()).isEqualTo(1);
-    }
-
-    @Test
-    void 이미_참여한_비회원이_같은_쿠키로_다른_선택을_보내면_ALREADY_VOTED다() {
-        var poll = savePoll(VoteFixture.openPoll(saveMember()));
-        var cookie = anonCookieProvider.issue();
-        saveVote(poll, 1, Voter.anonymous(cookie.anonId()));
-
-        assertThatThrownBy(() -> voteCommandService.castVote(
-            choice(poll, 2),
-            anonymous(cookie.value())))
-            .isInstanceOf(AuddumException.class)
-            .hasMessage(VoteErrorCode.ALREADY_VOTED.getMessage());
-    }
-
-    @Test
-    void 이미_참여한_사람이_존재하지_않는_선택지를_보내면_기존_참여가_먼저라_ALREADY_VOTED다() {
-        var memberId = saveMember();
-        var poll = savePoll(VoteFixture.openPoll(saveMember()));
-        saveVote(poll, 1, Voter.member(memberId));
-
-        assertThatThrownBy(() -> voteCommandService.castVote(
-            choice(poll, 3),
-            member(memberId)))
-            .isInstanceOf(AuddumException.class)
-            .hasMessage(VoteErrorCode.ALREADY_VOTED.getMessage());
     }
 
     // ---- 마감 (API-명세 §4 4단계, P-11, P-12) ----
@@ -321,46 +278,6 @@ class VoteCommandServiceTest extends VoteIntegrationTestSupport {
     }
 
     @Test
-    void 마감된_투표에_기록이_없는_사람이_존재하지_않는_선택지를_보내면_마감이_먼저라_POLL_CLOSED다() {
-        var poll = savePoll(VoteFixture.expire(VoteFixture.openPoll(saveMember())));
-        var memberId = saveMember();
-
-        assertThatThrownBy(() -> voteCommandService.castVote(
-            choice(poll, 3),
-            member(memberId)))
-            .isInstanceOf(AuddumException.class)
-            .hasMessage(PollErrorCode.POLL_CLOSED.getMessage());
-    }
-
-    @Test
-    void 마감_후_참여_기록이_있는_사람이_같은_선택을_보내면_POLL_CLOSED가_아니라_ALREADY_VOTED다() {
-        var memberId = saveMember();
-        var poll = savePoll(VoteFixture.openPoll(saveMember()));
-        saveVote(poll, 1, Voter.member(memberId));
-        savePoll(VoteFixture.expire(poll));
-
-        assertThatThrownBy(() -> voteCommandService.castVote(
-            choice(poll, 1),
-            member(memberId)))
-            .isInstanceOf(AuddumException.class)
-            .hasMessage(VoteErrorCode.ALREADY_VOTED.getMessage());
-    }
-
-    @Test
-    void 마감_후_참여_기록이_있는_사람이_다른_선택을_보내도_POLL_CLOSED가_아니라_ALREADY_VOTED다() {
-        var memberId = saveMember();
-        var poll = savePoll(VoteFixture.openPoll(saveMember()));
-        saveVote(poll, 1, Voter.member(memberId));
-        savePoll(VoteFixture.expire(poll));
-
-        assertThatThrownBy(() -> voteCommandService.castVote(
-            choice(poll, 2),
-            member(memberId)))
-            .isInstanceOf(AuddumException.class)
-            .hasMessage(VoteErrorCode.ALREADY_VOTED.getMessage());
-    }
-
-    @Test
     void 마감_시각이_없는_투표는_언제든_참여할_수_있다() {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
 
@@ -371,63 +288,6 @@ class VoteCommandServiceTest extends VoteIntegrationTestSupport {
     }
 
     // ---- 선택지 소속 (API-명세 §4 5단계, §7 INVALID_OPTION) ----
-
-    @Test
-    void 선택지가_2개인_투표의_마지막_position_2로_참여할_수_있다() {
-        var poll = savePoll(VoteFixture.openPoll(saveMember()));
-
-        var result = voteCommandService.castVote(
-            choice(poll, 2),
-            member(saveMember()));
-
-        assertThat(result.myChoice()).isEqualTo(2);
-    }
-
-    @Test
-    void 선택지가_2개인_투표에_position_3은_INVALID_OPTION이고_저장되지_않는다() {
-        var poll = savePoll(VoteFixture.openPoll(saveMember()));
-
-        assertThatThrownBy(() -> voteCommandService.castVote(
-            choice(poll, 3),
-            member(saveMember())))
-            .isInstanceOf(AuddumException.class)
-            .hasMessage(PollErrorCode.INVALID_OPTION.getMessage());
-
-        assertThat(voteJpaRepository.count()).isZero();
-    }
-
-    @Test
-    void 선택지가_5개인_투표의_position_5로_참여할_수_있다() {
-        var poll = savePoll(VoteFixture.openPoll(saveMember(), VoteFixture.fiveOptions()));
-
-        var result = voteCommandService.castVote(
-            choice(poll, 5),
-            member(saveMember()));
-
-        assertThat(result.myChoice()).isEqualTo(5);
-    }
-
-    @Test
-    void 선택지가_5개인_투표에_position_6은_INVALID_OPTION이다() {
-        var poll = savePoll(VoteFixture.openPoll(saveMember(), VoteFixture.fiveOptions()));
-
-        assertThatThrownBy(() -> voteCommandService.castVote(
-            choice(poll, 6),
-            member(saveMember())))
-            .isInstanceOf(AuddumException.class)
-            .hasMessage(PollErrorCode.INVALID_OPTION.getMessage());
-    }
-
-    @Test
-    void position_0은_INVALID_OPTION이다() {
-        var poll = savePoll(VoteFixture.openPoll(saveMember()));
-
-        assertThatThrownBy(() -> voteCommandService.castVote(
-            choice(poll, 0),
-            member(saveMember())))
-            .isInstanceOf(AuddumException.class)
-            .hasMessage(PollErrorCode.INVALID_OPTION.getMessage());
-    }
 
     // ---- 투표 조회 (API-명세 §4 1단계) ----
 

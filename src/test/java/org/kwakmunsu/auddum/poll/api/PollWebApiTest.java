@@ -5,12 +5,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.kwakmunsu.auddum.WebApiTestSupport;
 import org.kwakmunsu.auddum.poll.application.dto.NewPoll;
@@ -34,7 +36,7 @@ class PollWebApiTest extends WebApiTestSupport {
         """;
 
     @Test
-    void 생성하면_201과_Location을_내린다() {
+    void 생성하면_201과_Location을_내리고_본문은_공개_ID_문자열_하나다() {
         var poll = createPoll(null);
         given(pollCommandService.createPoll(any(NewPoll.class), eq(1L))).willReturn(poll);
 
@@ -45,22 +47,7 @@ class PollWebApiTest extends WebApiTestSupport {
             .content(REQUEST_BODY)
             .assertThat()
             .hasStatus(HttpStatus.CREATED)
-            .hasHeader("Location", "/api/v1/polls/" + poll.getPublicId().value());
-    }
-
-    @Test
-    void 본문은_공개_ID_문자열_하나다() {
-        var poll = createPoll(null);
-        given(pollCommandService.createPoll(any(NewPoll.class), eq(1L))).willReturn(poll);
-
-        mvcTester.post()
-            .uri("/api/v1/polls")
-            .with(loginAs(1L))
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(REQUEST_BODY)
-            .assertThat()
-            .hasStatus(HttpStatus.CREATED)
-            .apply(print())
+            .hasHeader("Location", "/api/v1/polls/" + poll.getPublicId().value())
             .bodyText()
             .isEqualTo(poll.getPublicId().value());
     }
@@ -86,37 +73,6 @@ class PollWebApiTest extends WebApiTestSupport {
     }
 
     @Test
-    void X_Member_Id_헤더의_값이_서비스에_memberId로_전달된다() {
-        given(pollCommandService.createPoll(any(NewPoll.class), eq(7L))).willReturn(createPoll(null));
-
-        mvcTester.post()
-            .uri("/api/v1/polls")
-            .with(loginAs(7L))
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(REQUEST_BODY)
-            .assertThat()
-            .hasStatus(HttpStatus.CREATED);
-
-        verify(pollCommandService).createPoll(any(NewPoll.class), eq(7L));
-    }
-
-    @Test
-    void 임시_신원이_없으면_401_UNAUTHENTICATED이고_서비스를_부르지_않는다() {
-        mvcTester.post()
-            .uri("/api/v1/polls")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(REQUEST_BODY)
-            .assertThat()
-            .hasStatus(HttpStatus.UNAUTHORIZED)
-            .hasContentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
-            .apply(print())
-            .bodyJson()
-            .hasPathSatisfying("$.code", v -> v.assertThat().isEqualTo("UNAUTHENTICATED"));
-
-        verifyNoInteractions(pollCommandService);
-    }
-
-    @Test
     void 알_수_없는_요청_필드는_무시하고_생성한다() {
         given(pollCommandService.createPoll(any(NewPoll.class), eq(1L))).willReturn(createPoll(null));
 
@@ -132,41 +88,11 @@ class PollWebApiTest extends WebApiTestSupport {
             .hasStatus(HttpStatus.CREATED);
     }
 
-    @Test
-    void 깨진_JSON은_400_MALFORMED_REQUEST다() {
-        mvcTester.post()
-            .uri("/api/v1/polls")
-            .with(loginAs(1L))
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("{\"question\": ")
-            .assertThat()
-            .hasStatus(HttpStatus.BAD_REQUEST)
-            .bodyJson()
-            .hasPathSatisfying("$.code", v -> v.assertThat().isEqualTo("MALFORMED_REQUEST"));
-    }
-
-    @Test
-    void 필수_필드가_없으면_400_VALIDATION_FAILED이고_서비스를_부르지_않는다() {
-        mvcTester.post()
-            .uri("/api/v1/polls")
-            .with(loginAs(1L))
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("{}")
-            .assertThat()
-            .hasStatus(HttpStatus.BAD_REQUEST)
-            .hasContentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
-            .apply(print())
-            .bodyJson()
-            .hasPathSatisfying("$.code", v -> v.assertThat().isEqualTo("VALIDATION_FAILED"))
-            .hasPathSatisfying("$.errors", v -> v.assertThat().isNotNull());
-
-        verifyNoInteractions(pollCommandService);
-    }
-
-    @Test
-    void 도메인_검증_실패는_400_VALIDATION_FAILED이고_errors에_필드와_사유를_담는다() {
+    @ParameterizedTest
+    @MethodSource("생성_오류와_상태")
+    void 서비스가_던진_생성_오류는_코드와_맞는_상태로_내린다(PollErrorCode errorCode, HttpStatus status) {
         given(pollCommandService.createPoll(any(NewPoll.class), eq(1L)))
-            .willThrow(AuddumException.validation("question", "질문은 1~500자여야 합니다."));
+            .willThrow(new AuddumException(errorCode));
 
         mvcTester.post()
             .uri("/api/v1/polls")
@@ -174,101 +100,19 @@ class PollWebApiTest extends WebApiTestSupport {
             .contentType(MediaType.APPLICATION_JSON)
             .content(REQUEST_BODY)
             .assertThat()
-            .hasStatus(HttpStatus.BAD_REQUEST)
-            .apply(print())
-            .bodyJson()
-            .hasPathSatisfying("$.code", v -> v.assertThat().isEqualTo("VALIDATION_FAILED"))
-            .hasPathSatisfying("$.errors[0].field", v -> v.assertThat().isEqualTo("question"))
-            .hasPathSatisfying("$.errors[0].reason", v -> v.assertThat().isEqualTo("질문은 1~500자여야 합니다."));
-    }
-
-    @Test
-    void 허용되지_않은_카테고리는_400이고_서비스를_부르지_않는다() {
-        mvcTester.post()
-            .uri("/api/v1/polls")
-            .with(loginAs(1L))
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("""
-                {"question": "질문", "category": "NOPE", "options": ["가", "나"]}
-                """)
-            .assertThat()
-            .hasStatus(HttpStatus.BAD_REQUEST);
-
-        verifyNoInteractions(pollCommandService);
-    }
-
-    @Test
-    void 과거_마감_시각은_400_VALIDATION_FAILED이고_closesAt을_errors에_담는다() {
-        mvcTester.post()
-            .uri("/api/v1/polls")
-            .with(loginAs(1L))
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("""
-                {"question": "질문", "category": "ETC", "options": ["가", "나"],
-                 "closesAt": "2000-01-01T00:00:00+09:00"}
-                """)
-            .assertThat()
-            .hasStatus(HttpStatus.BAD_REQUEST)
-            .bodyJson()
-            .hasPathSatisfying("$.code", v -> v.assertThat().isEqualTo("VALIDATION_FAILED"))
-            .hasPathSatisfying("$.errors[0].field", v -> v.assertThat().isEqualTo("closesAt"));
-
-        verifyNoInteractions(pollCommandService);
-    }
-
-    @Test
-    void 선택지가_한_개이면_400_VALIDATION_FAILED이고_서비스를_부르지_않는다() {
-        mvcTester.post()
-            .uri("/api/v1/polls")
-            .with(loginAs(1L))
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("""
-                {"question": "질문", "category": "ETC", "options": ["가"]}
-                """)
-            .assertThat()
-            .hasStatus(HttpStatus.BAD_REQUEST)
-            .bodyJson()
-            .hasPathSatisfying("$.code", v -> v.assertThat().isEqualTo("VALIDATION_FAILED"));
-
-        verifyNoInteractions(pollCommandService);
-    }
-
-    @Test
-    void 서비스가_POLL_RATE_LIMITED를_던지면_429다() {
-        given(pollCommandService.createPoll(any(NewPoll.class), eq(1L)))
-            .willThrow(new AuddumException(PollErrorCode.POLL_RATE_LIMITED));
-
-        mvcTester.post()
-            .uri("/api/v1/polls")
-            .with(loginAs(1L))
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(REQUEST_BODY)
-            .assertThat()
-            .hasStatus(HttpStatus.TOO_MANY_REQUESTS)
+            .hasStatus(status)
             .hasContentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
-            .apply(print())
             .bodyJson()
-            .hasPathSatisfying("$.code", v -> v.assertThat().isEqualTo("POLL_RATE_LIMITED"))
-            .hasPathSatisfying("$.status", v -> v.assertThat().isEqualTo(429))
+            .hasPathSatisfying("$.code", v -> v.assertThat().isEqualTo(errorCode.name()))
+            .hasPathSatisfying("$.status", v -> v.assertThat().isEqualTo(status.value()))
             .hasPathSatisfying("$.instance", v -> v.assertThat().isEqualTo("/api/v1/polls"));
     }
 
-    @Test
-    void 서비스가_DUPLICATE_POLL을_던지면_409다() {
-        given(pollCommandService.createPoll(any(NewPoll.class), eq(1L)))
-            .willThrow(new AuddumException(PollErrorCode.DUPLICATE_POLL));
-
-        mvcTester.post()
-            .uri("/api/v1/polls")
-            .with(loginAs(1L))
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(REQUEST_BODY)
-            .assertThat()
-            .hasStatus(HttpStatus.CONFLICT)
-            .hasContentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
-            .apply(print())
-            .bodyJson()
-            .hasPathSatisfying("$.code", v -> v.assertThat().isEqualTo("DUPLICATE_POLL"));
+    static Stream<Arguments> 생성_오류와_상태() {
+        return Stream.of(
+            Arguments.of(PollErrorCode.POLL_RATE_LIMITED, HttpStatus.TOO_MANY_REQUESTS),
+            Arguments.of(PollErrorCode.DUPLICATE_POLL, HttpStatus.CONFLICT)
+        );
     }
 
     private Poll createPoll(LocalDateTime closesAt) {

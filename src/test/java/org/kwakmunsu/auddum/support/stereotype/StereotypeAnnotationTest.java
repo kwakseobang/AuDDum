@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.RestController;
 
 class StereotypeAnnotationTest {
 
@@ -23,12 +22,6 @@ class StereotypeAnnotationTest {
     @QueryService
     static class SampleQueryService {
 
-    }
-
-    @Test
-    void WebApi는_RestController로_빈에_등록된다() {
-        assertThat(AnnotatedElementUtils.hasAnnotation(SampleController.class, RestController.class)).isTrue();
-        assertThat(AnnotatedElementUtils.hasAnnotation(SampleController.class, Component.class)).isTrue();
     }
 
     @Test

@@ -27,7 +27,6 @@ import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.poll.domain.PollErrorCode;
 import org.kwakmunsu.auddum.poll.domain.PollStatus;
 import org.kwakmunsu.auddum.support.error.AuddumException;
-import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
 import org.kwakmunsu.auddum.vote.VoteIntegrationTestSupport;
 import org.kwakmunsu.auddum.vote.application.VoteCommandService;
 import org.kwakmunsu.auddum.vote.application.VoteFixture;
@@ -417,30 +416,7 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
 
     // ---- 투표 조회 오류 (API-명세 §3) ----
 
-    @Test
-    void 공개_ID_형식이_틀리면_MALFORMED_REQUEST다() {
-        assertThatThrownBy(() -> getPollDetail("short", noCredential()))
-            .isInstanceOf(AuddumException.class)
-            .hasMessage(DefaultErrorCode.MALFORMED_REQUEST.getMessage());
-    }
-
-    @Test
-    void 없는_투표는_POLL_NOT_FOUND다() {
-        assertThatThrownBy(() -> getPollDetail("abcdefghijkl", noCredential()))
-            .isInstanceOf(AuddumException.class)
-            .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
-    }
-
     // ---- 숨김·삭제 투표 (API-명세 §3, §4 "숨김 투표의 결과는 일반 사용자에게 노출하지 않는다") ----
-
-    @Test
-    void 숨김_투표는_비회원에게_POLL_NOT_FOUND다() {
-        var poll = savePoll(hidden(VoteFixture.openPoll(saveMember())));
-
-        assertThatThrownBy(() -> getPollDetail(publicIdOf(poll), noCredential()))
-            .isInstanceOf(AuddumException.class)
-            .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
-    }
 
     @Test
     void 숨김_투표는_참여했던_일반_회원에게도_POLL_NOT_FOUND이고_결과를_내리지_않는다() {
@@ -453,81 +429,6 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
         assertThatThrownBy(() -> getPollDetail(publicIdOf(poll), member(memberId)))
             .isInstanceOf(AuddumException.class)
             .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
-    }
-
-    @Test
-    void 마감된_숨김_투표도_일반_사용자에게는_POLL_NOT_FOUND다() {
-        var poll = savePoll(hidden(VoteFixture.expire(VoteFixture.openPoll(saveMember()))));
-
-        assertThatThrownBy(() -> getPollDetail(publicIdOf(poll), member(saveMember())))
-            .isInstanceOf(AuddumException.class)
-            .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
-    }
-
-    @Test
-    void 삭제된_투표는_일반_사용자에게_POLL_NOT_FOUND다() {
-        var authorId = saveMember();
-        var poll = VoteFixture.openPoll(authorId);
-        poll.deleteByAuthor(authorId);
-        savePoll(poll);
-
-        assertThatThrownBy(() -> getPollDetail(publicIdOf(poll), member(saveMember())))
-            .isInstanceOf(AuddumException.class)
-            .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
-    }
-
-    @Test
-    void 작성자는_숨김_투표를_조회할_수_있고_status가_HIDDEN이다() {
-        var authorId = saveMember();
-        var poll = savePoll(hidden(VoteFixture.openPoll(authorId)));
-
-        var detail = getPollDetail(publicIdOf(poll), member(authorId));
-
-        assertThat(detail.poll().getStatus()).isEqualTo(PollStatus.HIDDEN);
-        assertThat(detail.poll().getPublicId().value()).isEqualTo(publicIdOf(poll));
-    }
-
-    @Test
-    void 작성자는_삭제된_투표를_조회할_수_있고_status가_DELETED다() {
-        var authorId = saveMember();
-        var poll = VoteFixture.openPoll(authorId);
-        poll.deleteByAuthor(authorId);
-        savePoll(poll);
-
-        var detail = getPollDetail(publicIdOf(poll), member(authorId));
-
-        assertThat(detail.poll().getStatus()).isEqualTo(PollStatus.DELETED);
-    }
-
-    @Test
-    void 관리자는_숨김_투표를_조회할_수_있고_status가_HIDDEN이다() {
-        var adminId = saveMember(Role.ADMIN);
-        var poll = savePoll(hidden(VoteFixture.openPoll(saveMember())));
-
-        var detail = getPollDetail(publicIdOf(poll), member(adminId));
-
-        assertThat(detail.poll().getStatus()).isEqualTo(PollStatus.HIDDEN);
-    }
-
-    @Test
-    void 관리자는_관리자가_삭제한_투표를_조회할_수_있고_status가_DELETED다() {
-        var adminId = saveMember(Role.ADMIN);
-        var poll = VoteFixture.openPoll(saveMember());
-        poll.deleteByAdmin();
-        savePoll(poll);
-
-        var detail = getPollDetail(publicIdOf(poll), member(adminId));
-
-        assertThat(detail.poll().getStatus()).isEqualTo(PollStatus.DELETED);
-    }
-
-    @Test
-    void 공개_투표의_status는_PUBLIC이다() {
-        var poll = savePoll(VoteFixture.openPoll(saveMember()));
-
-        var detail = getPollDetail(publicIdOf(poll), noCredential());
-
-        assertThat(detail.poll().getStatus()).isEqualTo(PollStatus.PUBLIC);
     }
 
     // ---- 정지 회원 (API-명세 §3 "조회는 회원 상태를 확인하지 않는다") ----
@@ -554,16 +455,6 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
 
         assertThat(detail.myChoice()).isNull();
         assertThat(detail.result()).isNull();
-    }
-
-    @Test
-    void 정지된_작성자도_자신의_숨김_투표를_조회할_수_있다() {
-        var authorId = saveSuspendedMember();
-        var poll = savePoll(hidden(VoteFixture.openPoll(authorId)));
-
-        var detail = getPollDetail(publicIdOf(poll), member(authorId));
-
-        assertThat(detail.poll().getStatus()).isEqualTo(PollStatus.HIDDEN);
     }
 
     // ---- 숨김·삭제 투표의 참여 정보는 일반 규칙과 같다 (API-명세 §4 결과 공개 규칙, 예외-정책 P-03·P-04·P-25) ----

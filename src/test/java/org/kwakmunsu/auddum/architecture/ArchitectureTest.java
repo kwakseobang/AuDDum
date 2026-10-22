@@ -18,7 +18,7 @@ import org.kwakmunsu.auddum.support.stereotype.WebApi;
 
 /**
  * 아키텍처 설계서 §2의 패키지 규칙을 검증한다.
- * 도메인 패키지가 아직 비어 있어도 통과해야 하므로 allowEmptyShould를 켠다.
+ * 규칙에 해당하는 클래스가 아직 없는 도메인(report, admin 등)이 있어도 통과해야 하므로 allowEmptyShould를 켠다.
  */
 @AnalyzeClasses(packages = ArchitectureTest.ROOT, importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureTest {

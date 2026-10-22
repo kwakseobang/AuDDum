@@ -7,6 +7,8 @@ import static org.kwakmunsu.auddum.vote.application.VoteFixture.NOW;
 
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.kwakmunsu.auddum.poll.domain.PollErrorCode;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 import org.kwakmunsu.auddum.vote.VoteIntegrationTestSupport;
@@ -18,7 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 참여 처리 통합 테스트(H2). 기준은 API-명세 §4, 예외-정책 P-08·P-12:
  * 기록이 없으면 저장하고 결과를 돌려주며, 이미 참여했으면 선택과 관계없이(같은 선택, 마감 후 포함) 409 ALREADY_VOTED이고
- * 기존 기록은 그대로다. 회원 상태·공개 ID 조회의 오류 경로는 VoteCommandServiceTest가 보장한다.
+ * 기존 기록은 그대로다. 참여 우선순위(이미 참여 > 마감 > 선택지 범위)는 이 클래스가 정본이고, 회원 상태·공개 ID 조회의 오류 경로는
+ * VoteCommandServiceTest가 보장한다.
  */
 @RequiredArgsConstructor
 @Transactional
@@ -43,26 +46,15 @@ class VoteParticipatorTest extends VoteIntegrationTestSupport {
         assertThat(voteJpaRepository.findAll()).extracting(Vote::getVoter).contains(voter);
     }
 
-    @Test
-    void 같은_선택을_다시_보내도_ALREADY_VOTED이고_기록은_한_건이다() {
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2, 3})
+    void 이미_참여했으면_선택과_관계없이_ALREADY_VOTED이고_기존_기록은_그대로다(int position) {
+        // 1: 다른 선택, 2: 같은 선택, 3: 존재하지 않는 선택지(기존 참여가 선택지 검증보다 먼저다)
         var voter = Voter.member(saveMember());
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
         saveVote(poll, 2, voter);
 
-        assertThatThrownBy(() -> voteParticipator.participate(poll, ResolvedVoter.existing(voter), 2, NOW))
-            .isInstanceOf(AuddumException.class)
-            .hasMessage(VoteErrorCode.ALREADY_VOTED.getMessage());
-
-        assertThat(voteJpaRepository.count()).isEqualTo(1);
-    }
-
-    @Test
-    void 다른_선택을_보내면_ALREADY_VOTED이고_기존_기록은_그대로다() {
-        var voter = Voter.member(saveMember());
-        var poll = savePoll(VoteFixture.openPoll(saveMember()));
-        saveVote(poll, 2, voter);
-
-        assertThatThrownBy(() -> voteParticipator.participate(poll, ResolvedVoter.existing(voter), 1, NOW))
+        assertThatThrownBy(() -> voteParticipator.participate(poll, ResolvedVoter.existing(voter), position, NOW))
             .isInstanceOf(AuddumException.class)
             .hasMessage(VoteErrorCode.ALREADY_VOTED.getMessage());
 
@@ -70,47 +62,43 @@ class VoteParticipatorTest extends VoteIntegrationTestSupport {
             .containsExactly(poll.getOptions().get(1).getId());
     }
 
-    @Test
-    void 마감_후_같은_선택을_다시_보내면_POLL_CLOSED가_아니라_ALREADY_VOTED다() {
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2})
+    void 마감_후에도_이미_참여했으면_POLL_CLOSED가_아니라_ALREADY_VOTED다(int position) {
         var voter = Voter.member(saveMember());
         var poll = savePoll(VoteFixture.pollClosingAt(saveMember(), NOW));
         saveVote(poll, 1, voter);
 
-        assertThatThrownBy(() -> voteParticipator.participate(poll, ResolvedVoter.existing(voter), 1, NOW))
+        assertThatThrownBy(() -> voteParticipator.participate(poll, ResolvedVoter.existing(voter), position, NOW))
             .isInstanceOf(AuddumException.class)
             .hasMessage(VoteErrorCode.ALREADY_VOTED.getMessage());
     }
 
-    @Test
-    void 참여_기록이_없는_사람이_마감_시각에_보내면_POLL_CLOSED다() {
+    @ParameterizedTest
+    @ValueSource(ints = {1, 3})
+    void 참여_기록이_없는_사람이_마감_시각에_보내면_POLL_CLOSED다(int position) {
+        // 3: 존재하지 않는 선택지여도 마감이 선택지 검증보다 먼저다
         var poll = savePoll(VoteFixture.pollClosingAt(saveMember(), NOW));
 
         var resolved = ResolvedVoter.existing(Voter.member(saveMember()));
 
-        assertThatThrownBy(() -> voteParticipator.participate(poll, resolved, 1, NOW))
+        assertThatThrownBy(() -> voteParticipator.participate(poll, resolved, position, NOW))
             .isInstanceOf(AuddumException.class)
             .hasMessage(PollErrorCode.POLL_CLOSED.getMessage());
 
         assertThat(voteJpaRepository.count()).isZero();
     }
 
-    @Test
-    void 새로_발급한_쿠키_값은_결과에_그대로_담긴다() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void 새로_발급한_쿠키_값만_결과에_담긴다(boolean issued) {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
         var voter = Voter.member(saveMember());
+        var resolved = issued ? ResolvedVoter.issued(voter, ISSUED_COOKIE) : ResolvedVoter.existing(voter);
 
-        var result = voteParticipator.participate(poll, ResolvedVoter.issued(voter, ISSUED_COOKIE), 1, NOW);
+        var result = voteParticipator.participate(poll, resolved, 1, NOW);
 
-        assertThat(result.newCookieValue()).isEqualTo(ISSUED_COOKIE);
-    }
-
-    @Test
-    void 쿠키를_발급하지_않았으면_결과의_쿠키_값은_null이다() {
-        var poll = savePoll(VoteFixture.openPoll(saveMember()));
-
-        var result = voteParticipator.participate(poll, ResolvedVoter.existing(Voter.member(saveMember())), 1, NOW);
-
-        assertThat(result.newCookieValue()).isNull();
+        assertThat(result.newCookieValue()).isEqualTo(issued ? ISSUED_COOKIE : null);
     }
 
 }
