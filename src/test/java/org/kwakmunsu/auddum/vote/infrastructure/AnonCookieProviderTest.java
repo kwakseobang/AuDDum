@@ -45,82 +45,39 @@ class AnonCookieProviderTest {
 
     // ---- 검증: 위조·변조 ----
 
-    @Test
-    void 서명을_다른_쿠키의_서명으로_바꾸면_무효다() {
+    @ParameterizedTest
+    @ValueSource(strings = {"다른 쿠키의 서명", "UUID만 변경", "서명 잘라냄", "다른 서명 키"})
+    void 서명이_맞지_않는_쿠키는_SignatureMismatch로_무효다(String kind) {
         var cookie = anonCookieProvider.issue();
         var other = anonCookieProvider.issue();
-        var forged = "v1." + cookie.anonId().value() + "." + signatureOf(other.value());
+        var forged = switch (kind) {
+            case "다른 쿠키의 서명" -> "v1." + cookie.anonId().value() + "." + signatureOf(other.value());
+            case "UUID만 변경" -> "v1." + UUID.randomUUID() + "." + signatureOf(cookie.value());
+            case "서명 잘라냄" -> cookie.value().substring(0, cookie.value().length() - 1);
+            case "다른 서명 키" -> new AnonCookieProvider(new AnonCookieProperties(OTHER_SECRET)).issue().value();
+            default -> throw new IllegalArgumentException(kind);
+        };
 
         assertThat(anonCookieProvider.check(forged)).isInstanceOf(Verification.SignatureMismatch.class);
     }
 
-    @Test
-    void UUID만_바꾸고_서명을_그대로_두면_무효다() {
+    @ParameterizedTest
+    @ValueSource(strings = {"서명 비어 있음", "서명 없음", "버전 v2", "부분 네 개", "UUID 형식 아님", "대문자 UUID"})
+    void 형식이_맞지_않는_쿠키는_Malformed로_무효다(String kind) {
         var cookie = anonCookieProvider.issue();
-        var forged = "v1." + UUID.randomUUID() + "." + signatureOf(cookie.value());
-
-        assertThat(anonCookieProvider.check(forged)).isInstanceOf(Verification.SignatureMismatch.class);
-    }
-
-    @Test
-    void 서명을_잘라내면_무효다() {
-        var cookie = anonCookieProvider.issue();
-        var forged = cookie.value().substring(0, cookie.value().length() - 1);
-
-        assertThat(anonCookieProvider.check(forged)).isInstanceOf(Verification.SignatureMismatch.class);
-    }
-
-    @Test
-    void 서명이_비어_있으면_무효다() {
-        var cookie = anonCookieProvider.issue();
-
-        var result = anonCookieProvider.check("v1." + cookie.anonId().value() + ".");
-
-        assertThat(result).isInstanceOf(Verification.Malformed.class);
-    }
-
-    @Test
-    void 서명이_없으면_무효다() {
-        var cookie = anonCookieProvider.issue();
-
-        var result = anonCookieProvider.check("v1." + cookie.anonId().value());
-
-        assertThat(result).isInstanceOf(Verification.Malformed.class);
-    }
-
-    @Test
-    void 버전이_v1이_아니면_무효다() {
-        var cookie = anonCookieProvider.issue();
-        var forged = "v2" + cookie.value().substring(2);
+        var uuid = cookie.anonId().value();
+        var forged = switch (kind) {
+            case "서명 비어 있음" -> "v1." + uuid + ".";
+            case "서명 없음" -> "v1." + uuid;
+            case "버전 v2" -> "v2" + cookie.value().substring(2);
+            case "부분 네 개" -> cookie.value() + ".extra";
+            case "UUID 형식 아님" -> "v1.not-a-uuid.abcdef";
+            // 서명이 맞아도 정규형(소문자) UUID가 아니면 형식 오류다
+            case "대문자 UUID" -> "v1." + uuid.toString().toUpperCase() + "." + signatureOf(cookie.value());
+            default -> throw new IllegalArgumentException(kind);
+        };
 
         assertThat(anonCookieProvider.check(forged)).isInstanceOf(Verification.Malformed.class);
-    }
-
-    @Test
-    void 부분이_네_개면_무효다() {
-        var cookie = anonCookieProvider.issue();
-
-        assertThat(anonCookieProvider.check(cookie.value() + ".extra")).isInstanceOf(Verification.Malformed.class);
-    }
-
-    @Test
-    void 다른_서명_키로_발급한_쿠키는_무효다() {
-        var cookie = new AnonCookieProvider(new AnonCookieProperties(OTHER_SECRET)).issue();
-
-        assertThat(anonCookieProvider.check(cookie.value())).isInstanceOf(Verification.SignatureMismatch.class);
-    }
-
-    @Test
-    void UUID_자리가_UUID_형식이_아니면_무효다() {
-        assertThat(anonCookieProvider.check("v1.not-a-uuid.abcdef")).isInstanceOf(Verification.Malformed.class);
-    }
-
-    @Test
-    void 대문자_UUID처럼_정규형이_아니면_서명이_맞아도_형식_오류다() {
-        var cookie = anonCookieProvider.issue();
-        var upper = "v1." + cookie.anonId().value().toString().toUpperCase() + "." + signatureOf(cookie.value());
-
-        assertThat(anonCookieProvider.check(upper)).isInstanceOf(Verification.Malformed.class);
     }
 
     @ParameterizedTest

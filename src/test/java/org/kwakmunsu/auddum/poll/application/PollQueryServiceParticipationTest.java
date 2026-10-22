@@ -20,6 +20,8 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.kwakmunsu.auddum.member.domain.Role;
 import org.kwakmunsu.auddum.poll.application.dto.PollDetail;
 import org.kwakmunsu.auddum.poll.application.dto.Viewer;
@@ -279,78 +281,35 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
 
     // ---- 위조·형식 오류·빈 쿠키는 쿠키 없음과 같다 (인증-중복-참여 §2 발급과 읽기, 설계-결정 §3) ----
 
-    @Test
-    void 서명이_위조된_쿠키는_오류_없이_미참여로_본다() {
-        var poll = savePoll(VoteFixture.openPoll(saveMember()));
-        var cookie = anonCookieProvider.issue();
-        saveVote(poll, 1, Voter.anonymous(cookie.anonId()));
+    // 쿠키를 믿을 수 없는 경우들(서명 위조, 형식 깨짐, 빈 문자열, 쿠키 없음, 다른 키 서명)은 모두 쿠키 없음과 같이 미참여로 본다.
 
-        var detail = getPollDetail(publicIdOf(poll), anonymous(tamperSignature(cookie.value())));
+    @ParameterizedTest
+    @ValueSource(strings = {"서명 위조", "형식 깨짐", "빈 문자열", "쿠키 없음", "다른 키 서명"})
+    void 믿을_수_없는_쿠키는_오류_없이_미참여로_보고_기록과_로그를_남기지_않는다(String kind) {
+        var poll = savePoll(VoteFixture.openPoll(saveMember()));
+        var issued = anonCookieProvider.issue();
+        saveVote(poll, 1, Voter.anonymous(issued.anonId()));
+        var before = voteJpaRepository.count();
+
+        var detail = getPollDetail(publicIdOf(poll), untrusted(kind, issued.value()));
 
         assertThat(detail.myChoice()).isNull();
         assertThat(detail.result()).isNull();
         assertThat(detail.participantCount()).isEqualTo(1);
-    }
-
-    @Test
-    void 형식이_깨진_쿠키는_오류_없이_미참여로_본다() {
-        var poll = savePoll(VoteFixture.openPoll(saveMember()));
-
-        var detail = getPollDetail(publicIdOf(poll), anonymous("not-a-cookie"));
-
-        assertThat(detail.myChoice()).isNull();
-        assertThat(detail.result()).isNull();
-    }
-
-    @Test
-    void 빈_문자열_쿠키는_쿠키_없음과_같이_미참여다() {
-        var poll = savePoll(VoteFixture.openPoll(saveMember()));
-
-        var detail = getPollDetail(publicIdOf(poll), anonymous(""));
-
-        assertThat(detail.myChoice()).isNull();
-        assertThat(detail.result()).isNull();
-    }
-
-    @Test
-    void 형식이_깨진_쿠키로_조회해도_투표_기록이_늘지_않는다() {
-        var poll = savePoll(VoteFixture.openPoll(saveMember()));
-        var before = voteJpaRepository.count();
-
-        getPollDetail(publicIdOf(poll), anonymous("not-a-cookie"));
-
         assertThat(voteJpaRepository.count()).isEqualTo(before);
+        assertNoWarnOrAbove();
+        assertThat(appender.list).extracting(ILoggingEvent::getFormattedMessage)
+            .noneMatch(message -> message.contains("ANON_COOKIE_FORGED"));
     }
 
-    @Test
-    void 서명이_위조된_쿠키로_조회해도_투표_기록이_늘지_않는다() {
-        var poll = savePoll(VoteFixture.openPoll(saveMember()));
-        var before = voteJpaRepository.count();
-
-        getPollDetail(
-            publicIdOf(poll),
-            anonymous(tamperSignature(anonCookieProvider.issue().value())));
-
-        assertThat(voteJpaRepository.count()).isEqualTo(before);
-    }
-
-    @Test
-    void 쿠키_없이_조회해도_투표_기록이_늘지_않는다() {
-        var poll = savePoll(VoteFixture.openPoll(saveMember()));
-        var before = voteJpaRepository.count();
-
-        getPollDetail(publicIdOf(poll), noCredential());
-
-        assertThat(voteJpaRepository.count()).isEqualTo(before);
-    }
-
-    @Test
-    void 마감_후에는_위조_쿠키로도_result를_받는다() {
+    @ParameterizedTest
+    @ValueSource(strings = {"서명 위조", "형식 깨짐", "빈 문자열", "쿠키 없음", "다른 키 서명"})
+    void 마감_후에는_믿을_수_없는_쿠키로도_result를_받고_myChoice는_null이다(String kind) {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
         saveVote(poll, 1, Voter.member(saveMember()));
         savePoll(VoteFixture.expire(poll));
 
-        var detail = getPollDetail(publicIdOf(poll), anonymous("not-a-cookie"));
+        var detail = getPollDetail(publicIdOf(poll), untrusted(kind, anonCookieProvider.issue().value()));
 
         assertThat(detail.myChoice()).isNull();
         assertThat(detail.result().total()).isEqualTo(1);
@@ -527,37 +486,6 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
     // ---- 조회에서는 위조 쿠키 WARN 로그를 남기지 않는다 (인증-중복-참여 §2 발급과 읽기, 설계-결정 §3) ----
 
     @Test
-    void 서명이_위조된_쿠키로_조회해도_WARN_이상의_로그가_없다() {
-        var poll = savePoll(VoteFixture.openPoll(saveMember()));
-        var cookie = anonCookieProvider.issue();
-
-        getPollDetail(publicIdOf(poll), anonymous(tamperSignature(cookie.value())));
-
-        assertNoWarnOrAbove();
-    }
-
-    @Test
-    void 형식이_깨진_쿠키로_조회해도_WARN_이상의_로그가_없다() {
-        var poll = savePoll(VoteFixture.openPoll(saveMember()));
-
-        getPollDetail(publicIdOf(poll), anonymous("garbage-cookie"));
-
-        assertNoWarnOrAbove();
-    }
-
-    @Test
-    void 다른_키로_서명한_쿠키로_조회해도_로그에_위조_표식이_없다() {
-        var poll = savePoll(VoteFixture.openPoll(saveMember()));
-        var forged = "v1." + UUID.randomUUID() + ".forgedsig";
-
-        getPollDetail(publicIdOf(poll), anonymous(forged));
-
-        assertNoWarnOrAbove();
-        assertThat(appender.list).extracting(ILoggingEvent::getFormattedMessage)
-            .noneMatch(message -> message.contains("ANON_COOKIE_FORGED"));
-    }
-
-    @Test
     void 회원이_위조_쿠키를_같이_보내도_쿠키를_보지_않아_로그가_없다() {
         var memberId = saveMember();
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
@@ -586,6 +514,18 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
     /** 참여 쪽 신원 단서(VoterCredential)를 조회 쪽 Viewer로 바꿔 상세를 조회한다. */
     private PollDetail getPollDetail(String publicId, VoterCredential credential) {
         return pollQueryService.getPollDetail(publicId, new Viewer(credential.memberId(), credential.anonCookieValue()));
+    }
+
+    /** 신뢰할 수 없는 쿠키 종류에 맞는 신원 단서. issuedValue는 실제로 발급된 쿠키 값이다(서명 위조는 이 쿠키의 서명을 바꾼다). */
+    private VoterCredential untrusted(String kind, String issuedValue) {
+        return switch (kind) {
+            case "서명 위조" -> anonymous(tamperSignature(issuedValue));
+            case "형식 깨짐" -> anonymous("not-a-cookie");
+            case "빈 문자열" -> anonymous("");
+            case "쿠키 없음" -> noCredential();
+            case "다른 키 서명" -> anonymous("v1." + UUID.randomUUID() + ".forgedsig");
+            default -> throw new IllegalArgumentException(kind);
+        };
     }
 
 }
