@@ -13,6 +13,7 @@ test-writer, domain-reviewer, code-reviewer가 **같은 기준**을 쓰기 위�
 
 | 주제 | 읽을 곳 |
 |---|---|
+| 문서 읽는 순서, 규칙의 정본, P·UC·OP 번호 범례 | `README.md` |
 | 용어(투표·참여·신원·숨김·삭제·정지·탈퇴) | `도메인-모델.md` §1 |
 | 회원·MemberAuth·RefreshToken 행위·규칙·상태 전이 | `도메인-모델.md` §3 |
 | Poll·PollOption 행위·규칙·공개 상태 전이 | `도메인-모델.md` §4 |
