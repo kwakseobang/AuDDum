@@ -19,7 +19,8 @@ class AnonIdTest {
     @Test
     void UUID가_null이면_만들_수_없다() {
         assertThatThrownBy(() -> new AnonId(null))
-                .isInstanceOf(AuddumException.class);
+                .isInstanceOf(AuddumException.class)
+                .hasMessage("익명 식별자는 필수입니다.");
     }
 
 }

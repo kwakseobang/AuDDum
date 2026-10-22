@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 
 class PublicIdTest {
@@ -14,37 +16,16 @@ class PublicIdTest {
         assertThat(PublicId.of("aB3dE6gH9jK1").value()).isEqualTo("aB3dE6gH9jK1");
     }
 
-    @Test
-    void 열한_자는_공개_ID가_될_수_없다() {
-        assertThatThrownBy(() -> PublicId.of("aB3dE6gH9jK"))
-                .isInstanceOf(AuddumException.class)
-                .hasMessage("공개 ID는 12자 영숫자여야 합니다.");
-    }
-
-    @Test
-    void 열세_자는_공개_ID가_될_수_없다() {
-        assertThatThrownBy(() -> PublicId.of("aB3dE6gH9jK12"))
-                .isInstanceOf(AuddumException.class)
-                .hasMessage("공개 ID는 12자 영숫자여야 합니다.");
-    }
-
-    @Test
-    void 영숫자가_아닌_문자가_있으면_공개_ID가_될_수_없다() {
-        assertThatThrownBy(() -> PublicId.of("aB3dE6gH9j-1"))
-                .isInstanceOf(AuddumException.class)
-                .hasMessage("공개 ID는 12자 영숫자여야 합니다.");
-    }
-
-    @Test
-    void 한글이_섞인_열두_자는_공개_ID가_될_수_없다() {
-        assertThatThrownBy(() -> PublicId.of("가나다라마바사아자차카타"))
-                .isInstanceOf(AuddumException.class)
-                .hasMessage("공개 ID는 12자 영숫자여야 합니다.");
-    }
-
-    @Test
-    void 공백이_섞인_열두_자는_공개_ID가_될_수_없다() {
-        assertThatThrownBy(() -> PublicId.of("aB3dE6gH9jK "))
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "aB3dE6gH9jK",       // 열한 자
+        "aB3dE6gH9jK12",     // 열세 자
+        "aB3dE6gH9j-1",      // 영숫자가 아닌 문자
+        "가나다라마바사아자차카타",   // 한글 열두 자
+        "aB3dE6gH9jK "       // 공백이 섞인 열두 자
+    })
+    void 열두_자_영숫자가_아니면_공개_ID가_될_수_없다(String value) {
+        assertThatThrownBy(() -> PublicId.of(value))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage("공개 ID는 12자 영숫자여야 합니다.");
     }

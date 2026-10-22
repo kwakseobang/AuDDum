@@ -5,7 +5,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.kwakmunsu.auddum.vote.domain.VoteFixture.anyAnonId;
 
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 
 class VoterTest {
@@ -28,43 +32,48 @@ class VoterTest {
         assertThat(voter.memberId()).isNull();
     }
 
-    @Test
-    void 회원_ID와_익명_식별자를_모두_주면_만들_수_없다() {
-        assertThatThrownBy(() -> new Voter(7L, anyAnonId()))
-                .isInstanceOf(AuddumException.class);
+    @ParameterizedTest
+    @MethodSource("정확히_하나가_아닌_조합")
+    void 회원_ID와_익명_식별자는_정확히_하나만_줄_수_있다(Long memberId, AnonId anonId) {
+        assertThatThrownBy(() -> new Voter(memberId, anonId))
+                .isInstanceOf(AuddumException.class)
+                .hasMessage("참여자는 회원 ID와 익명 식별자 중 하나여야 합니다.");
     }
 
-    @Test
-    void 회원_ID와_익명_식별자를_모두_비우면_만들_수_없다() {
-        assertThatThrownBy(() -> new Voter(null, null))
-                .isInstanceOf(AuddumException.class);
+    static Stream<Arguments> 정확히_하나가_아닌_조합() {
+        return Stream.of(
+                Arguments.of(7L, new AnonId(UUID.randomUUID())),   // 둘 다 줌
+                Arguments.of(null, null)                            // 둘 다 비움
+        );
     }
 
-    @Test
-    void 같은_회원_ID의_참여자는_같다() {
-        assertThat(Voter.member(7L)).isEqualTo(Voter.member(7L));
+    @ParameterizedTest
+    @MethodSource("같은_참여자")
+    void 같은_회원_ID_또는_같은_UUID의_참여자는_같다(Voter left, Voter right) {
+        assertThat(left).isEqualTo(right);
     }
 
-    @Test
-    void 다른_회원_ID의_참여자는_다르다() {
-        assertThat(Voter.member(7L)).isNotEqualTo(Voter.member(8L));
-    }
-
-    @Test
-    void 같은_UUID의_익명_참여자는_같다() {
+    static Stream<Arguments> 같은_참여자() {
         var uuid = UUID.randomUUID();
 
-        assertThat(Voter.anonymous(new AnonId(uuid))).isEqualTo(Voter.anonymous(new AnonId(uuid)));
+        return Stream.of(
+                Arguments.of(Voter.member(7L), Voter.member(7L)),
+                Arguments.of(Voter.anonymous(new AnonId(uuid)), Voter.anonymous(new AnonId(uuid)))
+        );
     }
 
-    @Test
-    void 다른_UUID의_익명_참여자는_다르다() {
-        assertThat(Voter.anonymous(anyAnonId())).isNotEqualTo(Voter.anonymous(anyAnonId()));
+    @ParameterizedTest
+    @MethodSource("다른_참여자")
+    void 회원_ID나_UUID가_다르거나_회원과_익명이면_참여자는_다르다(Voter left, Voter right) {
+        assertThat(left).isNotEqualTo(right);
     }
 
-    @Test
-    void 회원_참여자와_익명_참여자는_다르다() {
-        assertThat(Voter.member(7L)).isNotEqualTo(Voter.anonymous(anyAnonId()));
+    static Stream<Arguments> 다른_참여자() {
+        return Stream.of(
+                Arguments.of(Voter.member(7L), Voter.member(8L)),
+                Arguments.of(Voter.anonymous(anyAnonId()), Voter.anonymous(anyAnonId())),
+                Arguments.of(Voter.member(7L), Voter.anonymous(anyAnonId()))
+        );
     }
 
 }

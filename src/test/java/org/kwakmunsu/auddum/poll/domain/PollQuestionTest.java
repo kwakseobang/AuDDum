@@ -3,47 +3,52 @@ package org.kwakmunsu.auddum.poll.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 
 class PollQuestionTest {
 
-    @Test
-    void 한_글자_질문은_만들_수_있다() {
-        assertThat(PollQuestion.of("a").value()).isEqualTo("a");
+    @ParameterizedTest
+    @MethodSource("만들_수_있는_질문")
+    void 앞뒤_공백을_제거한_길이가_1에서_500자이면_제거한_값으로_만들_수_있다(String input, String expected) {
+        assertThat(PollQuestion.of(input).value()).isEqualTo(expected);
     }
 
-    @Test
-    void 오백_자_질문은_만들_수_있다() {
-        assertThat(PollQuestion.of(PollFixture.repeatChar(500)).value()).hasSize(500);
+    static Stream<Arguments> 만들_수_있는_질문() {
+        return Stream.of(
+                Arguments.of("a", "a"),
+                Arguments.of(PollFixture.repeatChar(500), PollFixture.repeatChar(500)),
+                Arguments.of("  점심 뭐 먹지?  ", "점심 뭐 먹지?"),
+                Arguments.of(" " + PollFixture.repeatChar(500) + " ", PollFixture.repeatChar(500))
+        );
     }
 
-    @Test
-    void 오백한_자_질문은_만들_수_없다() {
-        assertThatThrownBy(() -> PollQuestion.of(PollFixture.repeatChar(501)))
+    @ParameterizedTest
+    @MethodSource("길이가_범위_밖인_질문")
+    void 앞뒤_공백을_제거한_길이가_1에서_500자를_벗어나면_만들_수_없다(String input) {
+        assertThatThrownBy(() -> PollQuestion.of(input))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage("질문은 1~500자여야 합니다.");
     }
 
-    @Test
-    void 빈_질문은_만들_수_없다() {
-        assertThatThrownBy(() -> PollQuestion.of(""))
-                .isInstanceOf(AuddumException.class)
-                .hasMessage("질문은 1~500자여야 합니다.");
+    static Stream<String> 길이가_범위_밖인_질문() {
+        return Stream.of(
+                "",                                              // 빈 질문
+                "   ",                                           // 공백만
+                PollFixture.repeatChar(501),                     // 오백한 자
+                " " + PollFixture.repeatChar(501) + " "          // 앞뒤 공백을 제거해도 오백한 자
+        );
     }
 
-    @Test
-    void 줄바꿈이_있는_질문은_만들_수_없다() {
-        assertThatThrownBy(() -> PollQuestion.of("첫째 줄\n둘째 줄"))
-                .isInstanceOf(AuddumException.class)
-                .hasMessage("질문에는 줄바꿈을 넣을 수 없습니다.");
-    }
-
-    @Test
-    void 캐리지리턴이_있는_질문은_만들_수_없다() {
-        assertThatThrownBy(() -> PollQuestion.of("첫째 줄\r\n둘째 줄"))
+    @ParameterizedTest
+    @ValueSource(strings = {"첫째 줄\n둘째 줄", "첫째 줄\r\n둘째 줄", "가\u000B나", "가\u000C나", "가\u0085나", "가 나", "가 나"})
+    void 줄바꿈이나_유니코드_줄_구분자가_있으면_만들_수_없다(String value) {
+        assertThatThrownBy(() -> PollQuestion.of(value))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage("질문에는 줄바꿈을 넣을 수 없습니다.");
     }
@@ -57,38 +62,6 @@ class PollQuestionTest {
         assertThatThrownBy(() -> PollQuestion.of(emoji.repeat(501)))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage("질문은 1~500자여야 합니다.");
-    }
-
-    @Test
-    void 공백만_있는_질문은_만들_수_없다() {
-        assertThatThrownBy(() -> PollQuestion.of("   "))
-                .isInstanceOf(AuddumException.class)
-                .hasMessage("질문은 1~500자여야 합니다.");
-    }
-
-    @Test
-    void 앞뒤_공백은_제거한_값이_저장된다() {
-        assertThat(PollQuestion.of("  점심 뭐 먹지?  ").value()).isEqualTo("점심 뭐 먹지?");
-    }
-
-    @Test
-    void 앞뒤_공백이_붙은_오백_자_질문은_제거_후_길이로_판단해_만들_수_있다() {
-        assertThat(PollQuestion.of(" " + PollFixture.repeatChar(500) + " ").value()).isEqualTo(PollFixture.repeatChar(500));
-    }
-
-    @Test
-    void 앞뒤_공백이_붙은_오백한_자_질문은_만들_수_없다() {
-        assertThatThrownBy(() -> PollQuestion.of(" " + PollFixture.repeatChar(501) + " "))
-                .isInstanceOf(AuddumException.class)
-                .hasMessage("질문은 1~500자여야 합니다.");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"가\u000B나", "가\u000C나", "가\u0085나", "가\u2028나", "가\u2029나"})
-    void 유니코드_줄_구분자가_있는_질문은_만들_수_없다(String value) {
-        assertThatThrownBy(() -> PollQuestion.of(value))
-                .isInstanceOf(AuddumException.class)
-                .hasMessage("질문에는 줄바꿈을 넣을 수 없습니다.");
     }
 
 }

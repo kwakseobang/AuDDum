@@ -18,7 +18,6 @@ import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 import org.kwakmunsu.auddum.vote.ConcurrentRace.Outcome;
 import org.kwakmunsu.auddum.vote.application.VoteCommandService;
-import org.kwakmunsu.auddum.vote.application.VoteFixture;
 import org.kwakmunsu.auddum.vote.application.VoteReader;
 import org.kwakmunsu.auddum.vote.application.dto.CastResult;
 import org.kwakmunsu.auddum.vote.domain.AnonId;
@@ -51,7 +50,7 @@ class VoteConcurrencyTest extends MySqlConcurrencyTestSupport {
     final MockMvcTester mvcTester;
 
     @RepeatedTest(REPETITIONS)
-    void 같은_회원이_동시에_참여하면_기록은_한_건이다() throws Exception {
+    void 같은_회원이_동시에_참여하면_기록은_한_건이고_한_요청만_성공하며_나머지는_ALREADY_VOTED다() throws Exception {
         var poll = saveOpenPoll();
         var memberId = saveMember();
 
@@ -60,15 +59,6 @@ class VoteConcurrencyTest extends MySqlConcurrencyTestSupport {
         assertThat(voteJpaRepository.count()).isEqualTo(1);
         assertThat(voteReader.find(poll, Voter.member(memberId))).isPresent();
         assertThat(outcomes).hasSize(THREADS);
-    }
-
-    @RepeatedTest(REPETITIONS)
-    void 같은_회원이_동시에_참여하면_한_요청만_성공하고_나머지는_ALREADY_VOTED다() throws Exception {
-        var poll = saveOpenPoll();
-        var memberId = saveMember();
-
-        var outcomes = ConcurrentRace.run(repeat(() -> voteCommandService.castVote(choice(poll, 1), member(memberId))));
-
         assertThat(outcomes).filteredOn(Outcome::succeeded).hasSize(1);
         assertAllLosersAlreadyVoted(outcomes);
     }
@@ -100,18 +90,6 @@ class VoteConcurrencyTest extends MySqlConcurrencyTestSupport {
 
         assertThat(voteJpaRepository.count()).isEqualTo(1);
         assertThat(outcomes).filteredOn(Outcome::succeeded).hasSize(1);
-        assertAllLosersAlreadyVoted(outcomes);
-    }
-
-    @RepeatedTest(REPETITIONS)
-    void 같은_익명_쿠키로_같은_선택을_동시에_보내도_진_쪽은_ALREADY_VOTED다() throws Exception {
-        var poll = saveOpenPoll();
-        var cookie = anonCookieProvider.issue();
-
-        var outcomes = ConcurrentRace.run(repeat(() -> voteCommandService.castVote(choice(poll, 2), anonymous(cookie.value()))));
-
-        var losers = outcomes.stream().filter(outcome -> !outcome.succeeded()).toList();
-        assertThat(losers).hasSize(THREADS - 1);
         assertAllLosersAlreadyVoted(outcomes);
     }
 

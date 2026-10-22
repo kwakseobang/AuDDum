@@ -11,9 +11,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import java.sql.SQLException;
+import java.util.stream.Stream;
 import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.exception.ConstraintViolationException.ConstraintKind;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.poll.domain.PollErrorCode;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 import org.kwakmunsu.auddum.vote.domain.Vote;
@@ -49,38 +54,25 @@ class VoteWriterTest {
         verify(voteRepository).saveAndFlush(cast);
     }
 
-    @Test
-    void 마감된_투표는_POLL_CLOSED이고_저장하지_않는다() {
-        var poll = VoteFixture.withIds(VoteFixture.pollClosingAt(1L, NOW));
-
-        assertThatThrownBy(() -> voteWriter.cast(poll, Voter.member(7L), 1, NOW))
+    @ParameterizedTest
+    @MethodSource("저장하지_않는_위반")
+    void 도메인_규칙을_어기면_오류를_던지고_저장하지_않는다(Poll poll, int position, PollErrorCode expected) {
+        assertThatThrownBy(() -> voteWriter.cast(poll, Voter.member(7L), position, NOW))
             .isInstanceOf(AuddumException.class)
-            .hasMessage(PollErrorCode.POLL_CLOSED.getMessage());
+            .hasMessage(expected.getMessage());
 
         verify(voteRepository, never()).saveAndFlush(any(Vote.class));
     }
 
-    @Test
-    void 이_투표에_없는_순번은_INVALID_OPTION이고_저장하지_않는다() {
-        var poll = VoteFixture.withIds(VoteFixture.openPoll(1L));
+    static Stream<Arguments> 저장하지_않는_위반() {
+        var hidden = VoteFixture.withIds(VoteFixture.openPoll(1L));
+        hidden.hide();
 
-        assertThatThrownBy(() -> voteWriter.cast(poll, Voter.member(7L), 3, NOW))
-            .isInstanceOf(AuddumException.class)
-            .hasMessage(PollErrorCode.INVALID_OPTION.getMessage());
-
-        verify(voteRepository, never()).saveAndFlush(any(Vote.class));
-    }
-
-    @Test
-    void 공개가_아닌_투표는_POLL_NOT_FOUND이고_저장하지_않는다() {
-        var poll = VoteFixture.withIds(VoteFixture.openPoll(1L));
-        poll.hide();
-
-        assertThatThrownBy(() -> voteWriter.cast(poll, Voter.member(7L), 1, NOW))
-            .isInstanceOf(AuddumException.class)
-            .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
-
-        verify(voteRepository, never()).saveAndFlush(any(Vote.class));
+        return Stream.of(
+            Arguments.of(VoteFixture.withIds(VoteFixture.pollClosingAt(1L, NOW)), 1, PollErrorCode.POLL_CLOSED),
+            Arguments.of(VoteFixture.withIds(VoteFixture.openPoll(1L)), 3, PollErrorCode.INVALID_OPTION),
+            Arguments.of(hidden, 1, PollErrorCode.POLL_NOT_FOUND)
+        );
     }
 
     @Test
@@ -113,48 +105,26 @@ class VoteWriterTest {
             .hasCause(original);
     }
 
-    @Test
-    void 외래키_위반은_그대로_올린다() {
-        var original = violation(ConstraintKind.FOREIGN_KEY);
-        given(voteRepository.saveAndFlush(vote)).willThrow(original);
-
-        assertThatThrownBy(() -> voteWriter.saveOnce(vote)).isSameAs(original);
-    }
-
-    @Test
-    void CHECK_위반은_그대로_올린다() {
-        var original = violation(ConstraintKind.CHECK);
-        given(voteRepository.saveAndFlush(vote)).willThrow(original);
-
-        assertThatThrownBy(() -> voteWriter.saveOnce(vote)).isSameAs(original);
-    }
-
-    @Test
-    void 제약_종류를_알_수_없는_위반은_그대로_올린다() {
-        var original = violation(ConstraintKind.OTHER);
-        given(voteRepository.saveAndFlush(vote)).willThrow(original);
-
-        assertThatThrownBy(() -> voteWriter.saveOnce(vote)).isSameAs(original);
-    }
-
-    @Test
-    void 원인이_Hibernate_제약_예외가_아닌_DataIntegrityViolationException은_그대로_올린다() {
-        var original = new DataIntegrityViolationException("원인 없음");
-        given(voteRepository.saveAndFlush(vote)).willThrow(original);
-
-        assertThatThrownBy(() -> voteWriter.saveOnce(vote)).isSameAs(original);
-    }
-
-    @Test
-    void 다른_예외는_그대로_올린다() {
-        var original = new QueryTimeoutException("시간 초과");
+    @ParameterizedTest
+    @MethodSource("그대로_올리는_예외")
+    void 유니크_위반이_아닌_예외는_바꾸지_않고_그대로_올린다(RuntimeException original) {
         given(voteRepository.saveAndFlush(vote)).willThrow(original);
 
         assertThatThrownBy(() -> voteWriter.saveOnce(vote)).isSameAs(original);
         assertThat(original).isNotInstanceOf(AuddumException.class);
     }
 
-    private DataIntegrityViolationException violation(ConstraintKind kind) {
+    static Stream<RuntimeException> 그대로_올리는_예외() {
+        return Stream.of(
+            violation(ConstraintKind.FOREIGN_KEY),
+            violation(ConstraintKind.CHECK),
+            violation(ConstraintKind.OTHER),
+            new DataIntegrityViolationException("원인 없음"),
+            new QueryTimeoutException("시간 초과")
+        );
+    }
+
+    private static DataIntegrityViolationException violation(ConstraintKind kind) {
         var cause = new ConstraintViolationException("제약 위반", new SQLException("test"), kind, "uk_vote_test");
 
         return new DataIntegrityViolationException("저장 실패", cause);

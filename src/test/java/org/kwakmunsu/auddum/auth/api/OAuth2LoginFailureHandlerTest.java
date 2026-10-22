@@ -2,7 +2,11 @@ package org.kwakmunsu.auddum.auth.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -26,30 +30,33 @@ class OAuth2LoginFailureHandlerTest {
 
     final OAuth2LoginFailureHandler handler = new OAuth2LoginFailureHandler(FRONT);
 
-    @Test
-    void state가_없거나_일치하지_않으면_INVALID_STATE_코드로_오류_화면에_302한다() throws Exception {
-        assertRedirectsWithCode(oauthError("authorization_request_not_found"), "INVALID_STATE");
-        assertRedirectsWithCode(oauthError("invalid_state_parameter"), "INVALID_STATE");
+    @ParameterizedTest
+    @MethodSource("실패_원인과_오류_코드")
+    void 로그인_실패는_원인에_맞는_코드로_JSON_본문_없이_오류_화면에_302한다(AuthenticationException exception, String code) throws Exception {
+        var response = new MockHttpServletResponse();
+
+        handler.onAuthenticationFailure(new MockHttpServletRequest(), response, exception);
+
+        assertThat(response.getStatus()).isEqualTo(302);
+        assertThat(response.getRedirectedUrl()).isEqualTo(FRONT + "/login/error?code=" + code);
+        assertThat(response.getContentAsString()).isEmpty();
     }
 
-    @Test
-    void 인가_코드가_만료되거나_재사용되면_SOCIAL_AUTH_FAILED_코드로_오류_화면에_302한다() throws Exception {
-        assertRedirectsWithCode(oauthError("invalid_grant"), "SOCIAL_AUTH_FAILED");
-    }
-
-    @Test
-    void 카카오_장애나_타임아웃이면_SOCIAL_UNAVAILABLE_코드로_오류_화면에_302한다() throws Exception {
-        var timeout = new OAuth2AuthenticationException(new OAuth2Error("invalid_token_response"), new ResourceAccessException("timeout"));
-
-        assertRedirectsWithCode(timeout, "SOCIAL_UNAVAILABLE");
-    }
-
-    @Test
-    void 카카오가_4xx로_거절한_인가_코드_실패는_장애가_아니라_SOCIAL_AUTH_FAILED다() throws Exception {
-        var rejected = new OAuth2AuthenticationException(new OAuth2Error("invalid_grant"),
-            HttpClientErrorException.create(HttpStatus.BAD_REQUEST, "Bad Request", HttpHeaders.EMPTY, new byte[0], null));
-
-        assertRedirectsWithCode(rejected, "SOCIAL_AUTH_FAILED");
+    static Stream<Arguments> 실패_원인과_오류_코드() {
+        return Stream.of(
+            // state가 없거나 일치하지 않는다
+            Arguments.of(oauthError("authorization_request_not_found"), "INVALID_STATE"),
+            Arguments.of(oauthError("invalid_state_parameter"), "INVALID_STATE"),
+            // 인가 코드가 만료되거나 재사용되었다
+            Arguments.of(oauthError("invalid_grant"), "SOCIAL_AUTH_FAILED"),
+            // 카카오 장애나 타임아웃이다
+            Arguments.of(new OAuth2AuthenticationException(new OAuth2Error("invalid_token_response"), new ResourceAccessException("timeout")),
+                "SOCIAL_UNAVAILABLE"),
+            // 카카오가 4xx로 거절한 인가 코드 실패는 장애가 아니라 인증 실패다
+            Arguments.of(new OAuth2AuthenticationException(new OAuth2Error("invalid_grant"),
+                HttpClientErrorException.create(HttpStatus.BAD_REQUEST, "Bad Request", HttpHeaders.EMPTY, new byte[0], null)),
+                "SOCIAL_AUTH_FAILED")
+        );
     }
 
     @Test
@@ -72,16 +79,6 @@ class OAuth2LoginFailureHandlerTest {
     }
 
     @Test
-    void 실패_응답은_JSON_본문이_없는_리다이렉트다() throws Exception {
-        var response = new MockHttpServletResponse();
-
-        handler.onAuthenticationFailure(new MockHttpServletRequest(), response, oauthError("invalid_grant"));
-
-        assertThat(response.getStatus()).isEqualTo(302);
-        assertThat(response.getContentAsString()).isEmpty();
-    }
-
-    @Test
     void 사용자가_카카오_화면에서_취소해도_가입_없이_오류_화면으로_302한다() throws Exception {
         var response = new MockHttpServletResponse();
 
@@ -91,16 +88,7 @@ class OAuth2LoginFailureHandlerTest {
         assertThat(response.getRedirectedUrl()).startsWith(FRONT + "/login/error");
     }
 
-    private void assertRedirectsWithCode(AuthenticationException exception, String code) throws Exception {
-        var response = new MockHttpServletResponse();
-
-        handler.onAuthenticationFailure(new MockHttpServletRequest(), response, exception);
-
-        assertThat(response.getStatus()).isEqualTo(302);
-        assertThat(response.getRedirectedUrl()).isEqualTo(FRONT + "/login/error?code=" + code);
-    }
-
-    private OAuth2AuthenticationException oauthError(String errorCode) {
+    private static OAuth2AuthenticationException oauthError(String errorCode) {
         return new OAuth2AuthenticationException(new OAuth2Error(errorCode));
     }
 
