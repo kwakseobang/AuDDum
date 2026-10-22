@@ -3,11 +3,17 @@ package org.kwakmunsu.auddum.poll.api.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import lombok.AccessLevel;
+import lombok.Builder;
+import org.kwakmunsu.auddum.poll.application.dto.PollSummary;
 import org.kwakmunsu.auddum.poll.domain.Category;
 import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.support.config.TimeConfig;
 
-/** 목록의 투표 한 건. 내부 id는 담지 않고 공개 ID만 내린다. */
+/**
+ * 목록의 투표 한 건. 내부 id는 담지 않고 공개 ID만 내린다.
+ */
+@Builder(access = AccessLevel.PRIVATE)
 @Schema(description = "투표 목록 항목")
 public record PollSummaryResponse(
     @Schema(description = "공개 ID", example = "aB3dE5fG7hJk")
@@ -17,7 +23,7 @@ public record PollSummaryResponse(
 
     Category category,
 
-    @Schema(description = "참여 수. 참여 기능(#15) 전까지 0", example = "0")
+    @Schema(description = "전체 참여 수", example = "42")
     long participantCount,
 
     boolean closed,
@@ -29,16 +35,18 @@ public record PollSummaryResponse(
     OffsetDateTime createdAt
 ) {
 
-    public static PollSummaryResponse of(Poll poll, LocalDateTime now) {
-        return new PollSummaryResponse(
-            poll.getPublicId().value(),
-            poll.getQuestion().value(),
-            poll.getCategory(),
-            0,
-            poll.isClosed(now),
-            TimeConfig.toKstOffset(poll.getClosesAt() == null ? null : poll.getClosesAt().value()),
-            TimeConfig.toKstOffset(poll.getCreatedAt())
-        );
+    public static PollSummaryResponse of(PollSummary summary, LocalDateTime now) {
+        Poll poll = summary.poll();
+
+        return PollSummaryResponse.builder()
+            .id(poll.getPublicId().value())
+            .question(poll.getQuestion().value())
+            .category(poll.getCategory())
+            .participantCount(summary.participantCount())
+            .closed(poll.isClosed(now))
+            .closesAt(TimeConfig.toKstOffset(poll.getClosesAt() == null ? null : poll.getClosesAt().value()))
+            .createdAt(TimeConfig.toKstOffset(poll.getCreatedAt()))
+            .build();
     }
 
 }

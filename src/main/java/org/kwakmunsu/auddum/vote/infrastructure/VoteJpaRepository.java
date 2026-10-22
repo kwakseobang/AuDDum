@@ -1,5 +1,6 @@
 package org.kwakmunsu.auddum.vote.infrastructure;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,6 +31,18 @@ public interface VoteJpaRepository extends JpaRepository<Vote, Long> {
     /** 선택지별 득표 수. 득표가 없는 선택지는 나오지 않는다. */
     @Query("select v.optionId as optionId, count(v) as votes from Vote v where v.pollId = :pollId group by v.optionId")
     List<OptionCount> countByOption(@Param("pollId") Long pollId);
+
+    /** 투표별 참여 수. 참여가 없는 투표는 나오지 않는다. */
+    @Query("select v.pollId as pollId, count(v) as votes from Vote v where v.pollId in :pollIds group by v.pollId")
+    List<PollCount> countByPollIds(@Param("pollIds") Collection<Long> pollIds);
+
+    interface PollCount {
+
+        Long getPollId();
+
+        long getVotes();
+
+    }
 
     interface OptionCount {
 
