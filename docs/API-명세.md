@@ -390,9 +390,9 @@
 
 **POST /admin/reports/{reportId}/actions**
 
-- 요청: `{ actions, reason }`. `actions`는 `DISMISS`, `HIDE_POLL`, `DELETE_POLL`, `SUSPEND_AUTHOR` 중 하나 이상이고 `reason`은 필수다(회원에게 노출하지 않는다).
-- 허용하는 조합: `DISMISS`는 단독, `HIDE_POLL`과 `DELETE_POLL`은 함께 쓸 수 없고, 둘 중 하나에 `SUSPEND_AUTHOR`를 덧붙일 수 있다. 위반하면 400 `VALIDATION_FAILED`.
-- 대상 상태 변경, 신고 상태 변경(`DISMISS`면 DISMISSED, 그 외 RESOLVED), 조치 이력(처리자·시각·조치·사유) 기록을 한 트랜잭션으로 처리한다. 실패하면 전부 롤백한다.
+- 요청: `{ actions, reason }`. `actions`는 `DISMISS_REPORT`, `HIDE_POLL`, `DELETE_POLL`, `SUSPEND_MEMBER` 중 하나 이상이고 `reason`은 필수다(회원에게 노출하지 않는다).
+- 허용하는 조합: `DISMISS_REPORT`는 단독, `HIDE_POLL`과 `DELETE_POLL`은 함께 쓸 수 없고, 둘 중 하나에 `SUSPEND_MEMBER`를 덧붙일 수 있다. 위반하면 400 `VALIDATION_FAILED`.
+- 대상 상태 변경, 신고 상태 변경(`DISMISS_REPORT`면 DISMISSED, 그 외 RESOLVED), 조치 이력(처리자·시각·조치·사유) 기록을 한 트랜잭션으로 처리한다. 실패하면 전부 롤백한다.
 - 신고 상태가 PENDING일 때만 변경하는 조건부 갱신이다. 이미 처리된 신고에 다시 조치하거나 두 관리자가 동시에 처리하면 한쪽만 성공하고 나머지는 409 `REPORT_ALREADY_HANDLED`다.
 - 같은 투표의 다른 PENDING 신고는 같은 결과로 함께 종료한다. 한 투표에 신고가 여러 건이어도 조치는 한 번만 하면 된다.
 - 대상 투표가 이미 삭제된 신고는 투표 조치 없이 신고만 종료(RESOLVED)한다.
@@ -402,7 +402,7 @@
 
 ```json
 {
-  "actions": ["HIDE_POLL", "SUSPEND_AUTHOR"],
+  "actions": ["HIDE_POLL", "SUSPEND_MEMBER"],
   "reason": "특정인 비방 내용 확인"
 }
 ```
@@ -434,7 +434,7 @@ flowchart TD
 
 ## 7. 오류 코드 목록
 
-시나리오·예외 명세의 초안 코드를 확정하고 이 명세에서 새로 필요한 코드를 더했다. 상태 코드는 이 표가 기준이다.
+시나리오·예외 명세의 코드를 확정하고 이 명세에서 새로 필요한 코드를 더했다. 오류 코드와 상태 코드는 이 표가 기준이다.
 
 | 코드 | 상태 | 의미 |
 | --- | --- | --- |
