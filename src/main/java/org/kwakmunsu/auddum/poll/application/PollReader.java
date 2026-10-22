@@ -1,5 +1,6 @@
 package org.kwakmunsu.auddum.poll.application;
 
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.kwakmunsu.auddum.member.application.MemberReader;
 import org.kwakmunsu.auddum.poll.domain.Poll;
@@ -43,6 +44,11 @@ public class PollReader {
         long beforeId = cursorId == null ? Long.MAX_VALUE : cursorId;
 
         return pollRepository.findOlderThan(PollStatus.PUBLIC, beforeId, PageRequest.ofSize(size));
+    }
+
+    /** 작성자의 가장 최근 투표. 처음 만드는 사람이면 비어 있다. */
+    Optional<Poll> findLatestByAuthor(Long authorId) {
+        return pollRepository.findFirstByAuthorIdOrderByIdDesc(authorId);
     }
 
 }

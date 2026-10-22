@@ -1,15 +1,10 @@
 package org.kwakmunsu.auddum.auth.application;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
-import java.util.HexFormat;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.kwakmunsu.auddum.auth.domain.RefreshToken;
 import org.kwakmunsu.auddum.auth.infrastructure.JwtTokenProvider;
-import org.kwakmunsu.auddum.auth.infrastructure.RefreshTokenJpaRepository;
 import org.kwakmunsu.auddum.member.application.MemberReader;
 import org.kwakmunsu.auddum.member.domain.Member;
 import org.kwakmunsu.auddum.member.domain.Role;
@@ -27,7 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class RefreshTokenService {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final RefreshTokenJpaRepository refreshTokenRepository;
+    private final RefreshTokenReader refreshTokenReader;
+    private final RefreshTokenWriter refreshTokenWriter;
     private final MemberReader memberReader;
 
     /**
@@ -35,12 +31,13 @@ public class RefreshTokenService {
      */
     public IssuedTokens issue(Long memberId, Role role, LocalDateTime now) {
         String refreshToken = jwtTokenProvider.createRefreshToken(memberId, now);
-        refreshTokenRepository.save(RefreshToken.issue(
-            memberId, hash(refreshToken),
-            now.plus(JwtTokenProvider.REFRESH_TTL)
-        ));
 
-        return new IssuedTokens(jwtTokenProvider.createAccessToken(memberId, role, now), refreshToken);
+        refreshTokenWriter.save(memberId, refreshToken, now.plus(JwtTokenProvider.REFRESH_TTL));
+
+        return IssuedTokens.builder()
+            .accessToken(jwtTokenProvider.createAccessToken(memberId, role, now))
+            .refreshToken(refreshToken)
+            .build();
     }
 
     /**
@@ -50,8 +47,8 @@ public class RefreshTokenService {
     public IssuedTokens reissue(String refreshToken, LocalDateTime now) {
         jwtTokenProvider.parseRefreshToken(refreshToken, now);
 
-        RefreshToken stored = refreshTokenRepository.findForUpdate(hash(refreshToken))
-            .orElseThrow(RefreshTokenService::unauthenticated);
+        RefreshToken stored = refreshTokenReader.findForUpdate(refreshToken)
+            .orElseThrow(() -> new AuddumException(DefaultErrorCode.UNAUTHENTICATED));
         replace(stored, now);
         // 회원이 없어 아래에서 401이 되어도 위의 폐기는 커밋된다(noRollbackFor). 결과가 같아 의도한 동작이다.
 
@@ -68,46 +65,27 @@ public class RefreshTokenService {
             return;
         }
 
-        refreshTokenRepository.findByTokenHash(hash(refreshToken))
-            .ifPresent(stored -> stored.revoke(now));
+        // 모르는 토큰이면 이미 로그아웃된 것과 같으므로 읽어서 있을 때만 폐기한다. 폐기는 영속 엔티티의 상태 변경이라 이 트랜잭션이 끝날 때 반영된다.
+        refreshTokenReader.find(refreshToken)
+            .ifPresent(stored -> refreshTokenWriter.revoke(stored, now));
     }
 
     /**
-     * 재발급에 쓰인 토큰을 교체 대상으로 처리한다. 아직 쓰이지 않았으면 폐기하고, 이미 폐기됐어도 10초 유예 안(동시 재발급)이면 그대로 둔다.
-     * 유예를 넘겼으면 재사용으로 보고 그 회원의 토큰을 모두 폐기한 뒤 거절한다.
+     * 재발급에 쓰인 토큰을 교체 대상으로 처리한다. 아직 쓰이지 않았으면 폐기하고, 이미 폐기됐어도 10초 유예 안(동시 재발급)이면 그대로 둔다. 유예를 넘겼으면 재사용으로 보고 그 회원의 토큰을 모두 폐기한 뒤 거절한다.
      */
     private void replace(RefreshToken stored, LocalDateTime now) {
         if (!stored.isRevoked()) {
-            stored.revoke(now);
+            refreshTokenWriter.revoke(stored, now);
             return;
         }
         if (stored.isWithinGrace(now)) {
             return;
         }
 
-        revokeAll(stored.getMemberId(), now);
+        refreshTokenWriter.revokeAll(stored.getMemberId(), now);
         log.warn("[RefreshTokenService] 폐기된 리프레시 토큰이 재사용되어 회원의 토큰을 모두 폐기했다 (memberId={})", stored.getMemberId());
 
-        throw unauthenticated();
-    }
-
-    private static AuddumException unauthenticated() {
-        return new AuddumException(DefaultErrorCode.UNAUTHENTICATED);
-    }
-
-    private void revokeAll(Long memberId, LocalDateTime now) {
-        refreshTokenRepository.findAllByMemberId(memberId)
-            .forEach(token -> token.revoke(now));
-    }
-
-    private String hash(String refreshToken) {
-        try {
-            byte[] digest = MessageDigest.getInstance("SHA-256").digest(refreshToken.getBytes(StandardCharsets.UTF_8));
-
-            return HexFormat.of().formatHex(digest);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256을 지원하지 않는 환경이다", e);
-        }
+        throw new AuddumException(DefaultErrorCode.UNAUTHENTICATED);
     }
 
 }
