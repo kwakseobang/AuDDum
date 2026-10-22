@@ -11,7 +11,6 @@ import org.kwakmunsu.auddum.poll.application.PollCommandService;
 import org.kwakmunsu.auddum.poll.application.PollQueryService;
 import org.kwakmunsu.auddum.vote.api.AnonCookies;
 import org.kwakmunsu.auddum.vote.application.VoteCommandService;
-import org.kwakmunsu.auddum.vote.application.VoteQueryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.security.oauth2.client.autoconfigure.OAuth2ClientAutoConfiguration;
 import org.springframework.boot.security.oauth2.client.autoconfigure.servlet.OAuth2ClientWebSecurityAutoConfiguration;
@@ -61,9 +60,6 @@ public abstract class WebApiTestSupport {
 
     @MockitoBean
     protected VoteCommandService voteCommandService;
-
-    @MockitoBean
-    protected VoteQueryService voteQueryService;
 
     @MockitoBean
     protected RefreshTokenService refreshTokenService;

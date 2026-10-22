@@ -1,6 +1,5 @@
 package org.kwakmunsu.auddum.vote.application;
 
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -8,11 +7,9 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.kwakmunsu.auddum.poll.application.ParticipantCounter;
+import org.kwakmunsu.auddum.poll.application.dto.OptionTally;
+import org.kwakmunsu.auddum.poll.application.dto.PollTally;
 import org.kwakmunsu.auddum.poll.domain.Poll;
-import org.kwakmunsu.auddum.vote.application.dto.OptionTally;
-import org.kwakmunsu.auddum.vote.application.dto.PollDetail;
-import org.kwakmunsu.auddum.vote.application.dto.PollTally;
 import org.kwakmunsu.auddum.vote.domain.Vote;
 import org.kwakmunsu.auddum.vote.domain.Voter;
 import org.kwakmunsu.auddum.vote.infrastructure.VoteJpaRepository;
@@ -26,7 +23,7 @@ import org.springframework.stereotype.Component;
  */
 @RequiredArgsConstructor
 @Component
-public class VoteReader implements ParticipantCounter {
+public class VoteReader {
 
     private final VoteJpaRepository voteRepository;
 
@@ -40,22 +37,7 @@ public class VoteReader implements ParticipantCounter {
         return find(poll, voter).map(vote -> poll.positionOf(vote.getOptionId()));
     }
 
-    /**
-     * 투표 상세에 내 선택과 결과를 붙인다. 결과는 마감되었거나 내가 참여했을 때만 공개하고(`Poll.isResultOpen`), 아니면 null이며
-     * 전체 참여 수만 내려준다. 마감 여부는 받은 시각으로 한 번만 정한다.
-     *
-     * @param voter 조회자. 참여자를 알 수 없는 비회원(쿠키 없음·위조)은 비어 있다
-     */
-    public PollDetail readDetail(Poll poll, Optional<Voter> voter, LocalDateTime now) {
-        Optional<Integer> myChoice = voter.flatMap(found -> findChoice(poll, found));
-        PollTally tally = tally(poll);
-        PollTally openedResult = poll.isResultOpen(myChoice.isPresent(), now) ? tally : null;
-
-        return new PollDetail(poll, poll.isClosed(now), tally.total(), myChoice.orElse(null), openedResult);
-    }
-
-    /** 투표별 참여 수를 한 번에 센다(투표 목록용, poll의 {@link ParticipantCounter}). 참여가 없는 투표는 0이다. */
-    @Override
+    /** 투표별 참여 수를 한 번에 센다(투표 목록용). 참여가 없는 투표는 0이다. */
     public Map<Long, Long> countByPollIds(Collection<Long> pollIds) {
         if (pollIds.isEmpty()) {
             return Map.of();

@@ -2,9 +2,7 @@ package org.kwakmunsu.auddum.vote.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.kwakmunsu.auddum.vote.application.VoteFixture.NOW;
 
-import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
@@ -17,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * VoteReader 통합 테스트(H2). 참여 기록 조회, 내 선택, 결과 집계. 기준은 API-명세 §3·§4(myChoice, result),
  * 도메인-모델 §5 Vote, ERD §6(결과는 항상 vote 기록에서 센다), 인증-중복-참여 §2(회원·비회원 기록은 연결되지 않는다).
- * 결과 공개 판단의 진리표는 PollTest, 서비스 연결과 신원 조합은 VoteQueryServiceTest가 맡고 readDetail은 그 연결의 최소 확인만 한다.
+ * 결과 공개 판단의 진리표는 PollTest, 서비스 연결과 신원 조합은 PollQueryServiceParticipationTest가 맡는다.
  */
 @RequiredArgsConstructor
 @Transactional
@@ -161,75 +159,6 @@ class VoteReaderTest extends VoteIntegrationTestSupport {
 
         assertThat(tally.total()).isZero();
         assertThat(tally.options()).extracting("position", "count").containsExactly(tuple(1, 0L), tuple(2, 0L));
-    }
-
-    // ---- readDetail: 내 선택·결과 공개·마감·참여 수 (API-명세 §3·§4 결과 공개 규칙) ----
-
-    @Test
-    void 마감_전에_참여한_사람은_myChoice와_result를_받고_closed가_false다() {
-        var voter = Voter.member(saveMember());
-        var poll = savePoll(VoteFixture.pollClosingAt(saveMember(), NOW));
-        saveVote(poll, 2, voter);
-        saveVote(poll, 1, Voter.member(saveMember()));
-
-        var detail = voteReader.readDetail(poll, Optional.of(voter), NOW.minusSeconds(1));
-
-        assertThat(detail.closed()).isFalse();
-        assertThat(detail.myChoice()).isEqualTo(2);
-        assertThat(detail.result().options()).extracting("position", "count")
-            .containsExactly(tuple(1, 1L), tuple(2, 1L));
-        assertThat(detail.participantCount()).isEqualTo(2);
-    }
-
-    @Test
-    void 마감_전에_참여하지_않은_사람은_result가_null이고_전체_참여_수만_받는다() {
-        var poll = savePoll(VoteFixture.pollClosingAt(saveMember(), NOW));
-        saveVote(poll, 1, Voter.member(saveMember()));
-
-        var detail = voteReader.readDetail(poll, Optional.of(Voter.member(saveMember())), NOW.minusSeconds(1));
-
-        assertThat(detail.closed()).isFalse();
-        assertThat(detail.myChoice()).isNull();
-        assertThat(detail.result()).isNull();
-        assertThat(detail.participantCount()).isEqualTo(1);
-    }
-
-    @Test
-    void 마감_후에는_참여자를_알_수_없어도_result를_받고_myChoice는_null이다() {
-        var poll = savePoll(VoteFixture.pollClosingAt(saveMember(), NOW));
-        saveVote(poll, 2, Voter.member(saveMember()));
-
-        var detail = voteReader.readDetail(poll, Optional.empty(), NOW);
-
-        assertThat(detail.closed()).isTrue();
-        assertThat(detail.myChoice()).isNull();
-        assertThat(detail.result().total()).isEqualTo(1);
-        assertThat(detail.participantCount()).isEqualTo(1);
-    }
-
-    @Test
-    void 마감_후에도_참여한_사람은_myChoice를_받는다() {
-        var voter = Voter.member(saveMember());
-        var poll = savePoll(VoteFixture.pollClosingAt(saveMember(), NOW));
-        saveVote(poll, 1, voter);
-
-        var detail = voteReader.readDetail(poll, Optional.of(voter), NOW.plusSeconds(1));
-
-        assertThat(detail.closed()).isTrue();
-        assertThat(detail.myChoice()).isEqualTo(1);
-        assertThat(detail.result()).isNotNull();
-    }
-
-    @Test
-    void 참여자를_알_수_없고_마감_전이면_result가_null이다() {
-        var poll = savePoll(VoteFixture.openPoll(saveMember()));
-
-        var detail = voteReader.readDetail(poll, Optional.empty(), NOW);
-
-        assertThat(detail.closed()).isFalse();
-        assertThat(detail.myChoice()).isNull();
-        assertThat(detail.result()).isNull();
-        assertThat(detail.participantCount()).isZero();
     }
 
     // ---- 보조 ----

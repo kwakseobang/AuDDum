@@ -1,4 +1,4 @@
-package org.kwakmunsu.auddum.vote.application.dto;
+package org.kwakmunsu.auddum.poll.application.dto;
 
 import java.util.List;
 

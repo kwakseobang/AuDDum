@@ -1,4 +1,4 @@
-package org.kwakmunsu.auddum.vote.api;
+package org.kwakmunsu.auddum.poll.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.kwakmunsu.auddum.vote.api.AnonCookies.ANON_COOKIE;
@@ -28,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * GET /api/v1/polls/{pollId} 를 실제 필터 체인과 DB로 확인한다. 쿠키(토큰, 익명)가 신원으로 이어지고 myChoice·result가 정해지는지,
- * 조회가 Set-Cookie를 내리지 않는지 본다. API-명세 §3·§4, 인증-중복-참여 §2. 규칙의 전수 조합은 VoteQueryServiceTest가 맡는다.
+ * 조회가 Set-Cookie를 내리지 않는지 본다. API-명세 §3·§4, 인증-중복-참여 §2. 규칙의 전수 조합은 PollQueryServiceParticipationTest가 맡는다.
  */
 @AutoConfigureMockMvc
 @Transactional
