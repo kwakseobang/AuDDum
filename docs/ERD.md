@@ -210,7 +210,7 @@ vote는 poll이 아니라 poll_option을 통해 poll에 연결된다. (poll_id, 
 | reporter_member_id | BIGINT | Y | FK → member. 회원이 신고한 경우 |
 | reporter_anon_id | CHAR(36) | Y | 비회원 신고자의 익명 식별자 |
 | reason | VARCHAR(30) | N | ABUSE_HATE, SEXUAL_HARASSMENT, PERSONAL_INFO, SPAM, ETC |
-| detail | VARCHAR(200) | Y | '기타' 사유의 짧은 텍스트. 글자 수 상한은 구현 때 확정(임시 200) |
+| detail | VARCHAR(200) | Y | '기타' 사유의 짧은 텍스트. 글자 수 상한은 미정(구현 때 확정, 임시 200) |
 | status | VARCHAR(20) | N | PENDING(기본값), RESOLVED, DISMISSED (API 명세에서 확정) |
 | created_at, updated_at | DATETIME(6) | N | 접수·수정 시각 |
 | handled_at | DATETIME(6) | Y | 처리 시각 |
@@ -262,7 +262,7 @@ V1에는 제약(UNIQUE, CHECK, FK)과 그것이 쓰는 인덱스만 둔다. 이�
 | report (status, created_at) | 관리자 신고 대기 목록 | 대기 건수가 많을 때 정렬 비용 |
 | admin_action (admin_id, created_at) | 관리자별 이력 조회 | admin_id 외래키 인덱스만으로 충분한가 |
 
-### vote 테이블 DDL 초안
+### vote 테이블 DDL **[기술 초안]**
 
 ```sql
 CREATE TABLE vote (
@@ -292,7 +292,7 @@ CREATE TABLE vote (
 
 ## 6. 핵심 쿼리 패턴
 
-구현 전에 인덱스와 제약이 이 쿼리들을 받쳐 주는지 확인하기 위한 초안이다. 성능 수치는 측정하기 전에는 주장하지 않는다.
+구현 전에 인덱스와 제약이 이 쿼리들을 받쳐 주는지 확인하기 위한 **[기술 초안]**이다. 성능 수치는 측정하기 전에는 주장하지 않는다.
 
 ### 목록 (커서 기반)
 
@@ -349,8 +349,7 @@ INSERT INTO vote (poll_id, option_id, member_id, anon_id, created_at, updated_at
 VALUES (:pollId, :optionId, :memberId, :anonId, :now, :now);
 ```
 
-- 저장 전 사전 조회에서 이미 참여한 기록이 있으면 선택지와 관계없이 409를 반환한다.
-- 사전 조회를 동시에 통과한 요청이 유니크 제약을 위반하면(진 쪽) 마찬가지로 409로 변환하고 재조회하지 않는다.
+- 참여 처리 순서와 동시 요청(진 쪽 409)은 `API-명세.md` §4와 `인증-중복-참여.md` §3이 기준이다. 이 문서는 두 곳에 영향을 주는 스키마 쪽만 적는다.
 - 요청은 선택지 id가 아니라 표시 순서(position)로 선택지를 가리키고, 서버가 (투표, position)으로 선택지 id를 찾는다. 해당 순서의 선택지가 없으면 400으로 응답한다. 복합 외래키는 그래도 DB 단의 마지막 방어선으로 둔다.
 - 마감 판단은 요청을 받은 시점에 한 번만 한다. (P-11)
 
