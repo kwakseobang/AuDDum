@@ -23,7 +23,7 @@ public class VoteParticipator {
      * 같은 참여자의 동시 요청에서 진 쪽도 409다.
      */
     public CastResult participate(Poll poll, ResolvedVoter resolved, int position, LocalDateTime now) {
-        voteValidator.ensureNotParticipated(poll, resolved.voter());
+        voteValidator.validateNotParticipated(poll, resolved.voter());
         voteWriter.cast(poll, resolved.voter(), position, now);
 
         return new CastResult(position, voteReader.tally(poll), resolved.newCookieValue());

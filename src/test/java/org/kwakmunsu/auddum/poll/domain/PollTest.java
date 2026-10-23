@@ -201,14 +201,14 @@ class PollTest {
     void 공개이고_마감_전이면_참여할_수_있다() {
         var poll = PollFixture.pollWithCloses(NOW.plusHours(1));
 
-        assertThatCode(() -> poll.ensureVotable(NOW.plusHours(1).minusNanos(1))).doesNotThrowAnyException();
+        assertThatCode(() -> poll.validateVotable(NOW.plusHours(1).minusNanos(1))).doesNotThrowAnyException();
     }
 
     @Test
     void 마감_시각과_정확히_같은_시각에는_참여할_수_없다() {
         var poll = PollFixture.pollWithCloses(NOW.plusHours(1));
 
-        assertThatThrownBy(() -> poll.ensureVotable(NOW.plusHours(1)))
+        assertThatThrownBy(() -> poll.validateVotable(NOW.plusHours(1)))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage(PollErrorCode.POLL_CLOSED.getMessage());
     }
@@ -217,7 +217,7 @@ class PollTest {
     void 마감된_투표에는_참여할_수_없다() {
         var poll = PollFixture.pollWithCloses(NOW.plusHours(1));
 
-        assertThatThrownBy(() -> poll.ensureVotable(NOW.plusHours(2)))
+        assertThatThrownBy(() -> poll.validateVotable(NOW.plusHours(2)))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage(PollErrorCode.POLL_CLOSED.getMessage());
     }
@@ -228,7 +228,7 @@ class PollTest {
     void 투표의_선택지_순번이면_선택지를_돌려준다() {
         var poll = PollFixture.pollWithoutCloses();
 
-        assertThat(poll.ensureHasOption(2).getContent().value()).isEqualTo("파스타");
+        assertThat(poll.getOption(2).getContent().value()).isEqualTo("파스타");
     }
 
     @ParameterizedTest
@@ -237,7 +237,7 @@ class PollTest {
         // 0: 최소 미만, 3: 선택지 개수 초과, 6: 순번 상한 초과, -1: 음수
         var poll = PollFixture.pollWithoutCloses();
 
-        assertThatThrownBy(() -> poll.ensureHasOption(position))
+        assertThatThrownBy(() -> poll.getOption(position))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage(PollErrorCode.INVALID_OPTION.getMessage());
     }
@@ -246,8 +246,8 @@ class PollTest {
     void 선택지가_다섯_개인_투표는_마지막_순번_5까지_선택지다() {
         var poll = Poll.create(AUTHOR_ID, "질문", Category.ETC, List.of("a", "b", "c", "d", "e"), null, NOW);
 
-        assertThat(poll.ensureHasOption(5).getContent().value()).isEqualTo("e");
-        assertThatThrownBy(() -> poll.ensureHasOption(6))
+        assertThat(poll.getOption(5).getContent().value()).isEqualTo("e");
+        assertThatThrownBy(() -> poll.getOption(6))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage(PollErrorCode.INVALID_OPTION.getMessage());
     }
@@ -327,7 +327,7 @@ class PollTest {
         var poll = PollFixture.hiddenPoll();
         poll.restore();
 
-        assertThatCode(() -> poll.ensureVotable(NOW.plusMinutes(3))).doesNotThrowAnyException();
+        assertThatCode(() -> poll.validateVotable(NOW.plusMinutes(3))).doesNotThrowAnyException();
     }
 
     // ---- 상태 전이: 금지 ----
@@ -399,7 +399,7 @@ class PollTest {
     void 숨김_투표_참여는_POLL_NOT_FOUND다() {
         var poll = PollFixture.hiddenPoll();
 
-        assertThatThrownBy(() -> poll.ensureVotable(NOW.plusMinutes(2)))
+        assertThatThrownBy(() -> poll.validateVotable(NOW.plusMinutes(2)))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
     }
@@ -408,7 +408,7 @@ class PollTest {
     void 삭제된_투표_참여는_POLL_NOT_FOUND다() {
         var poll = PollFixture.deletedPoll();
 
-        assertThatThrownBy(() -> poll.ensureVotable(NOW.plusMinutes(2)))
+        assertThatThrownBy(() -> poll.validateVotable(NOW.plusMinutes(2)))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
     }
@@ -464,7 +464,7 @@ class PollTest {
         var latest = pollCreatedAt("점심 뭐 먹지?", NOW.minusDays(30));
         var poll = PollFixture.pollWithoutCloses();
 
-        assertThatThrownBy(() -> poll.ensureCreatableAfter(latest, NOW))
+        assertThatThrownBy(() -> poll.validateCreatableAfter(latest, NOW))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage(PollErrorCode.DUPLICATE_POLL.getMessage());
     }
@@ -474,7 +474,7 @@ class PollTest {
         var latest = pollCreatedAt("  점심 뭐 먹지?  ", NOW.minusDays(30));
         var poll = PollFixture.pollWithoutCloses();
 
-        assertThatThrownBy(() -> poll.ensureCreatableAfter(latest, NOW))
+        assertThatThrownBy(() -> poll.validateCreatableAfter(latest, NOW))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage(PollErrorCode.DUPLICATE_POLL.getMessage());
     }
@@ -484,7 +484,7 @@ class PollTest {
         var latest = pollCreatedAt("Hello there", NOW.minusDays(30));
         var poll = Poll.create(AUTHOR_ID, "hello there", Category.ETC, List.of("가", "나"), null, NOW);
 
-        assertThatCode(() -> poll.ensureCreatableAfter(latest, NOW)).doesNotThrowAnyException();
+        assertThatCode(() -> poll.validateCreatableAfter(latest, NOW)).doesNotThrowAnyException();
     }
 
     @Test
@@ -492,7 +492,7 @@ class PollTest {
         var latest = pollCreatedAt("다른 질문", NOW.minusSeconds(29));
         var poll = PollFixture.pollWithoutCloses();
 
-        assertThatThrownBy(() -> poll.ensureCreatableAfter(latest, NOW))
+        assertThatThrownBy(() -> poll.validateCreatableAfter(latest, NOW))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage(PollErrorCode.POLL_RATE_LIMITED.getMessage());
     }
@@ -502,7 +502,7 @@ class PollTest {
         var latest = pollCreatedAt("다른 질문", NOW.minusSeconds(30));
         var poll = PollFixture.pollWithoutCloses();
 
-        assertThatCode(() -> poll.ensureCreatableAfter(latest, NOW)).doesNotThrowAnyException();
+        assertThatCode(() -> poll.validateCreatableAfter(latest, NOW)).doesNotThrowAnyException();
     }
 
     @Test
@@ -510,7 +510,7 @@ class PollTest {
         var latest = pollCreatedAt("점심 뭐 먹지?", NOW.minusSeconds(5));
         var poll = PollFixture.pollWithoutCloses();
 
-        assertThatThrownBy(() -> poll.ensureCreatableAfter(latest, NOW))
+        assertThatThrownBy(() -> poll.validateCreatableAfter(latest, NOW))
                 .isInstanceOf(AuddumException.class)
                 .hasMessage(PollErrorCode.DUPLICATE_POLL.getMessage());
     }

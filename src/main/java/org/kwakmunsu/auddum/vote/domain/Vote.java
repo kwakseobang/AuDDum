@@ -42,8 +42,8 @@ public class Vote extends BaseEntity {
         @NonNull Voter voter,
         @NonNull LocalDateTime now
     ) {
-        poll.ensureVotable(now);
-        PollOption option = poll.ensureHasOption(position);
+        poll.validateVotable(now);
+        PollOption option = poll.getOption(position);
 
         Vote vote = new Vote();
 

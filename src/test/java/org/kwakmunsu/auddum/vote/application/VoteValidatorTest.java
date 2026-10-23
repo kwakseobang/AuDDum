@@ -29,14 +29,14 @@ class VoteValidatorTest {
     void 참여한_기록이_없으면_통과한다() {
         given(voteReader.find(poll, voter)).willReturn(Optional.empty());
 
-        assertThatCode(() -> voteValidator.ensureNotParticipated(poll, voter)).doesNotThrowAnyException();
+        assertThatCode(() -> voteValidator.validateNotParticipated(poll, voter)).doesNotThrowAnyException();
     }
 
     @Test
     void 참여한_기록이_있으면_ALREADY_VOTED다() {
         given(voteReader.find(poll, voter)).willReturn(Optional.of(Vote.cast(poll, 1, voter, NOW)));
 
-        assertThatThrownBy(() -> voteValidator.ensureNotParticipated(poll, voter))
+        assertThatThrownBy(() -> voteValidator.validateNotParticipated(poll, voter))
             .isInstanceOf(AuddumException.class)
             .hasMessage(VoteErrorCode.ALREADY_VOTED.getMessage());
     }
