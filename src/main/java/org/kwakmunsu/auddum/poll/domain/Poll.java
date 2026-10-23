@@ -123,10 +123,10 @@ public class Poll extends BaseEntity {
     }
 
     /**
-     * 같은 작성자의 직전 투표 뒤에 이 투표를 만들 수 있는지 보장한다. 질문이 같으면 409(DUPLICATE_POLL)이고,
+     * 같은 작성자의 직전 투표 뒤에 이 투표를 만들 수 있는지 점검한다. 질문이 같으면 409(DUPLICATE_POLL)이고,
      * 직전 생성 후 {@link #CREATE_INTERVAL}이 지나지 않았으면 429(POLL_RATE_LIMITED)다. 둘이 겹치면 409가 우선한다.
      */
-    public void ensureCreatableAfter(Poll latest, LocalDateTime now) {
+    public void validateCreatableAfter(Poll latest, LocalDateTime now) {
         if (question.equals(latest.question)) {
             throw new AuddumException(PollErrorCode.DUPLICATE_POLL);
         }
@@ -161,8 +161,8 @@ public class Poll extends BaseEntity {
         return isPublic() || isAuthor(viewerId) || isAdmin.getAsBoolean();
     }
 
-    /** 참여 가능 상태(공개이면서 마감 전)를 보장한다. 공개가 아니면 404, 마감되었으면 409다. */
-    public void ensureVotable(LocalDateTime now) {
+    /** 참여 가능 상태(공개이면서 마감 전)인지 점검한다. 공개가 아니면 404, 마감되었으면 409다. */
+    public void validateVotable(LocalDateTime now) {
         if (!isPublic()) {
             throw new AuddumException(PollErrorCode.POLL_NOT_FOUND);
         }
@@ -171,8 +171,8 @@ public class Poll extends BaseEntity {
         }
     }
 
-    /** 이 투표의 선택지인지 보장하고 그 선택지를 돌려준다. 없으면 400이다. */
-    public PollOption ensureHasOption(int position) {
+    /** 이 투표의 선택지를 찾아 돌려준다. 없으면 400이다. */
+    public PollOption getOption(int position) {
         return options.stream()
             .filter(option -> option.isAt(position))
             .findFirst()
@@ -191,7 +191,7 @@ public class Poll extends BaseEntity {
 
     /** 관리자 숨김. 공개 투표만 숨길 수 있고, 이미 숨겨진 투표는 그대로 둔다. 삭제된 투표는 404다. */
     public void hide() {
-        ensureNotDeleted();
+        validateNotDeleted();
         if (status == PollStatus.HIDDEN) {
             return;
         }
@@ -216,7 +216,7 @@ public class Poll extends BaseEntity {
         if (!isAuthor(memberId)) {
             throw new AuddumException(isPublic() ? DefaultErrorCode.FORBIDDEN : PollErrorCode.POLL_NOT_FOUND);
         }
-        ensureNotDeleted();
+        validateNotDeleted();
         if (status == PollStatus.HIDDEN) {
             throw new AuddumException(PollErrorCode.POLL_NOT_DELETABLE);
         }
@@ -226,12 +226,12 @@ public class Poll extends BaseEntity {
 
     /** 관리자 삭제. 공개·숨김 투표 모두 삭제할 수 있고, 이미 삭제된 투표는 404다. */
     public void deleteByAdmin() {
-        ensureNotDeleted();
+        validateNotDeleted();
 
         this.status = PollStatus.DELETED;
     }
 
-    private void ensureNotDeleted() {
+    private void validateNotDeleted() {
         if (status == PollStatus.DELETED) {
             throw new AuddumException(PollErrorCode.POLL_NOT_FOUND);
         }

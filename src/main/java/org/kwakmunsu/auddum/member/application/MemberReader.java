@@ -32,7 +32,7 @@ public class MemberReader {
     /** 탈퇴하지 않은 회원을 가져온다. 없거나 탈퇴했으면 401이다. 정지 회원은 통과한다(정지 중에도 재발급·조회·탈퇴는 할 수 있다). */
     public Member getNotWithdrawnMember(Long memberId) {
         Member member = getMember(memberId);
-        member.ensureNotWithdrawn();
+        member.validateNotWithdrawn();
 
         return member;
     }
@@ -40,7 +40,7 @@ public class MemberReader {
     /** 쓰기를 할 수 있는 정상 회원만 가져온다. 없거나 탈퇴했으면 401, 정지면 403이다. 정지 회원이 할 수 있는 탈퇴·재발급에서는 {@link #getMember}를 쓴다. */
     public Member getActiveMember(Long memberId) {
         Member member = getMember(memberId);
-        member.ensureActive();
+        member.validateActive();
 
         return member;
     }

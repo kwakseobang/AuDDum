@@ -15,7 +15,7 @@ public class VoteValidator {
     private final VoteReader voteReader;
 
     /** 이미 참여한 사람이면 선택과 관계없이 409(ALREADY_VOTED)다. 마감 후에도 같다. */
-    public void ensureNotParticipated(Poll poll, Voter voter) {
+    public void validateNotParticipated(Poll poll, Voter voter) {
         if (voteReader.find(poll, voter).isPresent()) {
             throw new AuddumException(VoteErrorCode.ALREADY_VOTED);
         }
