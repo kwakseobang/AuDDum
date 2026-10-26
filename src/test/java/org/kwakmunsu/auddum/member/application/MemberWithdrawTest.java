@@ -148,7 +148,8 @@ class MemberWithdrawTest extends IntegrationTestSupport {
         flushAndClear();
 
         assertThatThrownBy(() -> refreshTokenService.reissue(tokens.refreshToken(), NOW.plusMinutes(1)))
-            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(DefaultErrorCode.UNAUTHENTICATED));
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(DefaultErrorCode.UNAUTHENTICATED.getMessage());
     }
 
     private void flushAndClear() {

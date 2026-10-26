@@ -299,7 +299,7 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
         assertThat(voteJpaRepository.count()).isEqualTo(before);
         assertNoWarnOrAbove();
         assertThat(appender.list).extracting(ILoggingEvent::getFormattedMessage)
-            .noneMatch(message -> message.contains("ANON_COOKIE_FORGED"));
+            .noneMatch(message -> message.contains("위조 의심 익명 쿠키"));
     }
 
     @ParameterizedTest

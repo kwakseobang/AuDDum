@@ -95,7 +95,7 @@ public class JwtTokenProvider {
     private Claims parse(String token, LocalDateTime now, String category) {
         Claims claims = parse(token, now);
         if (!category.equals(claims.get(CATEGORY, String.class))) {
-            log.warn("[JWT_WRONG_CATEGORY] 기대한 토큰 종류가 아니다 (expected={}, token={})", category, mask(token));
+            log.warn("[JwtTokenProvider] 토큰 종류 불일치 - expected={}, token={}", category, mask(token));
 
             throw new AuddumException(DefaultErrorCode.UNAUTHENTICATED);
         }
@@ -112,11 +112,11 @@ public class JwtTokenProvider {
                 .parseSignedClaims(token)
                 .getPayload();
         } catch (ExpiredJwtException e) {
-            log.info("[JWT_EXPIRED] 만료된 토큰이다 (token={})", mask(token));
+            log.info("[JwtTokenProvider] 만료된 토큰 - token={}", mask(token));
 
             throw new AuddumException(DefaultErrorCode.UNAUTHENTICATED, e);
         } catch (JwtException | IllegalArgumentException e) {
-            log.warn("[JWT_INVALID] 유효하지 않은 토큰이다 (reason={}, token={})", e.getClass().getSimpleName(), mask(token));
+            log.warn("[JwtTokenProvider] 유효하지 않은 토큰 - reason={}, token={}", e.getClass().getSimpleName(), mask(token));
 
             throw new AuddumException(DefaultErrorCode.UNAUTHENTICATED, e);
         }

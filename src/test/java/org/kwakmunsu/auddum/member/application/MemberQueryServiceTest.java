@@ -54,13 +54,15 @@ class MemberQueryServiceTest extends IntegrationTestSupport {
         var saved = saveMember(MemberStatus.WITHDRAWN);
 
         assertThatThrownBy(() -> memberQueryService.getMyInfo(saved.getId()))
-            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(DefaultErrorCode.UNAUTHENTICATED));
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(DefaultErrorCode.UNAUTHENTICATED.getMessage());
     }
 
     @Test
     void DB에_없는_회원이면_401_UNAUTHENTICATED다() {
         assertThatThrownBy(() -> memberQueryService.getMyInfo(NOT_EXISTING_MEMBER_ID))
-            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(DefaultErrorCode.UNAUTHENTICATED));
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(DefaultErrorCode.UNAUTHENTICATED.getMessage());
     }
 
     private Member saveMember(MemberStatus status) {

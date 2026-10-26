@@ -23,7 +23,6 @@ import org.kwakmunsu.auddum.poll.domain.PublicId;
 import org.kwakmunsu.auddum.poll.domain.PollStatus;
 import org.kwakmunsu.auddum.poll.infrastructure.PollJpaRepository;
 import org.kwakmunsu.auddum.support.error.AuddumException;
-import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -70,7 +69,7 @@ class PollCommandServiceTest extends IntegrationTestSupport {
     }
 
     @Test
-    void 공개_ID가_계속_겹치면_INTERNAL_ERROR다() {
+    void 공개_ID가_계속_겹치면_IllegalStateException이다() {
         var memberId = saveMember();
         var taken = pollCommandService.createPoll(createNewPoll("먼저 만든 질문"), memberId).getPublicId();
 
@@ -79,8 +78,8 @@ class PollCommandServiceTest extends IntegrationTestSupport {
             var otherMember = saveMember();
 
             assertThatThrownBy(() -> pollCommandService.createPoll(createNewPoll("다른 질문"), otherMember))
-                .isInstanceOf(AuddumException.class)
-                .hasMessage(DefaultErrorCode.INTERNAL_ERROR.getMessage());
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("공개 ID를 발급하지 못했다");
         }
     }
 

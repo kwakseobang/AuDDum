@@ -29,7 +29,7 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     ResponseEntity<Object> handleAuddumException(AuddumException ex) {
         ErrorCode errorCode = ex.getErrorCode();
 
-        logByLevel(errorCode.getLogLevel(), "[%s] %s".formatted(errorCode.name(), ex.getMessage()), ex);
+        logByLevel(errorCode.getLogLevel(), "[GlobalExceptionHandler] 예외 응답 - code=%s, message=%s".formatted(errorCode.name(), ex.getMessage()), ex);
 
         ProblemDetail problem = problemOf(errorCode);
         if (!ex.getErrors().isEmpty()) {
@@ -41,7 +41,7 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<Object> handleUnexpected(Exception ex) {
-        logByLevel(LogLevel.ERROR, "[Exception] 처리되지 않은 예외", ex);
+        logByLevel(LogLevel.ERROR, "[GlobalExceptionHandler] 처리되지 않은 예외", ex);
 
         return ResponseEntity.status(DefaultErrorCode.INTERNAL_ERROR.getStatus())
             .body(problemOf(DefaultErrorCode.INTERNAL_ERROR));
@@ -61,7 +61,7 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             .toList();
 
         problem.setProperty(ERRORS, violations);
-        logByLevel(LogLevel.INFO, "[%s] 입력 검증 실패 (errors=%s)".formatted(DefaultErrorCode.VALIDATION_FAILED.name(), violations), ex);
+        logByLevel(LogLevel.INFO, "[GlobalExceptionHandler] 입력 검증 실패 - code=%s, errors=%s".formatted(DefaultErrorCode.VALIDATION_FAILED.name(), violations), ex);
 
         return handleExceptionInternal(ex, problem, headers, status, request);
     }
@@ -78,7 +78,7 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         @NonNull WebRequest request
     ) {
         if (!hasLoggedBySpecificHandler(body)) {
-            logByLevel(logLevelOf(statusCode), "[%s] %s".formatted(ex.getClass().getSimpleName(), ex.getMessage()), ex);
+            logByLevel(logLevelOf(statusCode), "[GlobalExceptionHandler] 예외 응답 - type=%s, message=%s".formatted(ex.getClass().getSimpleName(), ex.getMessage()), ex);
         }
         ResponseEntity<Object> response = super.handleExceptionInternal(ex, body, headers, statusCode, request);
 
