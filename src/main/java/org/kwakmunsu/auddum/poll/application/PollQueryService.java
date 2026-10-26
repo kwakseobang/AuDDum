@@ -51,7 +51,7 @@ public class PollQueryService {
 
         Map<Long, Long> counts = participationReader.countByPollIds(pollIds);
 
-        return polls.map(poll -> new PollSummary(poll, counts.get(poll.getId())));
+        return polls.map(poll -> PollSummary.of(poll, counts.get(poll.getId())));
     }
 
 }

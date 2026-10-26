@@ -118,7 +118,7 @@ class PollListWebApiTest extends WebApiTestSupport {
     // ---- 보조 ----
 
     private PollSummary summary(Poll poll, long participantCount) {
-        return new PollSummary(poll, participantCount);
+        return PollSummary.of(poll, participantCount);
     }
 
     private Slice<PollSummary> slice(List<PollSummary> polls, boolean hasNext) {

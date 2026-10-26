@@ -55,11 +55,11 @@ public class VoteReader {
             .collect(Collectors.toMap(OptionCount::getOptionId, OptionCount::getVotes));
 
         List<OptionTally> options = poll.getOptions().stream()
-            .map(option -> new OptionTally(option.getPosition().value(), countsByOption.getOrDefault(option.getId(), 0L)))
+            .map(option -> OptionTally.of(option.getPosition().value(), countsByOption.getOrDefault(option.getId(), 0L)))
             .toList();
         long total = options.stream().mapToLong(OptionTally::count).sum();
 
-        return new PollTally(total, options);
+        return PollTally.of(total, options);
     }
 
 }
