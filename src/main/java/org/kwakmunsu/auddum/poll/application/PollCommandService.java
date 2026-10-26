@@ -30,7 +30,7 @@ public class PollCommandService {
 
         LocalDateTime now = LocalDateTime.now(TimeConfig.KST);
         Poll poll = pollWriter.createWithUniquePublicId(newPoll, authorId, now);
-        pollValidator.ensureCreatable(poll, now);
+        pollValidator.validateCreatable(poll, now);
 
         Poll saved = pollWriter.save(poll);
 

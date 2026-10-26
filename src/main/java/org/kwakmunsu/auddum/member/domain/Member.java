@@ -56,22 +56,22 @@ public class Member extends BaseEntity {
 
     /** 탈퇴. 정지 중에도 할 수 있고, 이미 탈퇴한 회원이면 401이다. 소셜 연동·리프레시 토큰 삭제는 서비스가 같은 트랜잭션에서 함께 한다. */
     public void withdraw(LocalDateTime now) {
-        ensureNotWithdrawn();
+        validateNotWithdrawn();
 
         this.status = MemberStatus.WITHDRAWN;
         this.withdrawnAt = now;
     }
 
     /** 정상 회원만 통과시킨다. 탈퇴했으면 401, 정지면 403이다. 정지 회원이 할 수 있는 탈퇴·로그아웃에서는 부르지 않는다. */
-    public void ensureActive() {
-        ensureNotWithdrawn();
+    public void validateActive() {
+        validateNotWithdrawn();
         if (isSuspended()) {
             throw new AuddumException(MemberErrorCode.MEMBER_SUSPENDED);
         }
     }
 
     /** 탈퇴한 회원이면 401이다. */
-    public void ensureNotWithdrawn() {
+    public void validateNotWithdrawn() {
         if (isWithdrawn()) {
             throw new AuddumException(DefaultErrorCode.UNAUTHENTICATED);
         }
