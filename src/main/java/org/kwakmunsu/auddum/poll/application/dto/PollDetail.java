@@ -1,6 +1,8 @@
 package org.kwakmunsu.auddum.poll.application.dto;
 
 import java.time.LocalDateTime;
+import lombok.AccessLevel;
+import lombok.Builder;
 import org.kwakmunsu.auddum.poll.domain.Poll;
 
 /**
@@ -11,6 +13,7 @@ import org.kwakmunsu.auddum.poll.domain.Poll;
  * @param myChoice         내가 고른 선택지 순번. 참여하지 않았으면 null
  * @param result           결과. 공개하지 않는 경우 null
  */
+@Builder(access = AccessLevel.PRIVATE)
 public record PollDetail(
     Poll poll,
     boolean closed,
@@ -26,13 +29,13 @@ public record PollDetail(
     public static PollDetail of(Poll poll, Participation participation, LocalDateTime now) {
         boolean resultOpen = poll.isResultOpen(participation.participated(), now);
 
-        return new PollDetail(
-            poll,
-            poll.isClosed(now),
-            participation.tally().total(),
-            participation.myChoice(),
-            resultOpen ? participation.tally() : null
-        );
+        return PollDetail.builder()
+            .poll(poll)
+            .closed(poll.isClosed(now))
+            .participantCount(participation.tally().total())
+            .myChoice(participation.myChoice())
+            .result(resultOpen ? participation.tally() : null)
+            .build();
     }
 
 }

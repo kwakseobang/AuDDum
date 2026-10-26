@@ -94,7 +94,7 @@ class PollDetailWebApiTest extends WebApiTestSupport {
 
     @Test
     void 득표_0인_선택지도_result에_count_0으로_내린다() {
-        var zero = new PollTally(0, List.of(new OptionTally(1, 0), new OptionTally(2, 0), new OptionTally(3, 0)));
+        var zero = PollTally.of(0, List.of(OptionTally.of(1, 0), OptionTally.of(2, 0), OptionTally.of(3, 0)));
         given(pollQueryService.getPollDetail(eq(ID), eq(noCredential())))
             .willReturn(new PollDetail(poll(), true, 0, null, zero));
 
@@ -219,7 +219,7 @@ class PollDetailWebApiTest extends WebApiTestSupport {
     }
 
     private PollTally tally() {
-        return new PollTally(42, List.of(new OptionTally(1, 10), new OptionTally(2, 25), new OptionTally(3, 7)));
+        return PollTally.of(42, List.of(OptionTally.of(1, 10), OptionTally.of(2, 25), OptionTally.of(3, 7)));
     }
 
     /** 참여 정보가 없는 상세(참여 전, 결과 비공개). 마감 여부는 투표의 마감 시각으로 정한다. */

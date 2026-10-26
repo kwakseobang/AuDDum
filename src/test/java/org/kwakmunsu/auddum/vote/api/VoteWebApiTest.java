@@ -185,9 +185,9 @@ class VoteWebApiTest extends WebApiTestSupport {
     }
 
     private CastResult castResult(String newCookieValue) {
-        var tally = new PollTally(42, List.of(new OptionTally(1, 10), new OptionTally(2, 25), new OptionTally(3, 7)));
+        var tally = PollTally.of(42, List.of(OptionTally.of(1, 10), OptionTally.of(2, 25), OptionTally.of(3, 7)));
 
-        return new CastResult(2, tally, newCookieValue);
+        return CastResult.of(2, tally, newCookieValue);
     }
 
 }

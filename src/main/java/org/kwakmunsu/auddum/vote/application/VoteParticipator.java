@@ -26,7 +26,7 @@ public class VoteParticipator {
         voteValidator.validateNotParticipated(poll, resolved.voter());
         voteWriter.cast(poll, resolved.voter(), position, now);
 
-        return new CastResult(position, voteReader.tally(poll), resolved.newCookieValue());
+        return CastResult.of(position, voteReader.tally(poll), resolved.newCookieValue());
     }
 
 }
