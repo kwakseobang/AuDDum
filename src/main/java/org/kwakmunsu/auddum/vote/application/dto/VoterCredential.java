@@ -13,9 +13,4 @@ public record VoterCredential(Long memberId, String anonCookieValue) {
         return memberId != null;
     }
 
-    /** 익명 쿠키 값이 있는가. 빈 문자열은 없는 것으로 본다. */
-    public boolean hasAnonCookie() {
-        return anonCookieValue != null && !anonCookieValue.isEmpty();
-    }
-
 }

@@ -19,6 +19,8 @@ import org.junit.jupiter.api.Test;
 import org.kwakmunsu.auddum.member.domain.MemberErrorCode;
 import org.kwakmunsu.auddum.member.domain.MemberFixture;
 import org.kwakmunsu.auddum.poll.domain.PollErrorCode;
+import org.kwakmunsu.auddum.support.anon.AnonCookieProvider;
+import org.kwakmunsu.auddum.support.anon.AnonCookieProvider.Verification;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
 import org.kwakmunsu.auddum.vote.VoteIntegrationTestSupport;
@@ -26,8 +28,6 @@ import org.kwakmunsu.auddum.vote.domain.AnonId;
 import org.kwakmunsu.auddum.vote.domain.Vote;
 import org.kwakmunsu.auddum.vote.domain.VoteErrorCode;
 import org.kwakmunsu.auddum.vote.domain.Voter;
-import org.kwakmunsu.auddum.support.anon.AnonCookieProvider;
-import org.kwakmunsu.auddum.support.anon.AnonCookieProvider.Verification;
 import org.springframework.transaction.annotation.Transactional;
 
 /**

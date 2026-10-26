@@ -7,12 +7,12 @@ import static org.kwakmunsu.auddum.vote.application.VoteFixture.NOW;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.kwakmunsu.auddum.support.anon.AnonCookieProvider;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 import org.kwakmunsu.auddum.vote.VoteIntegrationTestSupport;
 import org.kwakmunsu.auddum.vote.domain.AnonId;
 import org.kwakmunsu.auddum.vote.domain.VoteErrorCode;
 import org.kwakmunsu.auddum.vote.domain.Voter;
-import org.kwakmunsu.auddum.support.anon.AnonCookieProvider;
 import org.springframework.dao.DataIntegrityViolationException;
 
 /**

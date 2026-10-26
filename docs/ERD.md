@@ -210,7 +210,7 @@ vote는 poll이 아니라 poll_option을 통해 poll에 연결된다. (poll_id, 
 | reporter_member_id | BIGINT | Y | FK → member. 회원이 신고한 경우 |
 | reporter_anon_id | CHAR(36) | Y | 비회원 신고자의 익명 식별자 |
 | reason | VARCHAR(30) | N | ABUSE_HATE, SEXUAL_HARASSMENT, PERSONAL_INFO, SPAM, ETC |
-| detail | VARCHAR(200) | Y | '기타' 사유의 짧은 텍스트. 글자 수 상한은 미정(구현 때 확정, 임시 200) |
+| detail | VARCHAR(200) | Y | 신고 상세 텍스트. `ETC`에서 필수, 다른 사유에서는 선택이며 입력 그대로 저장. 상한 200(임시, 유니코드 문자 단위) |
 | status | VARCHAR(20) | N | PENDING(기본값), RESOLVED, DISMISSED (API 명세에서 확정) |
 | created_at, updated_at | DATETIME(6) | N | 접수·수정 시각 |
 | handled_at | DATETIME(6) | Y | 처리 시각 |

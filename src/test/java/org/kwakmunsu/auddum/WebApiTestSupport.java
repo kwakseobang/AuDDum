@@ -9,6 +9,7 @@ import org.kwakmunsu.auddum.member.application.MemberQueryService;
 import org.kwakmunsu.auddum.member.domain.Role;
 import org.kwakmunsu.auddum.poll.application.PollCommandService;
 import org.kwakmunsu.auddum.poll.application.PollQueryService;
+import org.kwakmunsu.auddum.report.application.ReportCommandService;
 import org.kwakmunsu.auddum.support.web.AnonCookies;
 import org.kwakmunsu.auddum.vote.application.VoteCommandService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,6 +61,9 @@ public abstract class WebApiTestSupport {
 
     @MockitoBean
     protected VoteCommandService voteCommandService;
+
+    @MockitoBean
+    protected ReportCommandService reportCommandService;
 
     @MockitoBean
     protected RefreshTokenService refreshTokenService;

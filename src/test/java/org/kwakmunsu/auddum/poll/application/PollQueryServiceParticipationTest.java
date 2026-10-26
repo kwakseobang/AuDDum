@@ -28,6 +28,7 @@ import org.kwakmunsu.auddum.poll.application.dto.Viewer;
 import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.poll.domain.PollErrorCode;
 import org.kwakmunsu.auddum.poll.domain.PollStatus;
+import org.kwakmunsu.auddum.support.anon.AnonCookieProvider;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 import org.kwakmunsu.auddum.vote.VoteIntegrationTestSupport;
 import org.kwakmunsu.auddum.vote.application.VoteCommandService;
@@ -35,7 +36,6 @@ import org.kwakmunsu.auddum.vote.application.VoteFixture;
 import org.kwakmunsu.auddum.vote.application.dto.VoterCredential;
 import org.kwakmunsu.auddum.vote.domain.AnonId;
 import org.kwakmunsu.auddum.vote.domain.Voter;
-import org.kwakmunsu.auddum.support.anon.AnonCookieProvider;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
