@@ -70,8 +70,8 @@ public class OriginCheckFilter extends OncePerRequestFilter {
             return;
         }
 
-        log.warn("[{}] 허용되지 않은 Origin의 쓰기 요청 (method={}, uri={}, origin={})",
-            DefaultErrorCode.FORBIDDEN.name(), request.getMethod(), request.getRequestURI(), request.getHeader("Origin"));
+        log.warn("[OriginCheckFilter] 허용되지 않은 Origin의 쓰기 요청 차단 - method={}, uri={}, origin={}",
+            request.getMethod(), request.getRequestURI(), request.getHeader("Origin"));
 
         response.setStatus(DefaultErrorCode.FORBIDDEN.getStatus().value());
         response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);

@@ -38,8 +38,8 @@ class CurrentMemberIdResolverTest {
     @Test
     void 인증된_회원이_없으면_UNAUTHENTICATED다() {
         assertThatThrownBy(() -> resolver.resolveArgument(parameter, null, null, null))
-            .isInstanceOfSatisfying(AuddumException.class,
-                e -> assertThat(e.getErrorCode()).isEqualTo(DefaultErrorCode.UNAUTHENTICATED));
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(DefaultErrorCode.UNAUTHENTICATED.getMessage());
     }
 
 }

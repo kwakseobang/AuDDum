@@ -107,7 +107,8 @@ class RefreshTokenServiceTest extends IntegrationTestSupport {
         var reuseAt = firstAt.plusSeconds(10).plusNanos(1_000_000);
 
         assertThatThrownBy(() -> service.reissue(old.refreshToken(), reuseAt))
-            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(DefaultErrorCode.UNAUTHENTICATED));
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(DefaultErrorCode.UNAUTHENTICATED.getMessage());
 
         assertThat(refreshTokenJpaRepository.findAllByMemberId(memberId)).hasSize(3).allMatch(RefreshToken::isRevoked);
         assertThat(find(otherDevice.refreshToken()).isRevoked()).isTrue();
@@ -135,7 +136,8 @@ class RefreshTokenServiceTest extends IntegrationTestSupport {
         assertThatThrownBy(() -> service.reissue(old.refreshToken(), NOW.plusMinutes(6))).isInstanceOf(AuddumException.class);
 
         assertThatThrownBy(() -> service.reissue(renewed.refreshToken(), NOW.plusMinutes(7).plusSeconds(30)))
-            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(DefaultErrorCode.UNAUTHENTICATED));
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(DefaultErrorCode.UNAUTHENTICATED.getMessage());
     }
 
     @Test
@@ -145,7 +147,8 @@ class RefreshTokenServiceTest extends IntegrationTestSupport {
         refreshTokenJpaRepository.deleteAll(refreshTokenJpaRepository.findAllByMemberId(memberId));
 
         assertThatThrownBy(() -> service.reissue(token.refreshToken(), NOW.plusMinutes(1)))
-            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(DefaultErrorCode.UNAUTHENTICATED));
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(DefaultErrorCode.UNAUTHENTICATED.getMessage());
     }
 
     @Test
@@ -154,7 +157,8 @@ class RefreshTokenServiceTest extends IntegrationTestSupport {
         var token = service.issue(memberId, Role.MEMBER, NOW);
 
         assertThatThrownBy(() -> service.reissue(token.refreshToken(), NOW.plusDays(14).plusSeconds(1)))
-            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(DefaultErrorCode.UNAUTHENTICATED));
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(DefaultErrorCode.UNAUTHENTICATED.getMessage());
     }
 
     @Test
@@ -172,9 +176,11 @@ class RefreshTokenServiceTest extends IntegrationTestSupport {
     @Test
     void 리프레시_토큰이_없거나_비어_있으면_재발급은_401이다() {
         assertThatThrownBy(() -> service.reissue(null, NOW))
-            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(DefaultErrorCode.UNAUTHENTICATED));
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(DefaultErrorCode.UNAUTHENTICATED.getMessage());
         assertThatThrownBy(() -> service.reissue(" ", NOW))
-            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(DefaultErrorCode.UNAUTHENTICATED));
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(DefaultErrorCode.UNAUTHENTICATED.getMessage());
     }
 
     @Test
@@ -195,7 +201,8 @@ class RefreshTokenServiceTest extends IntegrationTestSupport {
         deleteMemberRowOnly(memberId);
 
         assertThatThrownBy(() -> service.reissue(token.refreshToken(), NOW.plusMinutes(1)))
-            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(DefaultErrorCode.UNAUTHENTICATED));
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(DefaultErrorCode.UNAUTHENTICATED.getMessage());
     }
 
     @Test
@@ -219,7 +226,8 @@ class RefreshTokenServiceTest extends IntegrationTestSupport {
         var tokens = service.issue(memberId, Role.MEMBER, NOW);
 
         assertThatThrownBy(() -> service.reissue(tokens.accessToken(), NOW.plusMinutes(1)))
-            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(DefaultErrorCode.UNAUTHENTICATED));
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(DefaultErrorCode.UNAUTHENTICATED.getMessage());
     }
 
     /** FK(fk_refresh_token_member) 때문에 토큰이 남은 회원은 지울 수 없어, H2의 참조 무결성 검사를 잠시 끄고 회원 행만 지운다. */

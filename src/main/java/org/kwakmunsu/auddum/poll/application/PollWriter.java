@@ -6,8 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.kwakmunsu.auddum.poll.application.dto.NewPoll;
 import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.poll.infrastructure.PollJpaRepository;
-import org.kwakmunsu.auddum.support.error.AuddumException;
-import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
 import org.springframework.stereotype.Component;
 
 /**
@@ -45,9 +43,9 @@ class PollWriter {
             log.warn("[PollWriter] 공개 ID 충돌, 다시 발급 - authorId={}, attempt={}", authorId, attempt + 1);
         }
 
-        log.error("[PollWriter] 공개 ID를 발급하지 못했다 - authorId={}, attempts={}", authorId, MAX_PUBLIC_ID_ATTEMPTS);
+        log.error("[PollWriter] 공개 ID 발급 실패 - authorId={}, attempts={}", authorId, MAX_PUBLIC_ID_ATTEMPTS);
 
-        throw new AuddumException(DefaultErrorCode.INTERNAL_ERROR);
+        throw new IllegalStateException("공개 ID를 발급하지 못했다");
     }
 
     Poll save(Poll poll) {

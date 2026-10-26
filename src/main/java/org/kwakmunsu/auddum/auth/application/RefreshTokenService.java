@@ -83,7 +83,7 @@ public class RefreshTokenService {
         }
 
         refreshTokenWriter.revokeAll(stored.getMemberId(), now);
-        log.warn("[RefreshTokenService] 폐기된 리프레시 토큰이 재사용되어 회원의 토큰을 모두 폐기했다 (memberId={})", stored.getMemberId());
+        log.warn("[RefreshTokenService] 폐기된 리프레시 토큰 재사용 감지, 회원 토큰 전체 폐기 - memberId={}", stored.getMemberId());
 
         throw new AuddumException(DefaultErrorCode.UNAUTHENTICATED);
     }

@@ -279,7 +279,8 @@ class PollQueryServiceTest extends IntegrationTestSupport {
         var otherId = saveMember(Role.MEMBER);
 
         assertThatThrownBy(() -> pollReader.getReadable(poll.getPublicId().value(), otherId))
-            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(PollErrorCode.POLL_NOT_FOUND));
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
     }
 
     @ParameterizedTest
@@ -288,7 +289,8 @@ class PollQueryServiceTest extends IntegrationTestSupport {
         var poll = savePoll(status);
 
         assertThatThrownBy(() -> pollReader.getReadable(poll.getPublicId().value(), null))
-            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(PollErrorCode.POLL_NOT_FOUND));
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
     }
 
     @ParameterizedTest
@@ -298,7 +300,8 @@ class PollQueryServiceTest extends IntegrationTestSupport {
         var withdrawnAdminId = memberJpaRepository.saveAndFlush(MemberFixture.createWithdrawnAdmin()).getId();
 
         assertThatThrownBy(() -> pollReader.getReadable(poll.getPublicId().value(), withdrawnAdminId))
-            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(PollErrorCode.POLL_NOT_FOUND));
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
     }
 
     @ParameterizedTest
@@ -319,15 +322,15 @@ class PollQueryServiceTest extends IntegrationTestSupport {
         var adminId = saveMember(Role.ADMIN);
 
         assertThatThrownBy(() -> pollReader.getReadable("zzzzzzzzzzzz", adminId))
-            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(PollErrorCode.POLL_NOT_FOUND));
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
     }
 
     @Test
     void 없는_공개_ID_상세는_POLL_NOT_FOUND다() {
         assertThatThrownBy(() -> pollReader.getReadable("zzzzzzzzzzzz", null))
             .isInstanceOf(AuddumException.class)
-            .extracting(e -> ((AuddumException) e).getErrorCode())
-            .isEqualTo(PollErrorCode.POLL_NOT_FOUND);
+            .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
     }
 
     // ---- 보조 ----

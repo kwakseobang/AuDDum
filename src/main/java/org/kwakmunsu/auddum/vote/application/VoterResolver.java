@@ -60,7 +60,7 @@ public class VoterResolver {
     }
 
     private ResolvedVoter forged(String reason) {
-        log.warn("[ANON_COOKIE_FORGED] 위조 의심 익명 쿠키를 무효로 처리하고 새로 발급했다 (reason={})", reason);
+        log.warn("[VoterResolver] 위조 의심 익명 쿠키 무효 처리 후 재발급 - reason={}", reason);
 
         return issueNew();
     }

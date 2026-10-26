@@ -258,7 +258,7 @@ class VoterResolverTest {
         assertThat(appender.list).hasSize(1);
         var event = appender.list.get(0);
         assertThat(event.getLevel()).isEqualTo(Level.WARN);
-        assertThat(logText(event)).contains("[ANON_COOKIE_FORGED]").contains("reason=서명 불일치");
+        assertThat(logText(event)).contains("[VoterResolver]").contains("reason=서명 불일치");
     }
 
     @Test
@@ -268,7 +268,7 @@ class VoterResolverTest {
         assertThat(appender.list).hasSize(1);
         var event = appender.list.get(0);
         assertThat(event.getLevel()).isEqualTo(Level.WARN);
-        assertThat(logText(event)).contains("[ANON_COOKIE_FORGED]").contains("reason=형식 오류");
+        assertThat(logText(event)).contains("[VoterResolver]").contains("reason=형식 오류");
     }
 
     @Test

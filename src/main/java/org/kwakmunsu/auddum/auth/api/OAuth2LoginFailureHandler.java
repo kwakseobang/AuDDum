@@ -37,7 +37,7 @@ public class OAuth2LoginFailureHandler implements AuthenticationFailureHandler {
         @NonNull AuthenticationException exception
     ) throws IOException {
         String code = resolveCode(exception);
-        log.info("[소셜 로그인 실패] code={}, reason={}", code, exception.getMessage());
+        log.info("[OAuth2LoginFailureHandler] 소셜 로그인 실패 - code={}, reason={}", code, exception.getMessage());
 
         // 로그인이 끝났으니 로그인 과정에서 쓴 세션(state, 돌아갈 경로)은 버린다.
         HttpSession session = request.getSession(false);

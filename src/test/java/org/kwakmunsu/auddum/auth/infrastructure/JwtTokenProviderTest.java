@@ -73,7 +73,8 @@ class JwtTokenProviderTest {
         var token = provider.createAccessToken(42L, Role.MEMBER, NOW);
 
         assertThatThrownBy(() -> provider.parseAccessToken(token, NOW.plusMinutes(30).plusSeconds(1)))
-            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(DefaultErrorCode.UNAUTHENTICATED));
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(DefaultErrorCode.UNAUTHENTICATED.getMessage());
     }
 
     @Test
@@ -82,7 +83,8 @@ class JwtTokenProviderTest {
         var token = other.createAccessToken(42L, Role.MEMBER, NOW);
 
         assertThatThrownBy(() -> provider.parseAccessToken(token, NOW))
-            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(DefaultErrorCode.UNAUTHENTICATED));
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(DefaultErrorCode.UNAUTHENTICATED.getMessage());
     }
 
     @Test
@@ -99,7 +101,8 @@ class JwtTokenProviderTest {
         var refresh = provider.createRefreshToken(42L, NOW);
 
         assertThatThrownBy(() -> provider.parseAccessToken(refresh, NOW))
-            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(DefaultErrorCode.UNAUTHENTICATED));
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(DefaultErrorCode.UNAUTHENTICATED.getMessage());
     }
 
     @Test
@@ -107,7 +110,8 @@ class JwtTokenProviderTest {
         var access = provider.createAccessToken(42L, Role.MEMBER, NOW);
 
         assertThatThrownBy(() -> provider.parseRefreshToken(access, NOW))
-            .isInstanceOfSatisfying(AuddumException.class, e -> assertThat(e.getErrorCode()).isEqualTo(DefaultErrorCode.UNAUTHENTICATED));
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(DefaultErrorCode.UNAUTHENTICATED.getMessage());
     }
 
     @Test
