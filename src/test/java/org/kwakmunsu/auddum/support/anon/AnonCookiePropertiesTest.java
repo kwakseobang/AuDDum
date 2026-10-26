@@ -1,4 +1,4 @@
-package org.kwakmunsu.auddum.vote.infrastructure;
+package org.kwakmunsu.auddum.support.anon;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

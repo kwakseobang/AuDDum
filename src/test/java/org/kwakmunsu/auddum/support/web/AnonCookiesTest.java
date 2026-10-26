@@ -1,4 +1,4 @@
-package org.kwakmunsu.auddum.vote.api;
+package org.kwakmunsu.auddum.support.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

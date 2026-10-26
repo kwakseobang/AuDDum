@@ -39,6 +39,5 @@ auddum:
     cookie-secure: true
     jwt:
       secret: test-only-jwt-secret-key-test-only-0123456789
-  vote:
-    anon-cookie:
-      secret: test-only-anon-cookie-secret-test-only-0123456789
+  anon-cookie:
+    secret: test-only-anon-cookie-secret-test-only-0123456789

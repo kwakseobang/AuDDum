@@ -1,4 +1,4 @@
-package org.kwakmunsu.auddum.vote.infrastructure;
+package org.kwakmunsu.auddum.support.anon;
 
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -7,7 +7,6 @@ import java.util.Base64;
 import java.util.UUID;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import org.kwakmunsu.auddum.vote.domain.AnonId;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -32,10 +31,10 @@ public class AnonCookieProvider {
 
     /** 새 UUID로 서명된 쿠키를 만든다. */
     public AnonCookie issue() {
-        AnonId anonId = new AnonId(UUID.randomUUID());
-        String payload = VERSION + SEPARATOR + anonId.value();
+        UUID id = UUID.randomUUID();
+        String payload = VERSION + SEPARATOR + id;
 
-        return new AnonCookie(anonId, payload + SEPARATOR + sign(payload));
+        return new AnonCookie(id, payload + SEPARATOR + sign(payload));
     }
 
     /** 쿠키 값을 검증하고 유효 여부와 무효 사유(형식 오류, 서명 불일치)를 돌려준다. */
@@ -60,7 +59,7 @@ public class AnonCookieProvider {
             return new Verification.SignatureMismatch();
         }
 
-        return new Verification.Valid(new AnonId(uuid));
+        return new Verification.Valid(uuid);
     }
 
     /** 소문자 표준 형식(8-4-4-4-12)만 UUID로 받는다. 서버가 발급한 값은 항상 이 형식이다. */
@@ -88,7 +87,7 @@ public class AnonCookieProvider {
     /** 쿠키 검증 결과. */
     public sealed interface Verification {
 
-        record Valid(AnonId anonId) implements Verification {
+        record Valid(UUID id) implements Verification {
 
         }
 

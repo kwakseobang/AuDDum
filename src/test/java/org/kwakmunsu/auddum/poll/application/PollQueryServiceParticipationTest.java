@@ -35,7 +35,7 @@ import org.kwakmunsu.auddum.vote.application.VoteFixture;
 import org.kwakmunsu.auddum.vote.application.dto.VoterCredential;
 import org.kwakmunsu.auddum.vote.domain.AnonId;
 import org.kwakmunsu.auddum.vote.domain.Voter;
-import org.kwakmunsu.auddum.vote.infrastructure.AnonCookieProvider;
+import org.kwakmunsu.auddum.support.anon.AnonCookieProvider;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -122,7 +122,7 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
     void 마감_전에_참여한_비회원은_유효한_쿠키로_myChoice와_result를_받는다() {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
         var cookie = anonCookieProvider.issue();
-        saveVote(poll, 2, Voter.anonymous(cookie.anonId()));
+        saveVote(poll, 2, Voter.anonymous(new AnonId(cookie.id())));
 
         var detail = getPollDetail(publicIdOf(poll), anonymous(cookie.value()));
 
@@ -225,7 +225,7 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
     void 익명의_참여는_회원의_myChoice에_영향이_없다() {
         var memberId = saveMember();
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
-        saveVote(poll, 2, Voter.anonymous(anonCookieProvider.issue().anonId()));
+        saveVote(poll, 2, Voter.anonymous(new AnonId(anonCookieProvider.issue().id())));
 
         assertThat(getPollDetail(publicIdOf(poll), member(memberId)).myChoice()).isNull();
     }
@@ -234,7 +234,7 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
     void 익명은_자기_쿠키의_참여로_myChoice를_받는다() {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
         var outsider = anonCookieProvider.issue();
-        saveVote(poll, 2, Voter.anonymous(outsider.anonId()));
+        saveVote(poll, 2, Voter.anonymous(new AnonId(outsider.id())));
         saveVote(poll, 1, Voter.member(saveMember()));
 
         assertThat(getPollDetail(
@@ -247,7 +247,7 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
         var memberId = saveMember();
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
         var cookie = anonCookieProvider.issue();
-        saveVote(poll, 1, Voter.anonymous(cookie.anonId()));
+        saveVote(poll, 1, Voter.anonymous(new AnonId(cookie.id())));
 
         var detail = getPollDetail(publicIdOf(poll), memberWithCookie(memberId, cookie.value()));
 
@@ -272,7 +272,7 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
         var other = savePoll(VoteFixture.openPoll(saveMember()));
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
         var cookie = anonCookieProvider.issue();
-        saveVote(other, 1, Voter.anonymous(cookie.anonId()));
+        saveVote(other, 1, Voter.anonymous(new AnonId(cookie.id())));
 
         var detail = getPollDetail(publicIdOf(poll), anonymous(cookie.value()));
 
@@ -288,7 +288,7 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
     void 믿을_수_없는_쿠키는_오류_없이_미참여로_보고_기록과_로그를_남기지_않는다(String kind) {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
         var issued = anonCookieProvider.issue();
-        saveVote(poll, 1, Voter.anonymous(issued.anonId()));
+        saveVote(poll, 1, Voter.anonymous(new AnonId(issued.id())));
         var before = voteJpaRepository.count();
 
         var detail = getPollDetail(publicIdOf(poll), untrusted(kind, issued.value()));

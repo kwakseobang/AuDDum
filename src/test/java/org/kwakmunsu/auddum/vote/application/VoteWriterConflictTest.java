@@ -9,9 +9,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 import org.kwakmunsu.auddum.vote.VoteIntegrationTestSupport;
+import org.kwakmunsu.auddum.vote.domain.AnonId;
 import org.kwakmunsu.auddum.vote.domain.VoteErrorCode;
 import org.kwakmunsu.auddum.vote.domain.Voter;
-import org.kwakmunsu.auddum.vote.infrastructure.AnonCookieProvider;
+import org.kwakmunsu.auddum.support.anon.AnonCookieProvider;
 import org.springframework.dao.DataIntegrityViolationException;
 
 /**
@@ -55,7 +56,7 @@ class VoteWriterConflictTest extends VoteIntegrationTestSupport {
     @Test
     void 이긴_쪽이_커밋한_비회원_키로_같은_선택을_저장해도_ALREADY_VOTED이고_기록은_한_건이다() {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
-        var voter = Voter.anonymous(anonCookieProvider.issue().anonId());
+        var voter = Voter.anonymous(new AnonId(anonCookieProvider.issue().id()));
         voteWriter.cast(poll, voter, 1, NOW);
 
         assertThatThrownBy(() -> voteWriter.cast(poll, voter, 1, NOW))

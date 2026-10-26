@@ -4,11 +4,12 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.kwakmunsu.auddum.member.application.MemberReader;
+import org.kwakmunsu.auddum.support.anon.AnonCookie;
+import org.kwakmunsu.auddum.support.anon.AnonCookieProvider;
+import org.kwakmunsu.auddum.support.anon.AnonCookieProvider.Verification;
 import org.kwakmunsu.auddum.vote.application.dto.VoterCredential;
+import org.kwakmunsu.auddum.vote.domain.AnonId;
 import org.kwakmunsu.auddum.vote.domain.Voter;
-import org.kwakmunsu.auddum.vote.infrastructure.AnonCookie;
-import org.kwakmunsu.auddum.vote.infrastructure.AnonCookieProvider;
-import org.kwakmunsu.auddum.vote.infrastructure.AnonCookieProvider.Verification;
 import org.springframework.stereotype.Component;
 
 /**
@@ -35,7 +36,7 @@ public class VoterResolver {
         }
 
         return switch (anonCookieProvider.check(credential.anonCookieValue())) {
-            case Verification.Valid valid -> ResolvedVoter.existing(Voter.anonymous(valid.anonId()));
+            case Verification.Valid valid -> ResolvedVoter.existing(Voter.anonymous(new AnonId(valid.id())));
             case Verification.Malformed _ -> forged("형식 오류");
             case Verification.SignatureMismatch _ -> forged("서명 불일치");
         };
@@ -54,7 +55,7 @@ public class VoterResolver {
         }
 
         return switch (anonCookieProvider.check(credential.anonCookieValue())) {
-            case Verification.Valid valid -> Optional.of(Voter.anonymous(valid.anonId()));
+            case Verification.Valid valid -> Optional.of(Voter.anonymous(new AnonId(valid.id())));
             case Verification.Malformed _, Verification.SignatureMismatch _ -> Optional.empty();
         };
     }
@@ -68,7 +69,7 @@ public class VoterResolver {
     private ResolvedVoter issueNew() {
         AnonCookie cookie = anonCookieProvider.issue();
 
-        return ResolvedVoter.issued(Voter.anonymous(cookie.anonId()), cookie.value());
+        return ResolvedVoter.issued(Voter.anonymous(new AnonId(cookie.id())), cookie.value());
     }
 
 }

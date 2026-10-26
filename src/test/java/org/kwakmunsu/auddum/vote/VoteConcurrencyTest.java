@@ -1,7 +1,6 @@
 package org.kwakmunsu.auddum.vote;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.kwakmunsu.auddum.vote.api.AnonCookies.ANON_COOKIE;
 import static org.kwakmunsu.auddum.vote.application.VoteFixture.anonymous;
 import static org.kwakmunsu.auddum.vote.application.VoteFixture.choice;
 import static org.kwakmunsu.auddum.vote.application.VoteFixture.member;
@@ -16,6 +15,7 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.support.error.AuddumException;
+import org.kwakmunsu.auddum.support.web.AnonCookieName;
 import org.kwakmunsu.auddum.vote.ConcurrentRace.Outcome;
 import org.kwakmunsu.auddum.vote.application.VoteCommandService;
 import org.kwakmunsu.auddum.vote.application.VoteReader;
@@ -23,7 +23,7 @@ import org.kwakmunsu.auddum.vote.application.dto.CastResult;
 import org.kwakmunsu.auddum.vote.domain.AnonId;
 import org.kwakmunsu.auddum.vote.domain.VoteErrorCode;
 import org.kwakmunsu.auddum.vote.domain.Voter;
-import org.kwakmunsu.auddum.vote.infrastructure.AnonCookieProvider;
+import org.kwakmunsu.auddum.support.anon.AnonCookieProvider;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -135,7 +135,7 @@ class VoteConcurrencyTest extends MySqlConcurrencyTestSupport {
     @Test
     void 익명_식별자는_MySQL의_CHAR_36_컬럼에_저장되고_같은_값으로_조회된다() {
         var poll = saveOpenPoll();
-        var anonId = anonCookieProvider.issue().anonId();
+        var anonId = new AnonId(anonCookieProvider.issue().id());
 
         saveVote(poll, 1, Voter.anonymous(anonId));
 
@@ -159,7 +159,7 @@ class VoteConcurrencyTest extends MySqlConcurrencyTestSupport {
         var response = mvcTester.post()
             .uri("/api/v1/polls/" + poll.getPublicId().value() + "/votes")
             .header("Origin", ALLOWED_ORIGIN)
-            .cookie(new Cookie(ANON_COOKIE, cookieValue))
+            .cookie(new Cookie(AnonCookieName.VALUE, cookieValue))
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"position\": 1}")
             .exchange()

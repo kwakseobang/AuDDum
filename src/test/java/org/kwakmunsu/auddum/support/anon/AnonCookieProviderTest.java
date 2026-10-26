@@ -1,4 +1,4 @@
-package org.kwakmunsu.auddum.vote.infrastructure;
+package org.kwakmunsu.auddum.support.anon;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.kwakmunsu.auddum.vote.infrastructure.AnonCookieProvider.Verification;
+import org.kwakmunsu.auddum.support.anon.AnonCookieProvider.Verification;
 
 class AnonCookieProviderTest {
 
@@ -25,13 +25,13 @@ class AnonCookieProviderTest {
         var parts = cookie.value().split("\\.");
         assertThat(parts).hasSize(3);
         assertThat(parts[0]).isEqualTo("v1");
-        assertThat(UUID.fromString(parts[1])).isEqualTo(cookie.anonId().value());
+        assertThat(UUID.fromString(parts[1])).isEqualTo(cookie.id());
         assertThat(parts[2]).isNotBlank();
     }
 
     @Test
     void 발급할_때마다_다른_UUID가_나온다() {
-        assertThat(anonCookieProvider.issue().anonId()).isNotEqualTo(anonCookieProvider.issue().anonId());
+        assertThat(anonCookieProvider.issue().id()).isNotEqualTo(anonCookieProvider.issue().id());
     }
 
     // ---- 검증: 유효 ----
@@ -40,7 +40,7 @@ class AnonCookieProviderTest {
     void 발급한_쿠키는_검증을_통과하고_같은_UUID를_돌려준다() {
         var cookie = anonCookieProvider.issue();
 
-        assertThat(anonCookieProvider.check(cookie.value())).isEqualTo(new Verification.Valid(cookie.anonId()));
+        assertThat(anonCookieProvider.check(cookie.value())).isEqualTo(new Verification.Valid(cookie.id()));
     }
 
     // ---- 검증: 위조·변조 ----
@@ -51,7 +51,7 @@ class AnonCookieProviderTest {
         var cookie = anonCookieProvider.issue();
         var other = anonCookieProvider.issue();
         var forged = switch (kind) {
-            case "다른 쿠키의 서명" -> "v1." + cookie.anonId().value() + "." + signatureOf(other.value());
+            case "다른 쿠키의 서명" -> "v1." + cookie.id() + "." + signatureOf(other.value());
             case "UUID만 변경" -> "v1." + UUID.randomUUID() + "." + signatureOf(cookie.value());
             case "서명 잘라냄" -> cookie.value().substring(0, cookie.value().length() - 1);
             case "다른 서명 키" -> new AnonCookieProvider(new AnonCookieProperties(OTHER_SECRET)).issue().value();
@@ -65,7 +65,7 @@ class AnonCookieProviderTest {
     @ValueSource(strings = {"서명 비어 있음", "서명 없음", "버전 v2", "부분 네 개", "UUID 형식 아님", "대문자 UUID"})
     void 형식이_맞지_않는_쿠키는_Malformed로_무효다(String kind) {
         var cookie = anonCookieProvider.issue();
-        var uuid = cookie.anonId().value();
+        var uuid = cookie.id();
         var forged = switch (kind) {
             case "서명 비어 있음" -> "v1." + uuid + ".";
             case "서명 없음" -> "v1." + uuid;

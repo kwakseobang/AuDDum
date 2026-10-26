@@ -26,8 +26,8 @@ import org.kwakmunsu.auddum.vote.domain.AnonId;
 import org.kwakmunsu.auddum.vote.domain.Vote;
 import org.kwakmunsu.auddum.vote.domain.VoteErrorCode;
 import org.kwakmunsu.auddum.vote.domain.Voter;
-import org.kwakmunsu.auddum.vote.infrastructure.AnonCookieProvider;
-import org.kwakmunsu.auddum.vote.infrastructure.AnonCookieProvider.Verification;
+import org.kwakmunsu.auddum.support.anon.AnonCookieProvider;
+import org.kwakmunsu.auddum.support.anon.AnonCookieProvider.Verification;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -111,7 +111,7 @@ class VoteCommandServiceTest extends VoteIntegrationTestSupport {
         assertThat(result.newCookieValue()).isNotBlank();
         var issued = (Verification.Valid) anonCookieProvider.check(result.newCookieValue());
         assertThat(voteJpaRepository.findAll()).extracting(Vote::getVoter)
-            .containsExactly(Voter.anonymous(issued.anonId()));
+            .containsExactly(Voter.anonymous(new AnonId(issued.id())));
     }
 
     @Test
@@ -127,7 +127,7 @@ class VoteCommandServiceTest extends VoteIntegrationTestSupport {
 
         assertThat(result.newCookieValue()).isNull();
         assertThat(voteJpaRepository.findAll()).extracting(Vote::getVoter)
-            .containsExactly(Voter.anonymous(cookie.anonId()));
+            .containsExactly(Voter.anonymous(new AnonId(cookie.id())));
     }
 
     @Test
@@ -145,7 +145,7 @@ class VoteCommandServiceTest extends VoteIntegrationTestSupport {
         assertThat(result.newCookieValue()).isNotBlank().isNotEqualTo(forged);
         var issued = (Verification.Valid) anonCookieProvider.check(result.newCookieValue());
         assertThat(voteJpaRepository.findAll()).extracting(Vote::getVoter)
-            .containsExactly(Voter.anonymous(issued.anonId()));
+            .containsExactly(Voter.anonymous(new AnonId(issued.id())));
     }
 
     @Test
@@ -211,7 +211,7 @@ class VoteCommandServiceTest extends VoteIntegrationTestSupport {
             choice(poll, 1),
             anonymous(cookie.value()));
 
-        var anonId = ((Verification.Valid) anonCookieProvider.check(cookie.value())).anonId();
+        var anonId = new AnonId(((Verification.Valid) anonCookieProvider.check(cookie.value())).id());
         assertThat(voteJpaRepository.findAll()).extracting(Vote::getVoter)
             .containsExactlyInAnyOrder(Voter.member(memberId), Voter.anonymous(anonId));
     }
@@ -237,7 +237,7 @@ class VoteCommandServiceTest extends VoteIntegrationTestSupport {
     void 이미_참여한_비회원이_같은_쿠키로_같은_선택을_다시_보내도_ALREADY_VOTED다() {
         var poll = savePoll(VoteFixture.openPoll(saveMember()));
         var cookie = anonCookieProvider.issue();
-        saveVote(poll, 1, Voter.anonymous(cookie.anonId()));
+        saveVote(poll, 1, Voter.anonymous(new AnonId(cookie.id())));
 
         assertThatThrownBy(() -> voteCommandService.castVote(
             choice(poll, 1),
