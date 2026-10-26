@@ -25,6 +25,7 @@ import org.kwakmunsu.auddum.poll.domain.PollStatus;
 import org.kwakmunsu.auddum.poll.infrastructure.PollJpaRepository;
 import org.kwakmunsu.auddum.support.config.TimeConfig;
 import org.kwakmunsu.auddum.support.error.AuddumException;
+import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -331,6 +332,55 @@ class PollQueryServiceTest extends IntegrationTestSupport {
         assertThatThrownBy(() -> pollReader.getReadable("zzzzzzzzzzzz", null))
             .isInstanceOf(AuddumException.class)
             .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
+    }
+
+    // ---- 공개 투표 한 건 (신고처럼 공개된 투표만 대상인 쓰기, API-명세 §5, 도메인-모델 §6) ----
+
+    @Test
+    void 공개_투표는_getPublic으로_조회된다() {
+        var poll = savePoll("공개 투표");
+        entityManager.flush();
+        entityManager.clear();
+
+        var found = pollReader.getPublic(poll.getPublicId().value());
+
+        assertThat(found.getId()).isEqualTo(poll.getId());
+        assertThat(found.getStatus()).isEqualTo(PollStatus.PUBLIC);
+    }
+
+    @Test
+    void 마감된_공개_투표도_getPublic으로_조회된다() {
+        var poll = savePoll("마감된 투표");
+        closePoll(poll.getId());
+
+        var found = pollReader.getPublic(poll.getPublicId().value());
+
+        assertThat(found.getId()).isEqualTo(poll.getId());
+        assertThat(found.isClosed(LocalDateTime.now(TimeConfig.KST))).isTrue();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = PollStatus.class, names = {"HIDDEN", "DELETED"})
+    void 숨김_삭제_투표는_getPublic에서_404_POLL_NOT_FOUND다(PollStatus status) {
+        var poll = savePoll(status);
+
+        assertThatThrownBy(() -> pollReader.getPublic(poll.getPublicId().value()))
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    void 없는_공개_ID는_getPublic에서_404_POLL_NOT_FOUND다() {
+        assertThatThrownBy(() -> pollReader.getPublic("zzzzzzzzzzzz"))
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    void 형식이_틀린_공개_ID는_getPublic에서_400_MALFORMED_REQUEST다() {
+        assertThatThrownBy(() -> pollReader.getPublic("not-a-public-id!"))
+            .isInstanceOf(AuddumException.class)
+            .hasMessage(DefaultErrorCode.MALFORMED_REQUEST.getMessage());
     }
 
     // ---- 보조 ----

@@ -360,12 +360,12 @@
 **POST /polls/{pollId}/reports**
 
 - 요청: `{ reason, detail }`
-- `reason`은 `ABUSE_HATE`, `SEXUAL_HARASSMENT`, `PERSONAL_INFO`, `SPAM`, `ETC` 중 하나다. `ETC`일 때만 `detail`을 받고 필수다. 글자 수 상한은 미정(구현 때 확정, 임시 200자). 다른 사유에 담긴 `detail`은 무시한다.
+- `reason`은 `ABUSE_HATE`, `SEXUAL_HARASSMENT`, `PERSONAL_INFO`, `SPAM`, `ETC` 중 하나다. `ETC`일 때 `detail`은 필수이고 공백뿐이면 없는 것으로 본다. 글자 수 상한은 200자(임시)이고 유니코드 문자 단위로 센다. 다른 사유에 담긴 `detail`은 버리지 않고 입력 그대로 저장한다(상한은 같다).
 - 신고자는 회원 ID 또는 익명 식별 쿠키로 식별한다. 비회원이 쿠키가 없으면 이 요청에서 발급한다.
 - 성공 시 `201`이고 본문은 없다. 신고자에게 처리 결과를 알리는 API는 없다.
 - 신고는 투표당 신고자당 1회다. 중복 신고는 409 `REPORT_ALREADY_SUBMITTED`이고 한 건만 인정한다.
-- 숨김·삭제된 투표에는 신고할 수 없고 404 `POLL_NOT_FOUND`다.
-- 정지 회원은 403 `MEMBER_SUSPENDED`이고, 허용되지 않는 `reason`이나 `ETC`인데 `detail`이 없는 경우는 400 `VALIDATION_FAILED`다.
+- 숨김·삭제된 투표에는 신고할 수 없고 404 `POLL_NOT_FOUND`다. 작성자와 관리자도 같다. 마감된 투표는 신고할 수 있다.
+- 정지 회원은 403 `MEMBER_SUSPENDED`다. `reason`이 없거나, `ETC`인데 `detail`이 없거나 공백뿐인 경우, `detail`이 200자를 넘는 경우는 400 `VALIDATION_FAILED`이고, 허용되지 않는 `reason` 값은 본문 형식 오류로 400 `MALFORMED_REQUEST`다.
 - 신고는 접수 상태(PENDING)로만 저장하고 투표의 노출 상태는 바꾸지 않는다. 건수만으로 자동 처리하지 않는다.
 
 `POST /polls/{pollId}/reports` 요청 예시

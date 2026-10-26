@@ -15,7 +15,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Component;
 
 /**
- * 투표 읽기. 열람할 수 있는 투표 한 건과 공개 투표 목록을 돌려준다. 다른 도메인(vote 등)도 서비스가 아니라 이 클래스로 투표를 읽는다(다른 도메인에 여는 것은 {@link #getReadable}뿐이다).
+ * 투표 읽기. 열람할 수 있는 투표 한 건({@link #getReadable}), 공개된 투표 한 건({@link #getPublic}), 공개 투표 목록을 돌려준다. 다른 도메인(vote, report 등)도 서비스가 아니라 이 클래스로 투표를 읽는다(한 건을 읽는 진입점은 {@code getReadable}과 {@code getPublic}이다).
  * 자체 트랜잭션 경계가 없어 부른 서비스의 트랜잭션에 참여한다.
  */
 @RequiredArgsConstructor
@@ -36,6 +36,20 @@ public class PollReader {
 
         return pollRepository.findByPublicId(publicId)
             .filter(poll -> poll.isReadableBy(viewerId, () -> memberReader.isAdmin(viewerId)))
+            .orElseThrow(() -> new AuddumException(PollErrorCode.POLL_NOT_FOUND));
+    }
+
+    /**
+     * 공개 투표 한 건을 돌려준다. 조회자와 상관없이 공개가 아닌 투표(숨김·삭제)는 없는 투표와 같이 404다. 작성자·관리자도 같다.
+     * 신고처럼 "공개된 투표만 대상"인 쓰기에 쓴다.
+     */
+    public Poll getPublic(String publicId) {
+        if (!PublicId.isValid(publicId)) {
+            throw new AuddumException(DefaultErrorCode.MALFORMED_REQUEST);
+        }
+
+        return pollRepository.findByPublicId(publicId)
+            .filter(Poll::isPublic)
             .orElseThrow(() -> new AuddumException(PollErrorCode.POLL_NOT_FOUND));
     }
 

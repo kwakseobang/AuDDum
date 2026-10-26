@@ -6,6 +6,7 @@ import static org.kwakmunsu.auddum.vote.application.VoteFixture.anonymous;
 import static org.kwakmunsu.auddum.vote.application.VoteFixture.member;
 import static org.kwakmunsu.auddum.vote.application.VoteFixture.memberWithCookie;
 import static org.kwakmunsu.auddum.vote.application.VoteFixture.noCredential;
+import static org.kwakmunsu.auddum.vote.application.VoteFixture.tamperSignature;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -27,17 +28,19 @@ import org.kwakmunsu.auddum.member.domain.MemberFixture;
 import org.kwakmunsu.auddum.member.domain.MemberStatus;
 import org.kwakmunsu.auddum.member.infrastructure.MemberAuthJpaRepository;
 import org.kwakmunsu.auddum.member.infrastructure.MemberJpaRepository;
+import org.kwakmunsu.auddum.support.anon.AnonCookieProperties;
+import org.kwakmunsu.auddum.support.anon.AnonCookieProvider;
+import org.kwakmunsu.auddum.support.anon.AnonCookieProvider.Verification;
+import org.kwakmunsu.auddum.support.anon.AnonIdentityResolver;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
 import org.kwakmunsu.auddum.vote.domain.AnonId;
 import org.kwakmunsu.auddum.vote.domain.Voter;
-import org.kwakmunsu.auddum.support.anon.AnonCookieProperties;
-import org.kwakmunsu.auddum.support.anon.AnonCookieProvider;
-import org.kwakmunsu.auddum.support.anon.AnonCookieProvider.Verification;
 import org.slf4j.LoggerFactory;
 
 /**
- * 참여자 결정 단위 테스트. 회원이면 먼저 정상 회원인지 확인한다(없거나 탈퇴 401 UNAUTHENTICATED, 정지 403 MEMBER_SUSPENDED).
+ * 참여자 결정 단위 테스트. 쿠키 해석과 위조 로그는 AnonIdentityResolverTest가 검증하고, 여기서는 회원 상태 확인·회원 우선·Voter 포장·find 위임만 본다.
+ * 회원이면 먼저 정상 회원인지 확인한다(없거나 탈퇴 401 UNAUTHENTICATED, 정지 403 MEMBER_SUSPENDED).
  * MemberReader는 실제 객체를 쓰고 repository만 목으로 둬 상태별 예외 규칙을 그대로 태운다.
  * 기준은 인증-중복-참여 §2, API-명세 §4 참여 순서(회원 상태 -> 참여자 결정).
  */
@@ -45,31 +48,30 @@ class VoterResolverTest {
 
     private static final Long MEMBER_ID = 7L;
     private static final String SECRET = "test-anon-cookie-secret-0123456789-abcdef";
-    private static final String OTHER_SECRET = "another-anon-cookie-secret-9876543210-zyxwvu";
 
     private final AnonCookieProvider anonCookieProvider = new AnonCookieProvider(new AnonCookieProperties(SECRET));
     private final MemberJpaRepository memberRepository = mock(MemberJpaRepository.class);
     private final MemberReader memberReader = new MemberReader(memberRepository, mock(MemberAuthJpaRepository.class));
-    private final VoterResolver resolver = new VoterResolver(anonCookieProvider, memberReader);
+    private final VoterResolver resolver = new VoterResolver(new AnonIdentityResolver(anonCookieProvider), memberReader);
 
-    private final Logger voteLogger = (Logger) LoggerFactory.getLogger("org.kwakmunsu.auddum.vote");
+    private final Logger anonLogger = (Logger) LoggerFactory.getLogger("org.kwakmunsu.auddum.support.anon");
     private final ListAppender<ILoggingEvent> appender = new ListAppender<>();
     private Level originalLevel;
 
     @BeforeEach
     void attachAppender() {
         given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(MemberFixture.createMember()));
-        originalLevel = voteLogger.getLevel();
-        voteLogger.setLevel(Level.ALL);
+        originalLevel = anonLogger.getLevel();
+        anonLogger.setLevel(Level.ALL);
         appender.start();
-        voteLogger.addAppender(appender);
+        anonLogger.addAppender(appender);
     }
 
     @AfterEach
     void detachAppender() {
-        voteLogger.detachAppender(appender);
+        anonLogger.detachAppender(appender);
         appender.stop();
-        voteLogger.setLevel(originalLevel);
+        anonLogger.setLevel(originalLevel);
     }
 
     private String logText(ILoggingEvent event) {
@@ -177,10 +179,10 @@ class VoterResolverTest {
         assertThat(appender.list).isEmpty();
     }
 
-    // ---- 쿠키 없음 ----
+    // ---- Voter 포장 ----
 
     @Test
-    void 비회원이고_쿠키가_없으면_새_익명_참여자를_만들고_쿠키를_발급한다() {
+    void 비회원이고_쿠키가_없으면_새_익명_참여자로_포장하고_쿠키를_발급한다() {
         var resolved = resolver.resolve(noCredential());
 
         assertThat(resolved.voter().anonId()).isNotNull();
@@ -189,25 +191,6 @@ class VoterResolverTest {
         assertThat(anonCookieProvider.check(resolved.newCookieValue()))
                 .isEqualTo(new Verification.Valid(resolved.voter().anonId().value()));
     }
-
-    @Test
-    void 빈_문자열_쿠키는_쿠키_없음으로_보고_로그_없이_새로_발급한다() {
-        var resolved = resolver.resolve(anonymous(""));
-
-        assertThat(resolved.newCookieValue()).isNotNull();
-        assertThat(anonCookieProvider.check(resolved.newCookieValue()))
-                .isEqualTo(new Verification.Valid(resolved.voter().anonId().value()));
-        assertThat(appender.list).isEmpty();
-    }
-
-    @Test
-    void 쿠키가_없는_것은_위조가_아니어서_로그를_남기지_않는다() {
-        resolver.resolve(noCredential());
-
-        assertThat(appender.list).isEmpty();
-    }
-
-    // ---- 유효 쿠키 ----
 
     @Test
     void 유효한_쿠키면_쿠키의_UUID가_참여자이고_다시_발급하지_않는다() {
@@ -220,100 +203,42 @@ class VoterResolverTest {
     }
 
     @Test
-    void 유효한_쿠키면_로그를_남기지_않는다() {
-        resolver.resolve(anonymous(anonCookieProvider.issue().value()));
-
-        assertThat(appender.list).isEmpty();
-    }
-
-    // ---- 위조 쿠키 ----
-
-    @Test
-    void 위조된_쿠키면_예외_없이_새_UUID를_발급한다() {
-        var victim = anonCookieProvider.issue();
-        var forged = "v1." + victim.id() + ".forged";
-
-        var resolved = resolver.resolve(anonymous(forged));
-
-        assertThat(resolved.voter().anonId()).isNotEqualTo(new AnonId(victim.id()));
-        assertThat(resolved.newCookieValue()).isNotNull();
-        assertThat(anonCookieProvider.check(resolved.newCookieValue()))
-                .isEqualTo(new Verification.Valid(resolved.voter().anonId().value()));
-    }
-
-    @Test
-    void 위조된_쿠키의_UUID로는_다른_사람의_참여자를_흉내_낼_수_없다() {
+    void 위조된_쿠키면_다른_사람의_참여자가_아닌_새_참여자로_발급한다() {
         var victim = anonCookieProvider.issue();
 
         var resolved = resolver.resolve(anonymous("v1." + victim.id() + ".forged"));
 
         assertThat(resolved.voter()).isNotEqualTo(Voter.anonymous(new AnonId(victim.id())));
+        assertThat(resolved.newCookieValue()).isNotNull();
+        assertThat(anonCookieProvider.check(resolved.newCookieValue()))
+                .isEqualTo(new Verification.Valid(resolved.voter().anonId().value()));
+    }
+
+    // ---- find 위임 (조회용) ----
+
+    @Test
+    void find는_회원이면_상태를_확인하지_않고_회원_참여자를_돌려준다() {
+        var found = resolver.find(member(MEMBER_ID));
+
+        assertThat(found).contains(Voter.member(MEMBER_ID));
+        verifyNoInteractions(memberRepository);
     }
 
     @Test
-    void 서명이_틀린_쿠키는_WARN_한_건으로_서명_불일치를_남긴다() {
-        var forgedUuid = UUID.randomUUID();
+    void find는_유효한_쿠키면_그_UUID의_익명_참여자를_돌려준다() {
+        var cookie = anonCookieProvider.issue();
 
-        resolver.resolve(anonymous("v1." + forgedUuid + ".forgedsig"));
+        var found = resolver.find(anonymous(cookie.value()));
 
-        assertThat(appender.list).hasSize(1);
-        var event = appender.list.get(0);
-        assertThat(event.getLevel()).isEqualTo(Level.WARN);
-        assertThat(logText(event)).contains("[VoterResolver]").contains("reason=서명 불일치");
+        assertThat(found).contains(Voter.anonymous(new AnonId(cookie.id())));
     }
 
     @Test
-    void 형식이_틀린_쿠키는_WARN_한_건으로_형식_오류를_남긴다() {
-        resolver.resolve(anonymous("garbage-cookie"));
-
-        assertThat(appender.list).hasSize(1);
-        var event = appender.list.get(0);
-        assertThat(event.getLevel()).isEqualTo(Level.WARN);
-        assertThat(logText(event)).contains("[VoterResolver]").contains("reason=형식 오류");
-    }
-
-    @Test
-    void 서명이_틀린_쿠키의_원문_UUID_서명은_로그에_들어가지_않는다() {
-        var forgedUuid = UUID.randomUUID();
-        var forgedValue = "v1." + forgedUuid + ".forgedsig";
-
-        resolver.resolve(anonymous(forgedValue));
-
-        assertThat(appender.list).isNotEmpty();
-        appender.list.forEach(event -> assertThat(logText(event))
-                .doesNotContain(forgedValue)
-                .doesNotContain(forgedUuid.toString())
-                .doesNotContain("forgedsig"));
-    }
-
-    @Test
-    void 다른_키로_서명한_쿠키도_원문을_로그에_남기지_않는다() {
-        var other = new AnonCookieProvider(new AnonCookieProperties(OTHER_SECRET)).issue();
-
-        resolver.resolve(anonymous(other.value()));
-
-        assertThat(appender.list).hasSize(1);
-        var event = appender.list.get(0);
-        assertThat(event.getLevel()).isEqualTo(Level.WARN);
-        assertThat(logText(event))
-                .doesNotContain(other.value())
-                .doesNotContain(other.id().toString());
-    }
-
-    @Test
-    void 형식이_틀린_쿠키의_원문은_로그에_들어가지_않는다() {
-        resolver.resolve(anonymous("garbage-cookie"));
-
-        assertThat(appender.list).isNotEmpty();
-        appender.list.forEach(event -> assertThat(logText(event)).doesNotContain("garbage-cookie"));
-    }
-
-    @Test
-    void 위조_쿠키를_두_번_보내면_매번_다른_UUID를_받는다() {
-        var first = resolver.resolve(anonymous("garbage"));
-        var second = resolver.resolve(anonymous("garbage"));
-
-        assertThat(first.voter()).isNotEqualTo(second.voter());
+    void find는_쿠키가_없거나_위조되었으면_비어_있고_로그도_없다() {
+        assertThat(resolver.find(noCredential())).isEmpty();
+        assertThat(resolver.find(anonymous("garbage"))).isEmpty();
+        assertThat(resolver.find(anonymous(tamperSignature(anonCookieProvider.issue().value())))).isEmpty();
+        assertThat(appender.list).isEmpty();
     }
 
 }
