@@ -1,7 +1,6 @@
 package org.kwakmunsu.auddum.poll.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.kwakmunsu.auddum.vote.api.AnonCookies.ANON_COOKIE;
 import static org.kwakmunsu.auddum.vote.application.VoteFixture.choice;
 import static org.kwakmunsu.auddum.vote.application.VoteFixture.expire;
 import static org.kwakmunsu.auddum.vote.application.VoteFixture.member;
@@ -19,6 +18,7 @@ import org.kwakmunsu.auddum.member.domain.Role;
 import org.kwakmunsu.auddum.poll.domain.Category;
 import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.support.config.TimeConfig;
+import org.kwakmunsu.auddum.support.web.AnonCookieName;
 import org.kwakmunsu.auddum.vote.VoteIntegrationTestSupport;
 import org.kwakmunsu.auddum.vote.application.VoteCommandService;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -58,7 +58,7 @@ class PollDetailChainTest extends VoteIntegrationTestSupport {
         var poll = savePoll(saveMember());
         var cast = voteCommandService.castVote(choice(poll, 2), noCredential());
 
-        var result = mvcTester.get().uri(uri(poll)).cookie(new Cookie(ANON_COOKIE, cast.newCookieValue())).exchange();
+        var result = mvcTester.get().uri(uri(poll)).cookie(new Cookie(AnonCookieName.VALUE, cast.newCookieValue())).exchange();
 
         assertThat(result).hasStatus(200);
         assertThat(result).bodyJson().extractingPath("$.myChoice").isEqualTo(2);
@@ -76,7 +76,7 @@ class PollDetailChainTest extends VoteIntegrationTestSupport {
         var votesBefore = voteJpaRepository.count();
         var forged = tamperSignature(cast.newCookieValue());
 
-        var result = mvcTester.get().uri(uri(poll)).cookie(new Cookie(ANON_COOKIE, forged)).exchange();
+        var result = mvcTester.get().uri(uri(poll)).cookie(new Cookie(AnonCookieName.VALUE, forged)).exchange();
 
         assertThat(result).hasStatus(200);
         assertThat(result).bodyJson().extractingPath("$.myChoice").isNull();
@@ -89,7 +89,7 @@ class PollDetailChainTest extends VoteIntegrationTestSupport {
     void 형식이_깨진_쿠키로_조회하면_200이고_Set_Cookie가_없다() {
         var poll = savePoll(saveMember());
 
-        var result = mvcTester.get().uri(uri(poll)).cookie(new Cookie(ANON_COOKIE, "not-a-cookie")).exchange();
+        var result = mvcTester.get().uri(uri(poll)).cookie(new Cookie(AnonCookieName.VALUE, "not-a-cookie")).exchange();
 
         assertThat(result).hasStatus(200);
         assertThat(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE)).isEmpty();
@@ -99,7 +99,7 @@ class PollDetailChainTest extends VoteIntegrationTestSupport {
     void 빈_쿠키로_조회하면_200이고_Set_Cookie가_없다() {
         var poll = savePoll(saveMember());
 
-        var result = mvcTester.get().uri(uri(poll)).cookie(new Cookie(ANON_COOKIE, "")).exchange();
+        var result = mvcTester.get().uri(uri(poll)).cookie(new Cookie(AnonCookieName.VALUE, "")).exchange();
 
         assertThat(result).hasStatus(200);
         assertThat(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE)).isEmpty();
@@ -125,7 +125,7 @@ class PollDetailChainTest extends VoteIntegrationTestSupport {
         var cast = voteCommandService.castVote(choice(poll, 1), noCredential());
 
         var result = mvcTester.get().uri(uri(poll))
-            .cookie(accessCookie(memberId), new Cookie(ANON_COOKIE, cast.newCookieValue()))
+            .cookie(accessCookie(memberId), new Cookie(AnonCookieName.VALUE, cast.newCookieValue()))
             .exchange();
 
         assertThat(result).hasStatus(200);

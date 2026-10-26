@@ -1,7 +1,6 @@
 package org.kwakmunsu.auddum.poll.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.kwakmunsu.auddum.vote.api.AnonCookies.ANON_COOKIE;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -23,6 +22,7 @@ import org.kwakmunsu.auddum.poll.application.dto.OptionTally;
 import org.kwakmunsu.auddum.poll.application.dto.PollDetail;
 import org.kwakmunsu.auddum.poll.application.dto.PollTally;
 import org.kwakmunsu.auddum.poll.application.dto.Viewer;
+import org.kwakmunsu.auddum.support.web.AnonCookieName;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
@@ -167,7 +167,7 @@ class PollDetailWebApiTest extends WebApiTestSupport {
 
         var request = mvcTester.get().uri(URI);
         if (cookieValue != null) {
-            request = request.cookie(new Cookie(ANON_COOKIE, cookieValue));
+            request = request.cookie(new Cookie(AnonCookieName.VALUE, cookieValue));
         }
         if (memberId != null) {
             request = request.with(loginAs(memberId));

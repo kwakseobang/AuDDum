@@ -4,6 +4,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.kwakmunsu.auddum.support.stereotype.WebApi;
+import org.kwakmunsu.auddum.support.web.AnonCookieName;
+import org.kwakmunsu.auddum.support.web.AnonCookies;
 import org.kwakmunsu.auddum.support.web.OptionalMemberId;
 import org.kwakmunsu.auddum.vote.api.dto.VoteCastRequest;
 import org.kwakmunsu.auddum.vote.api.dto.VoteCastResponse;
@@ -32,7 +34,7 @@ public class VoteWebApi extends VoteWebApiDocs {
     public ResponseEntity<VoteCastResponse> castVote(
         @PathVariable String pollId,
         @OptionalMemberId Long memberId,
-        @CookieValue(name = AnonCookies.ANON_COOKIE, required = false) String anonCookieValue,
+        @CookieValue(name = AnonCookieName.VALUE, required = false) String anonCookieValue,
         @RequestBody @Valid VoteCastRequest request,
         HttpServletResponse response
     ) {

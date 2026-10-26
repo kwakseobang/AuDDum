@@ -1,7 +1,6 @@
 package org.kwakmunsu.auddum.vote.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.kwakmunsu.auddum.vote.api.AnonCookies.ANON_COOKIE;
 import static org.kwakmunsu.auddum.vote.application.VoteFixture.expire;
 
 import java.time.LocalDateTime;
@@ -11,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.kwakmunsu.auddum.poll.domain.Category;
 import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.support.config.TimeConfig;
+import org.kwakmunsu.auddum.support.web.AnonCookieName;
 import org.kwakmunsu.auddum.vote.VoteIntegrationTestSupport;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
@@ -61,7 +61,7 @@ class VoteCastChainTest extends VoteIntegrationTestSupport {
     void 받은_쿠키로_다시_참여하면_409_ALREADY_VOTED이고_쿠키를_다시_내리지_않는다() {
         var poll = saveOpenPoll();
         var first = post(poll, 1);
-        var cookie = first.getResponse().getCookie(ANON_COOKIE);
+        var cookie = first.getResponse().getCookie(AnonCookieName.VALUE);
 
         var second = mvcTester.post()
             .uri("/api/v1/polls/" + poll.getPublicId().value() + "/votes")
@@ -86,7 +86,7 @@ class VoteCastChainTest extends VoteIntegrationTestSupport {
         assertThat(result).hasStatus(201);
         assertThat(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE))
             .hasSize(1)
-            .allMatch(cookie -> cookie.startsWith(ANON_COOKIE + "="));
+            .allMatch(cookie -> cookie.startsWith(AnonCookieName.VALUE + "="));
     }
 
     private MvcTestResult post(Poll poll, int position) {

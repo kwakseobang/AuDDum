@@ -29,10 +29,11 @@ import org.kwakmunsu.auddum.member.infrastructure.MemberAuthJpaRepository;
 import org.kwakmunsu.auddum.member.infrastructure.MemberJpaRepository;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
+import org.kwakmunsu.auddum.vote.domain.AnonId;
 import org.kwakmunsu.auddum.vote.domain.Voter;
-import org.kwakmunsu.auddum.vote.infrastructure.AnonCookieProperties;
-import org.kwakmunsu.auddum.vote.infrastructure.AnonCookieProvider;
-import org.kwakmunsu.auddum.vote.infrastructure.AnonCookieProvider.Verification;
+import org.kwakmunsu.auddum.support.anon.AnonCookieProperties;
+import org.kwakmunsu.auddum.support.anon.AnonCookieProvider;
+import org.kwakmunsu.auddum.support.anon.AnonCookieProvider.Verification;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -186,7 +187,7 @@ class VoterResolverTest {
         assertThat(resolved.voter().memberId()).isNull();
         assertThat(resolved.newCookieValue()).isNotNull();
         assertThat(anonCookieProvider.check(resolved.newCookieValue()))
-                .isEqualTo(new Verification.Valid(resolved.voter().anonId()));
+                .isEqualTo(new Verification.Valid(resolved.voter().anonId().value()));
     }
 
     @Test
@@ -195,7 +196,7 @@ class VoterResolverTest {
 
         assertThat(resolved.newCookieValue()).isNotNull();
         assertThat(anonCookieProvider.check(resolved.newCookieValue()))
-                .isEqualTo(new Verification.Valid(resolved.voter().anonId()));
+                .isEqualTo(new Verification.Valid(resolved.voter().anonId().value()));
         assertThat(appender.list).isEmpty();
     }
 
@@ -214,7 +215,7 @@ class VoterResolverTest {
 
         var resolved = resolver.resolve(anonymous(cookie.value()));
 
-        assertThat(resolved.voter()).isEqualTo(Voter.anonymous(cookie.anonId()));
+        assertThat(resolved.voter()).isEqualTo(Voter.anonymous(new AnonId(cookie.id())));
         assertThat(resolved.newCookieValue()).isNull();
     }
 
@@ -230,23 +231,23 @@ class VoterResolverTest {
     @Test
     void 위조된_쿠키면_예외_없이_새_UUID를_발급한다() {
         var victim = anonCookieProvider.issue();
-        var forged = "v1." + victim.anonId().value() + ".forged";
+        var forged = "v1." + victim.id() + ".forged";
 
         var resolved = resolver.resolve(anonymous(forged));
 
-        assertThat(resolved.voter().anonId()).isNotEqualTo(victim.anonId());
+        assertThat(resolved.voter().anonId()).isNotEqualTo(new AnonId(victim.id()));
         assertThat(resolved.newCookieValue()).isNotNull();
         assertThat(anonCookieProvider.check(resolved.newCookieValue()))
-                .isEqualTo(new Verification.Valid(resolved.voter().anonId()));
+                .isEqualTo(new Verification.Valid(resolved.voter().anonId().value()));
     }
 
     @Test
     void 위조된_쿠키의_UUID로는_다른_사람의_참여자를_흉내_낼_수_없다() {
         var victim = anonCookieProvider.issue();
 
-        var resolved = resolver.resolve(anonymous("v1." + victim.anonId().value() + ".forged"));
+        var resolved = resolver.resolve(anonymous("v1." + victim.id() + ".forged"));
 
-        assertThat(resolved.voter()).isNotEqualTo(Voter.anonymous(victim.anonId()));
+        assertThat(resolved.voter()).isNotEqualTo(Voter.anonymous(new AnonId(victim.id())));
     }
 
     @Test
@@ -296,7 +297,7 @@ class VoterResolverTest {
         assertThat(event.getLevel()).isEqualTo(Level.WARN);
         assertThat(logText(event))
                 .doesNotContain(other.value())
-                .doesNotContain(other.anonId().value().toString());
+                .doesNotContain(other.id().toString());
     }
 
     @Test

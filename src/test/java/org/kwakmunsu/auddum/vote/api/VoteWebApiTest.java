@@ -1,7 +1,6 @@
 package org.kwakmunsu.auddum.vote.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.kwakmunsu.auddum.vote.api.AnonCookies.ANON_COOKIE;
 import static org.kwakmunsu.auddum.vote.application.VoteFixture.anonymous;
 import static org.kwakmunsu.auddum.vote.application.VoteFixture.choice;
 import static org.kwakmunsu.auddum.vote.application.VoteFixture.noCredential;
@@ -16,6 +15,7 @@ import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.kwakmunsu.auddum.WebApiTestSupport;
+import org.kwakmunsu.auddum.support.web.AnonCookieName;
 import org.kwakmunsu.auddum.vote.application.dto.CastResult;
 import org.kwakmunsu.auddum.poll.application.dto.OptionTally;
 import org.kwakmunsu.auddum.poll.application.dto.PollTally;
@@ -87,7 +87,7 @@ class VoteWebApiTest extends WebApiTestSupport {
 
         mvcTester.post()
             .uri(URI)
-            .cookie(new Cookie(ANON_COOKIE, ISSUED_COOKIE))
+            .cookie(new Cookie(AnonCookieName.VALUE, ISSUED_COOKIE))
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"position\": 1}")
             .assertThat()
@@ -112,7 +112,7 @@ class VoteWebApiTest extends WebApiTestSupport {
         assertThat(result).hasStatus(HttpStatus.CREATED);
         List<String> cookies = result.getResponse().getHeaders(HttpHeaders.SET_COOKIE);
         assertThat(cookies).hasSize(1);
-        assertThat(cookies.get(0)).startsWith(ANON_COOKIE + "=" + ISSUED_COOKIE)
+        assertThat(cookies.get(0)).startsWith(AnonCookieName.VALUE + "=" + ISSUED_COOKIE)
             .contains("HttpOnly", "Secure", "SameSite=Lax", "Path=/;", "Max-Age=" + ONE_YEAR_SECONDS);
     }
 
@@ -123,7 +123,7 @@ class VoteWebApiTest extends WebApiTestSupport {
 
         var result = mvcTester.post()
             .uri(URI)
-            .cookie(new Cookie(ANON_COOKIE, ISSUED_COOKIE))
+            .cookie(new Cookie(AnonCookieName.VALUE, ISSUED_COOKIE))
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"position\": 1}")
             .exchange();
@@ -140,7 +140,7 @@ class VoteWebApiTest extends WebApiTestSupport {
         var result = mvcTester.post()
             .uri(URI)
             .with(loginAs(7L))
-            .cookie(new Cookie(ANON_COOKIE, ISSUED_COOKIE))
+            .cookie(new Cookie(AnonCookieName.VALUE, ISSUED_COOKIE))
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"position\": 1}")
             .exchange();
