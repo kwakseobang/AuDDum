@@ -27,7 +27,7 @@ public class VoteCommandService {
      * @param credential 참여하려는 사람의 신원 단서(회원 ID, 익명 쿠키)
      */
     public CastResult castVote(PollChoice choice, VoterCredential credential) {
-        Poll poll = pollReader.getReadable(choice.pollPublicId(), null);
+        Poll poll = pollReader.getPublic(choice.pollPublicId());
 
         ResolvedVoter voter = voterResolver.resolve(credential);
 
