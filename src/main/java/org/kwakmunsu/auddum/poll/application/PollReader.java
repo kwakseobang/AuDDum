@@ -41,7 +41,7 @@ public class PollReader {
 
     /**
      * 공개 투표 한 건을 돌려준다. 조회자와 상관없이 공개가 아닌 투표(숨김·삭제)는 없는 투표와 같이 404다. 작성자·관리자도 같다.
-     * 신고처럼 "공개된 투표만 대상"인 쓰기에 쓴다.
+     * 참여·신고처럼 "공개된 투표만 대상"인 쓰기에 쓴다.
      */
     public Poll getPublic(String publicId) {
         if (!PublicId.isValid(publicId)) {
