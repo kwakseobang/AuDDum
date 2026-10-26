@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.kwakmunsu.auddum.DataIntegrationTestSupport;
 import org.kwakmunsu.auddum.auth.api.AuthCookies;
 import org.kwakmunsu.auddum.auth.infrastructure.JwtTokenProvider;
 import org.kwakmunsu.auddum.member.domain.Role;
@@ -24,7 +25,6 @@ import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.support.anon.AnonCookieProvider;
 import org.kwakmunsu.auddum.support.config.TimeConfig;
 import org.kwakmunsu.auddum.support.web.AnonCookieName;
-import org.kwakmunsu.auddum.vote.VoteIntegrationTestSupport;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -40,7 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 @AutoConfigureMockMvc
 @Transactional
 @RequiredArgsConstructor
-class ReportSubmitChainTest extends VoteIntegrationTestSupport {
+class ReportSubmitChainTest extends DataIntegrationTestSupport {
 
     final MockMvcTester mvcTester;
     final JwtTokenProvider jwtTokenProvider;

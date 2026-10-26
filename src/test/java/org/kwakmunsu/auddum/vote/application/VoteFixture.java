@@ -5,7 +5,7 @@ import java.util.List;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.kwakmunsu.auddum.poll.domain.Category;
-import org.kwakmunsu.auddum.poll.domain.ClosesAt;
+import org.kwakmunsu.auddum.poll.ClosedPollFixture;
 import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.support.config.TimeConfig;
 import org.kwakmunsu.auddum.vote.application.dto.PollChoice;
@@ -23,9 +23,6 @@ public final class VoteFixture {
 
     /** 투표를 만든 시각. 마감 시각이 NOW여도 만들 수 있도록 NOW보다 과거다. */
     public static final LocalDateTime CREATED_AT = NOW.minusDays(1);
-
-    /** 투표를 만들 때는 미래여야 하므로, 이미 마감된 투표를 만들 때 필드를 이 값으로 바꾼다. */
-    public static final LocalDateTime LONG_PAST = LocalDateTime.of(2000, 1, 1, 0, 0);
 
     private static final String FORGED_SIGNATURE = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
@@ -60,11 +57,9 @@ public final class VoteFixture {
         return poll;
     }
 
-    /** 생성 시점에는 과거 마감을 만들 수 없으므로 마감 시각 필드를 직접 먼 과거로 바꿔 마감된 투표로 만든다. */
+    /** 마감된 투표로 만든다. 구현은 {@link ClosedPollFixture#expire}에 있다. */
     public static Poll expire(Poll poll) {
-        ReflectionTestUtils.setField(poll, "closesAt", new ClosesAt(LONG_PAST));
-
-        return poll;
+        return ClosedPollFixture.expire(poll);
     }
 
     /** 서명 부분만 다른 값으로 바꿔 서명 불일치(위조) 쿠키를 만든다. */
