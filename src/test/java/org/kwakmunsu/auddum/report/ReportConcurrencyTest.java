@@ -11,8 +11,10 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.RepeatedTest;
+import org.kwakmunsu.auddum.ConcurrentRace;
+import org.kwakmunsu.auddum.ConcurrentRace.Outcome;
+import org.kwakmunsu.auddum.MySqlConcurrencyTestSupport;
 import org.kwakmunsu.auddum.auth.api.AuthCookies;
 import org.kwakmunsu.auddum.auth.infrastructure.JwtTokenProvider;
 import org.kwakmunsu.auddum.member.domain.Role;
@@ -20,9 +22,6 @@ import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.support.anon.AnonCookieProvider;
 import org.kwakmunsu.auddum.support.config.TimeConfig;
 import org.kwakmunsu.auddum.support.web.AnonCookieName;
-import org.kwakmunsu.auddum.vote.ConcurrentRace;
-import org.kwakmunsu.auddum.vote.ConcurrentRace.Outcome;
-import org.kwakmunsu.auddum.vote.MySqlConcurrencyTestSupport;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -43,12 +42,6 @@ class ReportConcurrencyTest extends MySqlConcurrencyTestSupport {
     final JdbcTemplate jdbcTemplate;
     final JwtTokenProvider jwtTokenProvider;
     final AnonCookieProvider anonCookieProvider;
-
-    /** 상위 클래스의 정리보다 먼저 실행되어 report가 poll·member보다 먼저 지워진다. */
-    @AfterEach
-    void cleanUpReports() {
-        jdbcTemplate.update("DELETE FROM report");
-    }
 
     @RepeatedTest(REPETITIONS)
     void 같은_익명_쿠키로_동시에_신고하면_기록은_한_건이고_201이_하나이며_나머지는_409다() throws Exception {

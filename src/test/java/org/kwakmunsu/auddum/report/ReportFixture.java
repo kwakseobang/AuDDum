@@ -4,11 +4,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.kwakmunsu.auddum.poll.ClosedPollFixture;
 import org.kwakmunsu.auddum.poll.domain.Category;
-import org.kwakmunsu.auddum.poll.domain.ClosesAt;
 import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.support.config.TimeConfig;
-import org.springframework.test.util.ReflectionTestUtils;
 
 /** 신고 테스트에서 반복되는 투표 데이터와 요청 본문. */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -36,12 +35,8 @@ public final class ReportFixture {
         return poll;
     }
 
-    /** 생성 시점에는 과거 마감을 만들 수 없으므로 마감 시각 필드를 직접 과거로 바꿔 마감된 투표로 만든다. */
     public static Poll newClosedPoll(Long authorId) {
-        var poll = newPoll(authorId);
-        ReflectionTestUtils.setField(poll, "closesAt", new ClosesAt(LocalDateTime.now(TimeConfig.KST).minusDays(1)));
-
-        return poll;
+        return ClosedPollFixture.expire(newPoll(authorId));
     }
 
     public static String reasonBody(String reason) {

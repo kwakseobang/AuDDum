@@ -1,4 +1,4 @@
-package org.kwakmunsu.auddum.vote;
+package org.kwakmunsu.auddum;
 
 import java.util.ArrayList;
 import java.util.List;
