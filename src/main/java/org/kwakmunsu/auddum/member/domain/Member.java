@@ -93,9 +93,9 @@ public class Member extends BaseEntity {
         return role == Role.ADMIN;
     }
 
-    /** 관리자 권한이 있는지 본다. role이 ADMIN이어도 탈퇴한 회원은 없다. 정지된 관리자의 처리는 관리자 API(#52)에서 정한다. */
+    /** 관리자 권한이 있는지 본다. role이 ADMIN이어도 탈퇴했거나 정지된 회원은 없다. */
     public boolean hasAdminAuthority() {
-        return isAdmin() && !isWithdrawn();
+        return isAdmin() && isActive();
     }
 
 }

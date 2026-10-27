@@ -45,7 +45,7 @@ public class MemberReader {
         return member;
     }
 
-    /** 관리자인지 확인한다. 권한은 토큰이 아니라 DB의 role로 판단하고, 비회원·없는 회원·탈퇴한 회원은 false다. */
+    /** 관리자인지 확인한다. 권한은 토큰이 아니라 DB의 role로 판단하고, 비회원·없는 회원·탈퇴한 회원·정지된 회원은 false다. */
     public boolean isAdmin(Long memberId) {
         if (memberId == null) {
             return false;

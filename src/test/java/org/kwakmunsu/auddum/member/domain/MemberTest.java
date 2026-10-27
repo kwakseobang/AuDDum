@@ -47,4 +47,19 @@ class MemberTest {
         assertThat(withdrawnAdmin.hasAdminAuthority()).isFalse();
     }
 
+    @Test
+    void 정지된_ADMIN은_관리자_권한이_없다() {
+        var suspendedAdmin = MemberFixture.changeStatus(MemberFixture.createMember(Role.ADMIN), MemberStatus.SUSPENDED);
+
+        assertThat(suspendedAdmin.isAdmin()).isTrue();
+        assertThat(suspendedAdmin.hasAdminAuthority()).isFalse();
+    }
+
+    @Test
+    void 정지된_일반_회원은_관리자_권한이_없다() {
+        var suspendedMember = MemberFixture.changeStatus(MemberFixture.createMember(Role.MEMBER), MemberStatus.SUSPENDED);
+
+        assertThat(suspendedMember.hasAdminAuthority()).isFalse();
+    }
+
 }
