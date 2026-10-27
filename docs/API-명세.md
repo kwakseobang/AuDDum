@@ -233,7 +233,7 @@
 - `result`는 4절의 공개 규칙에 따라 내려준다. 공개하지 않는 경우 null이고 선택지와 전체 참여 수만 내려준다.
 - 마감된 투표는 조회되며 `closed`가 true다.
 - 숨김(HIDDEN)·삭제(DELETED) 투표는 일반 사용자에게 404 `POLL_NOT_FOUND`이고 작성자와 관리자에게는 200이다. 이때 응답의 `status`로 상태를 직접 확인할 수 있다.
-- 관리자는 DB의 `role`이 ADMIN이고 탈퇴하지 않은 회원이다(권한은 토큰이 아니라 DB로 판단한다). 아니면 일반 사용자로 본다. 비회원·정지 회원도 조회 규칙은 같다(조회는 회원 상태를 확인하지 않는다).
+- 관리자는 DB의 `role`이 ADMIN이고 정상(ACTIVE) 회원이다. 권한은 토큰이 아니라 DB로 판단하고, 정지·탈퇴한 관리자나 그 밖의 회원은 일반 사용자로 본다. 비회원·정지 회원도 조회 규칙은 같다(조회는 회원 상태를 확인하지 않는다).
 - ID 형식 오류 400 `MALFORMED_REQUEST`, 없는 ID 404.
 
 `GET /polls/{pollId}` 응답 예시: 참여 전(결과 비공개)
@@ -376,7 +376,7 @@
 
 ## 6. 관리자 API
 
-모두 관리자 권한이 필요하다. 권한은 매 요청마다 서버가 확인하고, 권한이 없으면 403 `FORBIDDEN`이며 시도를 기록한다. 관리자 역할(`role`)은 API로 바꾸지 않는다.
+모두 관리자 권한(DB의 `role`이 ADMIN이고 정상 상태인 회원)이 필요하다. 권한은 매 요청마다 서버가 확인하고, 권한이 없으면 403 `FORBIDDEN`이며 시도를 기록한다. 관리자 역할(`role`)은 API로 바꾸지 않는다.
 
 | 메서드와 경로 | 성공 응답 | 설명 |
 | --- | --- | --- |
@@ -436,7 +436,7 @@
 
 ```mermaid
 flowchart TD
-    A[POST /admin/reports/id/actions] --> B{관리자 권한<br/>DB role이 ADMIN?}
+    A[POST /admin/reports/id/actions] --> B{관리자 권한<br/>role이 ADMIN이고 ACTIVE?}
     B -- 아니오 --> X1[403 FORBIDDEN]
     B -- 예 --> C{actions 조합이 허용되는가?}
     C -- 아니오 --> X2[400 VALIDATION_FAILED]

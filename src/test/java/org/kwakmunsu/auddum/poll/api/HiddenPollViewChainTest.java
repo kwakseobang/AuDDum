@@ -11,6 +11,7 @@ import org.kwakmunsu.auddum.IntegrationTestSupport;
 import org.kwakmunsu.auddum.auth.api.AuthCookies;
 import org.kwakmunsu.auddum.auth.infrastructure.JwtTokenProvider;
 import org.kwakmunsu.auddum.member.domain.MemberFixture;
+import org.kwakmunsu.auddum.member.domain.MemberStatus;
 import org.kwakmunsu.auddum.member.domain.Role;
 import org.kwakmunsu.auddum.member.infrastructure.MemberJpaRepository;
 import org.kwakmunsu.auddum.poll.domain.Category;
@@ -142,6 +143,19 @@ class HiddenPollViewChainTest extends IntegrationTestSupport {
         var publicId = saveHiddenPoll(authorId).getPublicId().value();
 
         var result = mvcTester.get().uri("/api/v1/polls/" + publicId).cookie(accessCookie(memberId, Role.ADMIN)).exchange();
+
+        assertThat(result).hasStatus(404);
+        assertThat(result).bodyJson().extractingPath("$.code").isEqualTo("POLL_NOT_FOUND");
+    }
+
+    @Test
+    void 정지된_관리자의_쿠키로_숨김_투표를_조회하면_404_POLL_NOT_FOUND다() {
+        var authorId = saveMember(Role.MEMBER);
+        var suspendedAdminId = memberJpaRepository.saveAndFlush(
+            MemberFixture.changeStatus(MemberFixture.createMember(Role.ADMIN), MemberStatus.SUSPENDED)).getId();
+        var publicId = saveHiddenPoll(authorId).getPublicId().value();
+
+        var result = mvcTester.get().uri("/api/v1/polls/" + publicId).cookie(accessCookie(suspendedAdminId, Role.ADMIN)).exchange();
 
         assertThat(result).hasStatus(404);
         assertThat(result).bodyJson().extractingPath("$.code").isEqualTo("POLL_NOT_FOUND");

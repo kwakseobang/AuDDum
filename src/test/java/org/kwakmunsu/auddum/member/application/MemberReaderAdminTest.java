@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.kwakmunsu.auddum.IntegrationTestSupport;
 import org.kwakmunsu.auddum.member.domain.MemberFixture;
+import org.kwakmunsu.auddum.member.domain.MemberStatus;
 import org.kwakmunsu.auddum.member.domain.Role;
 import org.kwakmunsu.auddum.member.infrastructure.MemberJpaRepository;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,6 +53,14 @@ class MemberReaderAdminTest extends IntegrationTestSupport {
         var withdrawnAdminId = saveWithdrawnAdmin();
 
         assertThat(memberReader.isAdmin(withdrawnAdminId)).isFalse();
+    }
+
+    @Test
+    void 정지된_ADMIN은_isAdmin이_false다() {
+        var suspendedAdminId = memberJpaRepository.saveAndFlush(
+            MemberFixture.changeStatus(MemberFixture.createMember(Role.ADMIN), MemberStatus.SUSPENDED)).getId();
+
+        assertThat(memberReader.isAdmin(suspendedAdminId)).isFalse();
     }
 
     private Long saveWithdrawnAdmin() {
