@@ -389,7 +389,9 @@
 **GET /admin/reports**
 
 - 요청 파라미터 `status`(`PENDING`, `RESOLVED`, `DISMISSED`, 기본 `PENDING`), `cursor`, `size`.
-- 항목: `{ id, poll: { id, question, status }, reason, status, createdAt, pollReportCount }`. `pollReportCount`는 같은 투표에 쌓인 신고 수다. 정렬 기준은 미정(구현 때 정한다, 기본은 접수 순).
+- 항목: `{ id, poll: { id, question, status }, reason, status, createdAt, pollReportCount }`. `pollReportCount`는 같은 투표에 쌓인 신고 수다. 접수 순(`id` 오름차순)으로 정렬하고 커서는 마지막으로 본 신고 id를 담는다. 상태와 상관없이 같다(먼저 접수된 신고부터 처리한다).
+- `status` 값이 위 셋이 아니면 400 `MALFORMED_REQUEST`다. `cursor`·`size`의 형식 오류, `size` 보정(1~50), 빈 `cursor`는 투표 목록(§3)과 같은 규칙이다.
+- 신고 ID가 숫자가 아니면 400 `MALFORMED_REQUEST`다.
 
 `GET /admin/reports` 응답 예시
 
@@ -412,6 +414,7 @@
 **GET /admin/reports/{reportId}**
 
 - 신고 내용과 대상 투표(숨김·삭제 상태여도 조회), 같은 투표의 다른 신고, 지금까지의 조치 이력을 담는다. 없는 ID는 404 `REPORT_NOT_FOUND`.
+- 응답: `{ id, reason, detail, status, createdAt, handledAt, handledBy, poll: { id, question, status, authorId }, otherReports: [{ id, reason, detail, status, createdAt }], actions: [{ id, actionType, adminId, reason, createdAt }] }`. 신고자는 노출하지 않는다. `handledAt`·`handledBy`는 처리 전에는 null이다. `poll.authorId`는 작성자 회원의 내부 id다(작성자 정지에 쓴다). `otherReports`는 같은 투표의 이 신고를 뺀 신고를 접수 순으로 처음 20건까지(전체 건수는 목록의 `pollReportCount`로 안다), `actions`는 이 신고와 연결된 조치를 시각 순으로 담는다.
 
 **POST /admin/reports/{reportId}/actions**
 
@@ -493,7 +496,6 @@ flowchart TD
 이 명세를 쓰면서 제안으로 정한 값이다. 운영이나 구현 중 바꿀 수 있다.
 
 - 페이지 크기(기본 20, 최대 50), `ETC` 신고 사유의 글자 수 상한(임시 200자)
-- 관리자 신고 목록의 정렬 기준(기본은 접수 순)
 - 로그인 중 state 저장 방식과 로그인 실패 응답 방식
 
 **다른 문서에서 정할 것**

@@ -2,6 +2,7 @@ package org.kwakmunsu.auddum;
 
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
+import org.kwakmunsu.auddum.admin.application.AdminReportQueryService;
 import org.kwakmunsu.auddum.auth.api.AuthCookies;
 import org.kwakmunsu.auddum.auth.application.RefreshTokenService;
 import org.kwakmunsu.auddum.member.application.MemberCommandService;
@@ -52,6 +53,9 @@ public abstract class WebApiTestSupport {
             return request;
         };
     }
+
+    @MockitoBean
+    protected AdminReportQueryService adminReportQueryService;
 
     @MockitoBean
     protected PollCommandService pollCommandService;

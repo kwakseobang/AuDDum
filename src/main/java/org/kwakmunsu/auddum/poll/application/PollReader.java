@@ -1,5 +1,7 @@
 package org.kwakmunsu.auddum.poll.application;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.kwakmunsu.auddum.member.application.MemberReader;
@@ -51,6 +53,17 @@ public class PollReader {
         return pollRepository.findByPublicId(publicId)
             .filter(Poll::isPublic)
             .orElseThrow(() -> new AuddumException(PollErrorCode.POLL_NOT_FOUND));
+    }
+
+    /** 노출 상태와 상관없이 내부 id로 투표 한 건을 돌려준다. 관리자 화면처럼 숨김·삭제 투표도 봐야 하는 곳이 쓴다. 없으면 404다. */
+    public Poll getById(Long id) {
+        return pollRepository.findById(id)
+            .orElseThrow(() -> new AuddumException(PollErrorCode.POLL_NOT_FOUND));
+    }
+
+    /** 노출 상태와 상관없이 내부 id들의 투표를 돌려준다. 없는 id는 결과에서 빠진다. */
+    public List<Poll> findAllByIds(Collection<Long> ids) {
+        return pollRepository.findAllById(ids);
     }
 
     /** 공개 투표를 최신순으로 size개 돌려준다. cursorId(마지막으로 본 내부 id)가 없으면 첫 페이지다. */
