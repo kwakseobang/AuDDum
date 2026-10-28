@@ -382,9 +382,13 @@
 | --- | --- | --- |
 | `GET /admin/reports` | 200 | 신고 목록 |
 | `GET /admin/reports/{reportId}` | 200 | 신고 상세 |
-| `POST /admin/reports/{reportId}/actions` | 200 | 신고 처리(기각·숨김·삭제·작성자 정지) |
+| `POST /admin/reports/{reportId}/dismiss` | 204 | 신고 기각 |
+| `PATCH /admin/polls/{pollId}/status` | 204 | 투표 숨김·삭제(`status`: HIDDEN·DELETED) |
+| `POST /admin/members/{memberId}/suspend` | 204 | 회원 정지 |
 | `POST /admin/polls/{pollId}/restore` | 204 | 숨김 투표 복구 |
 | `POST /admin/members/{memberId}/unsuspend` | 204 | 회원 정지 해제 |
+
+신고 기각, 투표 숨김·삭제, 회원 정지는 별도 API다. 모든 요청은 `{ reason }`이 필수다(투표 조치는 `status`도 함께)(공백뿐이면 없는 것, 200자 이하, 회원에게 노출하지 않는다). 본문 형식 오류(깨진 JSON, 허용되지 않은 `status` 값)는 프레임워크가 먼저 읽다가 걸리므로 권한과 무관하게 400 `MALFORMED_REQUEST`다. 사유 규칙은 권한 확인 뒤에 따지므로 권한이 없으면 사유가 틀려도 403이고, 사유가 틀리면 400 `VALIDATION_FAILED`다. 투표 식별자는 공개 ID(`publicId`), 신고·회원은 내부 숫자 id다.
 
 **GET /admin/reports**
 
@@ -414,42 +418,26 @@
 **GET /admin/reports/{reportId}**
 
 - 신고 내용과 대상 투표(숨김·삭제 상태여도 조회), 같은 투표의 다른 신고, 지금까지의 조치 이력을 담는다. 없는 ID는 404 `REPORT_NOT_FOUND`.
-- 응답: `{ id, reason, detail, status, createdAt, handledAt, handledBy, poll: { id, question, status, authorId }, otherReports: [{ id, reason, detail, status, createdAt }], actions: [{ id, actionType, adminId, reason, createdAt }] }`. 신고자는 노출하지 않는다. `handledAt`·`handledBy`는 처리 전에는 null이다. `poll.authorId`는 작성자 회원의 내부 id다(작성자 정지에 쓴다). `otherReports`는 같은 투표의 이 신고를 뺀 신고를 접수 순으로 처음 20건까지(전체 건수는 목록의 `pollReportCount`로 안다), `actions`는 이 신고와 연결된 조치를 시각 순으로 담는다.
+- 응답: `{ id, reason, detail, status, createdAt, handledAt, handledBy, poll: { id, question, status, authorId }, otherReports: [{ id, reason, detail, status, createdAt }], actions: [{ id, actionType, adminId, reason, createdAt }] }`. 신고자는 노출하지 않는다. `handledAt`·`handledBy`는 처리 전에는 null이다. `poll.authorId`는 작성자 회원의 내부 id다(`suspend`에 쓴다). `otherReports`는 같은 투표의 이 신고를 뺀 신고를 접수 순으로 처음 20건까지(전체 건수는 목록의 `pollReportCount`로 안다), `actions`는 이 신고를 기각한 이력과 대상 투표에 한 숨김·삭제 이력을 시각 순(id 오름차순)으로 담는다.
 
-**POST /admin/reports/{reportId}/actions**
+**POST /admin/reports/{reportId}/dismiss**
 
-- 요청: `{ actions, reason }`. `actions`는 `DISMISS_REPORT`, `HIDE_POLL`, `DELETE_POLL`, `SUSPEND_MEMBER` 중 하나 이상이고 `reason`은 필수다(회원에게 노출하지 않는다).
-- 허용하는 조합: `DISMISS_REPORT`는 단독, `HIDE_POLL`과 `DELETE_POLL`은 함께 쓸 수 없고, 둘 중 하나에 `SUSPEND_MEMBER`를 덧붙일 수 있다. 위반하면 400 `VALIDATION_FAILED`.
-- 대상 상태 변경, 신고 상태 변경(`DISMISS_REPORT`면 DISMISSED, 그 외 RESOLVED), 조치 이력(처리자·시각·조치·사유) 기록을 한 트랜잭션으로 처리한다. 실패하면 전부 롤백한다.
-- 신고 상태가 PENDING일 때만 변경하는 조건부 갱신이다. 이미 처리된 신고에 다시 조치하거나 두 관리자가 동시에 처리하면 한쪽만 성공하고 나머지는 409 `REPORT_ALREADY_HANDLED`다.
-- 같은 투표의 다른 PENDING 신고는 같은 결과로 함께 종료한다. 한 투표에 신고가 여러 건이어도 조치는 한 번만 하면 된다.
-- 대상 투표가 이미 삭제된 신고는 투표 조치 없이 신고만 종료(RESOLVED)한다.
-- 작성자를 정지해도 그 회원의 기존 투표는 그대로 유지한다.
+- 신고를 기각(DISMISSED)한다. 투표와 회원의 상태는 바꾸지 않으므로 투표가 숨김·삭제 상태여도 기각할 수 있다. 같은 투표의 다른 PENDING 신고도 함께 기각한다. 이력(`DISMISS_REPORT`)에 처리자·시각·사유와 대상 투표를 남긴다.
+- 신고 상태가 PENDING일 때만 처리한다. 이미 처리된 신고에 다시 요청하거나, 같은 신고에 요청이 동시에 들어오면(더블클릭·재전송) 한쪽만 성공하고 나머지는 409 `REPORT_ALREADY_HANDLED`다. 동시 요청은 신고의 낙관적 락(`version`)으로 가린다. 없는 신고는 404 `REPORT_NOT_FOUND`다.
+- 신고 상태 변경과 이력 기록은 한 트랜잭션이고 실패하면 전부 롤백한다.
 
-`POST /admin/reports/{reportId}/actions` 요청 예시
+**PATCH /admin/polls/{pollId}/status**
 
-```json
-{
-  "actions": ["HIDE_POLL", "SUSPEND_MEMBER"],
-  "reason": "특정인 비방 내용 확인"
-}
-```
+- 요청 `{ status, reason }`. `status`는 필수이고 `HIDDEN`(숨김) 또는 `DELETED`(삭제)만 받는다. 그 외 값은 400 `MALFORMED_REQUEST`, 누락은 400 `VALIDATION_FAILED`다. 복구(`restore`)는 별도 API다.
+- `HIDDEN`: 공개(PUBLIC) 투표를 숨김으로 바꾼다. 이력은 `HIDE_POLL`이다. 숨긴 투표는 `restore`로 되돌릴 수 있다. 이미 숨겨진 투표는 409 `POLL_NOT_PUBLIC`이다.
+- `DELETED`: 공개 또는 숨김 투표를 삭제한다. 이력은 `DELETE_POLL`이다. 삭제는 복구할 수 없다.
+- 둘 다 같은 트랜잭션에서 그 투표의 PENDING 신고를 모두 조치 완료(RESOLVED)로 종료하고 이력에 대상 투표를 남긴다.
+- 삭제됐거나 없는 투표는 404 `POLL_NOT_FOUND`, 투표 ID 형식 오류는 400 `MALFORMED_REQUEST`다. 대상이 없으면(404) 사유 오류(400)보다 먼저, 사유 오류(400)는 대상 상태 오류(409)보다 먼저 나간다.
 
-조치 요청의 처리 순서는 아래와 같다.
+**POST /admin/members/{memberId}/suspend**
 
-```mermaid
-flowchart TD
-    A[POST /admin/reports/id/actions] --> B{관리자 권한<br/>role이 ADMIN이고 ACTIVE?}
-    B -- 아니오 --> X1[403 FORBIDDEN]
-    B -- 예 --> C{actions 조합이 허용되는가?}
-    C -- 아니오 --> X2[400 VALIDATION_FAILED]
-    C -- 예 --> D{신고가 PENDING인가?<br/>조건부 갱신}
-    D -- 아니오 --> X3[409 REPORT_ALREADY_HANDLED]
-    D -- 예 --> E[한 트랜잭션]
-    E --> F[대상 투표·작성자 상태 변경<br/>삭제된 투표면 신고만 종료]
-    F --> G[신고 상태 변경 RESOLVED·DISMISSED<br/>같은 투표의 PENDING 신고도 함께 종료]
-    G --> H[조치 이력 기록 → 200]
-```
+- 정상(ACTIVE) 회원을 정지(SUSPENDED)한다. 기간 없이 `unsuspend`로 해제할 때까지 유지되고, 그 회원이 만든 기존 투표는 그대로 둔다. 신고의 상태는 바꾸지 않는다. 이력(`SUSPEND_MEMBER`)에 대상 회원을 남긴다.
+- 이미 정지됐거나 탈퇴한 회원은 409 `MEMBER_NOT_ACTIVE`, 없는 회원은 404 `MEMBER_NOT_FOUND`다.
 
 **POST /admin/polls/{pollId}/restore**
 
@@ -458,7 +446,7 @@ flowchart TD
 **POST /admin/members/{memberId}/unsuspend**
 
 - 정지(SUSPENDED) 회원을 ACTIVE로 되돌린다. 요청 `{ reason }`. 정지 상태가 아니면 409 `MEMBER_NOT_SUSPENDED`이다. 이력을 남긴다.
-- 정지는 기간 없이 수동으로 해제할 때까지 유지된다. 신고 조치 없이 회원을 직접 정지하는 API는 MVP에 두지 않는다.
+- 정지는 기간 없이 수동으로 해제할 때까지 유지된다.
 
 ## 7. 오류 코드 목록
 
@@ -482,7 +470,9 @@ flowchart TD
 | `POLL_CLOSED` | 409 | 마감된 투표에 참여(기록이 없는 경우만) |
 | `DUPLICATE_POLL` | 409 | 직전과 같은 질문으로 연속 생성 |
 | `REPORT_ALREADY_SUBMITTED` | 409 | 같은 투표를 이미 신고했다 |
-| `REPORT_ALREADY_HANDLED` | 409 | 이미 처리된 신고에 조치했거나 동시 처리에서 졌다 |
+| `REPORT_ALREADY_HANDLED` | 409 | 이미 처리된 신고를 기각하려 했거나 동시 처리에서 졌다 |
+| `POLL_NOT_PUBLIC` | 409 | 공개 상태가 아닌(이미 숨겨진) 투표를 숨기려 했다 |
+| `MEMBER_NOT_ACTIVE` | 409 | 정상 상태가 아닌(이미 정지·탈퇴한) 회원을 정지하려 했다 |
 | `POLL_NOT_HIDDEN` | 409 | 숨김 상태가 아닌 투표를 복구하려 했다 |
 | `MEMBER_NOT_SUSPENDED` | 409 | 정지 상태가 아닌 회원의 정지를 해제하려 했다 |
 | `POLL_RATE_LIMITED` | 429 | 연속 생성 간격 위반 |

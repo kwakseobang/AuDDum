@@ -23,6 +23,7 @@ public class AdminReportQueryService {
     private final AdminAccessValidator adminAccessValidator;
     private final ReportReader reportReader;
     private final PollReader pollReader;
+    private final AdminActionReader adminActionReader;
 
     /** 같은 상태의 신고를 접수 순으로 한 페이지 돌려준다. 대상 투표와 투표별 신고 수는 페이지 단위로 한 번에 읽는다. */
     public Slice<AdminReportSummary> getReports(Long adminId, ReportStatus status, Long cursorId, int size) {
@@ -50,10 +51,15 @@ public class AdminReportQueryService {
     public AdminReportDetail getReportDetail(Long adminId, Long reportId) {
         adminAccessValidator.validateAdmin(adminId);
 
-        Report report = reportReader.get(reportId);
-        Poll poll = pollReader.getById(report.getPollId());
+        Report report = reportReader.find(reportId);
+        Poll poll = pollReader.find(report.getPollId());
 
-        return new AdminReportDetail(report, poll, reportReader.findOthersOfSamePoll(report));
+        return new AdminReportDetail(
+            report,
+            poll,
+            reportReader.findOthersOfSamePoll(report),
+            adminActionReader.findByReport(report)
+        );
     }
 
 }

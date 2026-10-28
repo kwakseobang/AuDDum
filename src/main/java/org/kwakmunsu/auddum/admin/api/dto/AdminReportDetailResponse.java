@@ -6,6 +6,7 @@ import java.util.List;
 import lombok.AccessLevel;
 import lombok.Builder;
 import org.kwakmunsu.auddum.admin.application.dto.AdminReportDetail;
+import org.kwakmunsu.auddum.admin.domain.AdminAction;
 import org.kwakmunsu.auddum.poll.domain.Poll;
 import org.kwakmunsu.auddum.poll.domain.PollStatus;
 import org.kwakmunsu.auddum.report.domain.Report;
@@ -13,7 +14,7 @@ import org.kwakmunsu.auddum.report.domain.ReportReasonCode;
 import org.kwakmunsu.auddum.report.domain.ReportStatus;
 import org.kwakmunsu.auddum.support.config.TimeConfig;
 
-/** 관리자 신고 상세. 신고자는 노출하지 않는다. 조치 이력(actions)은 조치 API(AdminAction)를 만들 때 채운다. */
+/** 관리자 신고 상세. 신고자는 노출하지 않는다. */
 @Builder(access = AccessLevel.PRIVATE)
 @Schema(description = "관리자 신고 상세")
 public record AdminReportDetailResponse(
@@ -57,7 +58,7 @@ public record AdminReportDetailResponse(
             .handledBy(report.getHandledBy())
             .poll(PollInfo.from(detail.poll()))
             .otherReports(detail.otherReports().stream().map(OtherReport::from).toList())
-            .actions(List.of())
+            .actions(detail.actions().stream().map(ActionHistory::from).toList())
             .build();
     }
 
@@ -118,6 +119,16 @@ public record AdminReportDetailResponse(
 
         OffsetDateTime createdAt
     ) {
+
+        static ActionHistory from(AdminAction action) {
+            return new ActionHistory(
+                action.getId(),
+                action.getType().name(),
+                action.getAdminId(),
+                action.getReason(),
+                TimeConfig.toKstOffset(action.getCreatedAt())
+            );
+        }
 
     }
 

@@ -30,7 +30,7 @@ public class ReportReader {
     private final ReportJpaRepository reportRepository;
 
     /** 신고 한 건. 없으면 404(REPORT_NOT_FOUND)다. */
-    public Report get(Long reportId) {
+    public Report find(Long reportId) {
         return reportRepository.findById(reportId)
             .orElseThrow(() -> new AuddumException(ReportErrorCode.REPORT_NOT_FOUND));
     }

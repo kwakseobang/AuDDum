@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 public enum ReportErrorCode implements ErrorCode {
 
     REPORT_NOT_FOUND (HttpStatus.NOT_FOUND, "존재하지 않는 신고입니다.", LogLevel.INFO),
+    REPORT_ALREADY_HANDLED (HttpStatus.CONFLICT, "이미 처리된 신고입니다.", LogLevel.INFO),
     REPORT_ALREADY_SUBMITTED (HttpStatus.CONFLICT, "이미 신고한 투표입니다.", LogLevel.INFO),
 
     ;

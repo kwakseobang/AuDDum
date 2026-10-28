@@ -54,6 +54,16 @@ public class Member extends BaseEntity {
         this.lastLoginAt = now;
     }
 
+    /** 이용 정지. 정상(ACTIVE) 회원만 정지 상태로 바꾸고 정지 일시를 남긴다. 이미 정지·탈퇴한 회원이면 409(MEMBER_NOT_ACTIVE)다. */
+    public void suspend(LocalDateTime now) {
+        if (!isActive()) {
+            throw new AuddumException(MemberErrorCode.MEMBER_NOT_ACTIVE);
+        }
+
+        this.status = MemberStatus.SUSPENDED;
+        this.suspendedAt = now;
+    }
+
     /** 탈퇴. 정지 중에도 할 수 있고, 이미 탈퇴한 회원이면 401이다. 소셜 연동·리프레시 토큰 삭제는 서비스가 같은 트랜잭션에서 함께 한다. */
     public void withdraw(LocalDateTime now) {
         validateNotWithdrawn();

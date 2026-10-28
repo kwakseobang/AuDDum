@@ -6,11 +6,13 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import org.kwakmunsu.auddum.support.error.AuddumException;
 import org.kwakmunsu.auddum.support.jpa.BaseEntity;
 
 /**
@@ -36,6 +38,11 @@ public class Report extends BaseEntity {
     @Column(name = "status", nullable = false, length = 20)
     private ReportStatus status;
 
+    /** 동시에 들어온 처리 요청(더블클릭·재전송)에서 한쪽만 반영되도록 하는 낙관적 락 버전. */
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
+
     @Column(name = "handled_at")
     private LocalDateTime handledAt;
 
@@ -60,6 +67,21 @@ public class Report extends BaseEntity {
         report.status = ReportStatus.PENDING;
 
         return report;
+    }
+
+    /** 기각한다. 대기(PENDING) 신고만 DISMISSED로 바꾸고 처리 일시·처리자를 남긴다. 이미 처리된 신고는 409다. */
+    public void dismiss(@NonNull Long adminId, @NonNull LocalDateTime now) {
+        close(ReportStatus.DISMISSED, adminId, now);
+    }
+
+    private void close(ReportStatus result, Long adminId, LocalDateTime now) {
+        if (!isPending()) {
+            throw new AuddumException(ReportErrorCode.REPORT_ALREADY_HANDLED);
+        }
+
+        this.status = result;
+        this.handledAt = now;
+        this.handledBy = adminId;
     }
 
     public boolean isPending() {

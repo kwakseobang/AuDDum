@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.kwakmunsu.auddum.admin.api.dto.AdminReasonRequest;
 import org.kwakmunsu.auddum.admin.api.dto.AdminReportDetailResponse;
 import org.kwakmunsu.auddum.admin.api.dto.AdminReportListResponse;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +44,22 @@ public abstract class AdminReportWebApiDocs {
     public abstract ResponseEntity<AdminReportDetailResponse> getReport(
         @Parameter(hidden = true) Long adminId,
         @Parameter(description = "신고 내부 id", example = "17") Long reportId
+    );
+
+    @Operation(
+        summary = "신고 기각",
+        description = "신고를 기각하고 같은 투표의 다른 대기 신고도 함께 기각한다. 투표와 회원의 상태는 바꾸지 않는다. 신고 상태 변경과 이력 기록은 한 트랜잭션이다."
+    )
+    @ApiResponse(responseCode = "204", description = "기각됨")
+    @ApiResponse(responseCode = "400", description = "VALIDATION_FAILED: 사유 규칙 위반, MALFORMED_REQUEST: 신고 ID 형식 오류·본문 형식 오류")
+    @ApiResponse(responseCode = "401", description = "UNAUTHENTICATED")
+    @ApiResponse(responseCode = "403", description = "FORBIDDEN: 관리자가 아님(정지·탈퇴한 관리자 포함)")
+    @ApiResponse(responseCode = "404", description = "REPORT_NOT_FOUND")
+    @ApiResponse(responseCode = "409", description = "REPORT_ALREADY_HANDLED: 이미 처리됐거나 동시 처리에서 졌다")
+    public abstract ResponseEntity<Void> dismissReport(
+        @Parameter(hidden = true) Long adminId,
+        @Parameter(description = "신고 내부 id", example = "17") Long reportId,
+        AdminReasonRequest request
     );
 
 }
