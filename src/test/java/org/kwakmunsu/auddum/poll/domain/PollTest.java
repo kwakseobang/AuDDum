@@ -383,13 +383,16 @@ class PollTest {
 
     // ---- 공백 제거 (DR-1) ----
 
-    // ---- 이미 숨김 투표 hide (DR-1) ----
+    // ---- 이미 숨김 투표 hide (도메인-모델 Poll.hide: 이미 숨겨졌으면 409 POLL_NOT_PUBLIC) ----
 
     @Test
-    void 이미_숨겨진_투표를_다시_숨겨도_예외가_없다() {
+    void 이미_숨겨진_투표를_숨기면_409_POLL_NOT_PUBLIC이고_상태는_그대로다() {
         var poll = PollFixture.hiddenPoll();
 
-        assertThatCode(() -> poll.hide()).doesNotThrowAnyException();
+        assertThatThrownBy(() -> poll.hide())
+                .isInstanceOfSatisfying(AuddumException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(PollErrorCode.POLL_NOT_PUBLIC));
+        assertThat(PollErrorCode.POLL_NOT_PUBLIC.getStatus().value()).isEqualTo(409);
         assertThat(poll.getStatus()).isEqualTo(PollStatus.HIDDEN);
     }
 
@@ -429,8 +432,8 @@ class PollTest {
         var poll = PollFixture.deletedPoll();
 
         assertThatThrownBy(() -> poll.hide())
-                .isInstanceOf(AuddumException.class)
-                .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
+                .isInstanceOfSatisfying(AuddumException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(PollErrorCode.POLL_NOT_FOUND));
 
         assertThat(poll.getStatus()).isEqualTo(PollStatus.DELETED);
     }

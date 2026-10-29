@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.kwakmunsu.auddum.member.domain.AuthProvider;
 import org.kwakmunsu.auddum.member.domain.Member;
 import org.kwakmunsu.auddum.member.domain.MemberAuth;
+import org.kwakmunsu.auddum.member.domain.MemberErrorCode;
 import org.kwakmunsu.auddum.member.infrastructure.MemberAuthJpaRepository;
 import org.kwakmunsu.auddum.member.infrastructure.MemberJpaRepository;
 import org.kwakmunsu.auddum.support.error.AuddumException;
@@ -27,6 +28,12 @@ public class MemberReader {
     public Member getMember(Long memberId) {
         return memberRepository.findById(memberId)
             .orElseThrow(() -> new AuddumException(DefaultErrorCode.UNAUTHENTICATED));
+    }
+
+    /** 상태와 상관없이 회원을 찾는다. 없으면 404(MEMBER_NOT_FOUND)다. 관리자 조치처럼 대상 회원의 상태를 직접 따지는 곳이 쓴다. */
+    public Member find(Long memberId) {
+        return memberRepository.findById(memberId)
+            .orElseThrow(() -> new AuddumException(MemberErrorCode.MEMBER_NOT_FOUND));
     }
 
     /** 탈퇴하지 않은 회원을 가져온다. 없거나 탈퇴했으면 401이다. 정지 회원은 통과한다(정지 중에도 재발급·조회·탈퇴는 할 수 있다). */

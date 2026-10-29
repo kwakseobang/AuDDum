@@ -189,11 +189,11 @@ public class Poll extends BaseEntity {
             .value();
     }
 
-    /** 관리자 숨김. 공개 투표만 숨길 수 있고, 이미 숨겨진 투표는 그대로 둔다. 삭제된 투표는 404다. */
+    /** 관리자 숨김. 공개 투표만 숨길 수 있다. 이미 숨겨졌으면 409(POLL_NOT_PUBLIC), 삭제된 투표는 404다. */
     public void hide() {
         validateNotDeleted();
         if (status == PollStatus.HIDDEN) {
-            return;
+            throw new AuddumException(PollErrorCode.POLL_NOT_PUBLIC);
         }
 
         this.status = PollStatus.HIDDEN;
@@ -231,7 +231,8 @@ public class Poll extends BaseEntity {
         this.status = PollStatus.DELETED;
     }
 
-    private void validateNotDeleted() {
+    /** 삭제된 투표면 404 POLL_NOT_FOUND다. 관리자 조치가 사유 검증(400)보다 먼저 대상 유무를 가릴 때 쓴다. */
+    public void validateNotDeleted() {
         if (status == PollStatus.DELETED) {
             throw new AuddumException(PollErrorCode.POLL_NOT_FOUND);
         }

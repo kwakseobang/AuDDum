@@ -215,6 +215,7 @@ vote는 poll이 아니라 poll_option을 통해 poll에 연결된다. (poll_id, 
 | created_at, updated_at | DATETIME(6) | N | 접수·수정 시각 |
 | handled_at | DATETIME(6) | Y | 처리 시각 |
 | handled_by | BIGINT | Y | FK → member. 처리한 관리자 |
+| version | BIGINT | N | 낙관적 락 버전(기본 0). 같은 신고에 조치가 동시에 들어오면 한쪽만 반영한다. |
 
 ### admin_action
 
@@ -225,7 +226,7 @@ vote는 poll이 아니라 poll_option을 통해 poll에 연결된다. (poll_id, 
 | action_type | VARCHAR(30) | N | HIDE_POLL, DELETE_POLL, RESTORE_POLL, SUSPEND_MEMBER, UNSUSPEND_MEMBER, DISMISS_REPORT |
 | target_poll_id | BIGINT | Y | FK → poll |
 | target_member_id | BIGINT | Y | FK → member |
-| report_id | BIGINT | Y | FK → report. 신고에서 비롯된 조치일 때 |
+| report_id | BIGINT | Y | FK → report. 신고 기각 이력에만 채운다 |
 | reason | VARCHAR(200) | Y | 관리자가 남기는 사유 (회원에게 노출하지 않는다) |
 | created_at, updated_at | DATETIME(6) | N | 조치·수정 시각 |
 

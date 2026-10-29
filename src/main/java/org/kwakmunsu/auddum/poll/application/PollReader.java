@@ -55,8 +55,18 @@ public class PollReader {
             .orElseThrow(() -> new AuddumException(PollErrorCode.POLL_NOT_FOUND));
     }
 
+    /** 노출 상태와 상관없이 공개 ID로 투표 한 건을 돌려준다. 형식이 틀리면 400, 없으면 404다. 관리자 숨김·삭제처럼 노출 상태를 직접 따지는 곳이 쓴다. */
+    public Poll find(String publicId) {
+        if (!PublicId.isValid(publicId)) {
+            throw new AuddumException(DefaultErrorCode.MALFORMED_REQUEST);
+        }
+
+        return pollRepository.findByPublicId(publicId)
+            .orElseThrow(() -> new AuddumException(PollErrorCode.POLL_NOT_FOUND));
+    }
+
     /** 노출 상태와 상관없이 내부 id로 투표 한 건을 돌려준다. 관리자 화면처럼 숨김·삭제 투표도 봐야 하는 곳이 쓴다. 없으면 404다. */
-    public Poll getById(Long id) {
+    public Poll find(Long id) {
         return pollRepository.findById(id)
             .orElseThrow(() -> new AuddumException(PollErrorCode.POLL_NOT_FOUND));
     }
