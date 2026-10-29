@@ -12,7 +12,7 @@ import org.kwakmunsu.auddum.member.infrastructure.MemberJpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 인증-중복-참여 동시 재발급 직렬화: 같은 토큰의 재발급은 행을 잠그고 읽는다.
+ * 동시 재발급 직렬화: 같은 토큰의 재발급은 행을 잠그고 읽는다.
  * 여기서는 해시로 조회되는지(FOR UPDATE 쿼리가 H2에서 동작하는지)만 확인하고, 실제 경합은 검증하지 않는다.
  */
 @Transactional

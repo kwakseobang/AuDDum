@@ -27,7 +27,7 @@ import org.kwakmunsu.auddum.support.error.AuddumException;
 import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
 
 /**
- * 신고자 결정 단위 테스트. 기준은 인증-중복-참여 익명 식별 쿠키, API-명세(회원 상태: 정지 403, 탈퇴·없음 401). 쿠키 해석 자체는 AnonIdentityResolverTest가 검증한다.
+ * 신고자 결정 단위 테스트. 기준은 익명 식별 쿠키, 회원 상태(정지 403, 탈퇴·없음 401). 쿠키 해석 자체는 AnonIdentityResolverTest가 검증한다.
  */
 class ReporterResolverTest {
 

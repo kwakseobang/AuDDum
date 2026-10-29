@@ -17,7 +17,7 @@ import org.kwakmunsu.auddum.support.stereotype.ApplicationService;
 import org.kwakmunsu.auddum.support.stereotype.WebApi;
 
 /**
- * 아키텍처 설계서의 패키지 규칙을 검증한다.
+ * 패키지 규칙을 검증한다.
  * 규칙에 해당하는 클래스가 아직 없는 도메인(report, admin 등)이 있어도 통과해야 하므로 allowEmptyShould를 켠다.
  */
 @AnalyzeClasses(packages = ArchitectureTest.ROOT, importOptions = ImportOption.DoNotIncludeTests.class)
@@ -61,7 +61,7 @@ class ArchitectureTest {
 
             noClasses().that().resideInAPackage(ROOT + "." + domain + "..")
                     .should().dependOnClassesThat().resideInAnyPackage(forbidden)
-                    .because(domain + "은(는) 아키텍처의 애플리케이션 구조 다이어그램에 없는 도메인에 의존할 수 없다")
+                    .because(domain + "은(는) 허용된 도메인 의존 목록에 없는 도메인에 의존할 수 없다")
                     .allowEmptyShould(true)
                     .check(classes);
         }

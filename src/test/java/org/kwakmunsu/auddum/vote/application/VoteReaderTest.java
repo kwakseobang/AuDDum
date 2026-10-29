@@ -13,8 +13,8 @@ import org.kwakmunsu.auddum.vote.domain.Voter;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * VoteReader 통합 테스트(H2). 참여 기록 조회, 내 선택, 결과 집계. 기준은 API-명세(myChoice, result),
- * 도메인-모델 Vote, ERD(결과는 항상 vote 기록에서 센다), 인증-중복-참여(회원·비회원 기록은 연결되지 않는다).
+ * VoteReader 통합 테스트(H2). 참여 기록 조회, 내 선택, 결과 집계. 기준은 응답의 myChoice와 result,
+ * 결과는 항상 vote 기록에서 센다, 회원·비회원 기록은 연결되지 않는다.
  * 결과 공개 판단의 진리표는 PollTest, 서비스 연결과 신원 조합은 PollQueryServiceParticipationTest가 맡는다.
  */
 @RequiredArgsConstructor

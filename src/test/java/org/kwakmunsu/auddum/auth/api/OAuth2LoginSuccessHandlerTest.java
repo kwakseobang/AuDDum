@@ -22,7 +22,7 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 
 /**
- * API-명세 SuccessHandler: 토큰 쿠키를 발급하고, 돌아갈 경로를 검증한 뒤 302한다. 허용되지 않으면 홈.
+ * SuccessHandler: 토큰 쿠키를 발급하고, 돌아갈 경로를 검증한 뒤 302한다. 허용되지 않으면 홈.
  * 가정한 이름: OAuth2LoginSuccessHandler(RefreshTokenService, AuthCookies, RedirectPathValidator, String frontendBaseUrl),
  * RefreshTokenService#issue(Long memberId, Role role, LocalDateTime now), 세션 키 OAuth2LoginSuccessHandler.REDIRECT_SESSION_KEY.
  * 리다이렉트 위치는 {프런트 기본 주소}{경로}로 가정한다.

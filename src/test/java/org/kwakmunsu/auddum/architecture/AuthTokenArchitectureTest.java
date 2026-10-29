@@ -7,7 +7,7 @@ import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 
-/** 아키텍처 설계서: 토큰 처리는 auth.application·domain·infrastructure, 컨트롤러·필터·핸들러는 auth.api. infrastructure는 위 계층에 의존하지 않는다. */
+/** 패키지 규칙: 토큰 처리는 auth.application·domain·infrastructure, 컨트롤러·필터·핸들러는 auth.api. infrastructure는 위 계층에 의존하지 않는다. */
 @AnalyzeClasses(packages = "org.kwakmunsu.auddum.auth", importOptions = ImportOption.DoNotIncludeTests.class)
 class AuthTokenArchitectureTest {
 

@@ -19,7 +19,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
 
 /**
- * API-명세 FailureHandler + brief 확정: 실패는 JSON이 아니라 프런트 오류 화면으로 302하며 코드를 전달한다.
+ * FailureHandler: 실패는 JSON이 아니라 프런트 오류 화면으로 302하며 코드를 전달한다.
  * 가정한 이름: OAuth2LoginFailureHandler(String frontendBaseUrl), 이동 위치 {프런트}/login/error?code=<코드>.
  * 회원은 핸들러가 만들지 않는다(회원 생성은 성공한 OAuth2UserService 호출에서만 일어난다).
  * Spring이 던지는 OAuth2 오류 코드와 우리 코드의 대응은 사용자 확인 대상이다(note 참조).

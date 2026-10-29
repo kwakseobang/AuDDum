@@ -7,7 +7,7 @@ import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * 돌아갈 경로 검증(brief 확정 사항, API-명세 SuccessHandler). 내부 경로만 통과하고 나머지는 기본 경로 "/"다.
+ * 돌아갈 경로 검증(SuccessHandler). 내부 경로만 통과하고 나머지는 기본 경로 "/"다.
  * 가정한 이름: RedirectPathValidator#resolve(String redirect) -> String (허용이면 그대로, 아니면 "/"), 기본 생성자.
  */
 class RedirectPathValidatorTest {

@@ -16,7 +16,7 @@ import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
 import org.springframework.http.HttpHeaders;
 
 /**
- * API-명세: POST /auth/refresh 204 + 새 액세스·리프레시 쿠키, 무효면 401 UNAUTHENTICATED. POST /auth/logout 204 + 쿠키 삭제.
+ * POST /auth/refresh 204 + 새 액세스·리프레시 쿠키, 무효면 401 UNAUTHENTICATED. POST /auth/logout 204 + 쿠키 삭제.
  * 가정한 이름: AuthWebApi(경로 /api/v1/auth), RefreshTokenService#reissue(String, LocalDateTime)/#logout(String, LocalDateTime), IssuedTokens(accessToken, refreshToken).
  * 컨트롤러가 쿠키 이름 access_token·refresh_token과 설계서의 경로·속성으로 내린다고 본다.
  * 로그아웃의 로그인 회원 인증(액세스 쿠키)은 슬라이스에서 구성이 정해지지 않아 여기서 확인하지 않는다(note 사용자 질문 참고).

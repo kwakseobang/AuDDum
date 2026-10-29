@@ -21,7 +21,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
- * 인증-중복-참여: 액세스 토큰은 서명 검증만으로 판단하고, 토큰이 무효하면 비회원으로 취급한다(조회는 통과).
+ * 액세스 토큰은 서명 검증만으로 판단하고, 토큰이 무효하면 비회원으로 취급한다(조회는 통과).
  */
 class AccessTokenFilterTest {
 

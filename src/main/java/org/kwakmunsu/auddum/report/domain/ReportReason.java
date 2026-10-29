@@ -20,7 +20,7 @@ public record ReportReason(
     String detail
 ) {
 
-    /** 상세 글자 수 상한. 임시 값이다(확정 전 항목, R-REPORT-03). ERD의 detail 컬럼 길이와 맞춘다. */
+    /** 상세 글자 수 상한. 임시 값이다(확정 전 항목, R-REPORT-03). detail 컬럼 길이와 맞춘다. */
     public static final int DETAIL_MAX_LENGTH = 200;
 
     public ReportReason {

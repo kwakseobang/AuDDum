@@ -18,7 +18,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 실제 SecurityConfig 체인의 배선 확인(인증-중복-참여 CSRF·조회, API-명세 FORBIDDEN·UNAUTHENTICATED).
+ * 실제 SecurityConfig 체인의 배선 확인(CSRF·조회, FORBIDDEN·UNAUTHENTICATED).
  * 필터 단위 테스트는 따로 있고, 여기서는 Origin 검사 -> 액세스 토큰 -> 컨트롤러 순서로 체인에 붙어 있는지만 본다.
  * MockMvc 요청은 테스트와 같은 스레드라 @Transactional로 만든 회원이 요청에서 보이고, 끝나면 롤백된다.
  */

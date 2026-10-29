@@ -10,7 +10,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 /**
- * 테스트-배포: 허용 Origin 목록은 설정값(쉼표 구분)에서 오므로, 공백과 빈 항목이 섞여 있어도 정리돼 해당 Origin이 허용된다.
+ * 허용 Origin 목록은 설정값(쉼표 구분)에서 오므로, 공백과 빈 항목이 섞여 있어도 정리돼 해당 Origin이 허용된다.
  */
 @TestPropertySource(properties = {
     "auddum.frontend.base-url=https://auddum.example.com",

@@ -30,7 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 투표 목록·상세 조회(PollQueryService, PollReader)의 통합 테스트(H2). 공개 범위, 최신순 커서 이어짐, 상세 선택지 순서와 404, 숨김·삭제 투표의 작성자·관리자 열람을 확인한다.
- * 가정한 이름: PollReader#getReadable(String publicId, Long viewerId)(비회원은 null). 관리자는 DB의 role로만 판단한다(토큰 role은 서비스에 넘기지 않는다). 이슈 #48 brief의 확정 시그니처.
+ * 가정한 이름: PollReader#getReadable(String publicId, Long viewerId)(비회원은 null). 관리자는 DB의 role로만 판단한다(토큰 role은 서비스에 넘기지 않는다).
  * 커서 인코딩과 size 보정은 api 계층 코드(PollListRequest, PollCursor)가 맡는다.
  */
 @RequiredArgsConstructor
@@ -235,7 +235,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
         assertThat(found.isClosed(LocalDateTime.now(TimeConfig.KST))).isTrue();
     }
 
-    // ---- 상세: 숨김·삭제 투표의 열람 권한 (API-명세, 인증-중복-참여) ----
+    // ---- 상세: 숨김·삭제 투표의 열람 권한 ----
 
     @Test
     void 공개_투표는_로그인한_타인도_조회한다() {
@@ -334,7 +334,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
             .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
     }
 
-    // ---- 공개 투표 한 건 (신고처럼 공개된 투표만 대상인 쓰기, API-명세, 도메인-모델) ----
+    // ---- 공개 투표 한 건 (신고처럼 공개된 투표만 대상인 쓰기) ----
 
     @Test
     void 공개_투표는_getPublic으로_조회된다() {

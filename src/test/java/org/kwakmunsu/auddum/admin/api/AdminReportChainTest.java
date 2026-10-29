@@ -34,8 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * GET /api/v1/admin/reports, GET /api/v1/admin/reports/{reportId} 를 실제 필터 체인·서비스·DB(H2)로 확인한다.
- * 기준은 API-명세(페이징·오류 응답), 인증-중복-참여(관리자 판정), 예외-정책 관리자 권한 행·OP-01,
- * 도메인-모델 신고(Report). 구현 전에 쓰였으므로 서비스·저장소 이름에는 기대지 않고 HTTP와 ReportFixture로만 확인한다.
+ * 기준은 페이징·오류 응답, 관리자 판정, 관리자 권한·OP-01,
+ * 신고(Report). 구현 전에 쓰였으므로 서비스·저장소 이름에는 기대지 않고 HTTP와 ReportFixture로만 확인한다.
  * 이 PR에는 AdminAction이 없어 actions는 항상 빈 배열이다.
  */
 @AutoConfigureMockMvc
@@ -49,7 +49,7 @@ class AdminReportChainTest extends DataIntegrationTestSupport {
     final JwtTokenProvider jwtTokenProvider;
     final ReportJpaRepository reportJpaRepository;
 
-    // ---- 권한 (API-명세 인증·인가 실패의 구분, 예외-정책 관리자 권한 행) ----
+    // ---- 권한 (인증·인가 실패의 구분) ----
 
     @Test
     void 관리자는_목록을_조회하면_200이다() {
@@ -220,7 +220,7 @@ class AdminReportChainTest extends DataIntegrationTestSupport {
         assertThat(ints(result, "$.items[*].pollReportCount")).containsExactly(3, 3, 1);
     }
 
-    // ---- 목록: 숨김·삭제 투표 (API-명세, 도메인-모델 신고) ----
+    // ---- 목록: 숨김·삭제 투표 ----
 
     @Test
     void 숨김_투표에_대한_신고도_목록에서_조회되고_poll_status가_HIDDEN이다() {
@@ -247,7 +247,7 @@ class AdminReportChainTest extends DataIntegrationTestSupport {
         assertThat(strings(result, "$.items[*].poll.status")).containsExactly("DELETED");
     }
 
-    // ---- 목록: 접수 순 정렬과 커서 (API-명세 페이징) ----
+    // ---- 목록: 접수 순 정렬과 커서 ----
 
     @Test
     void 목록은_접수_순_id_오름차순이다() {

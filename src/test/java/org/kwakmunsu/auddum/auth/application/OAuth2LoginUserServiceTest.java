@@ -25,7 +25,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * API-명세 콜백: OAuth2UserService가 소셜 계정으로 회원을 조회·가입시킨다.
+ * 콜백: OAuth2UserService가 소셜 계정으로 회원을 조회·가입시킨다.
  * 제공자는 요청의 registrationId로, 제공자의 사용자 식별자는 user-name-attribute 값(카카오는 id)으로 구한다.
  */
 @RequiredArgsConstructor

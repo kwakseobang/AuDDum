@@ -16,7 +16,7 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Flyway V1 스키마 검증. 기대값은 docs/ERD.md의 테이블 정의·제약조건과 인덱스, docs/테스트-배포.md의 환경 설정에서 가져왔다.
+ * Flyway V1 스키마 검증(테이블 정의·제약조건·인덱스).
  * 테스트 H2가 같은 마이그레이션 SQL로 스키마를 만든다는 전제다.
  */
 @SpringBootTest

@@ -22,7 +22,7 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 회원 상태 확인과 탈퇴를 실제 요청부터 응답까지 확인한다(인증-중복-참여 회원 상태 확인, API-명세 DELETE /members/me, 예외-정책 P-04·P-05·P-22).
+ * 회원 상태 확인과 탈퇴를 실제 요청부터 응답까지 확인한다(회원 상태 확인, DELETE /members/me, P-04·P-05·P-22).
  * 상태 확인이 어디서 일어나든 상관없이 요청과 응답만 본다.
  *
  * 가정한 이름:

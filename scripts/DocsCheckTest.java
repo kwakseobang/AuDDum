@@ -35,6 +35,7 @@ public class DocsCheckTest {
         절_번호_참조는_docs와_src에서_실패한다();
         하네스_문서의_절_번호_참조는_보고만_한다();
         적용된_마이그레이션은_검사하지_않는다();
+        src의_문서_이름_언급은_실패한다();
 
         System.out.println(total + "개 중 " + (total - failures.size()) + "개 통과");
         failures.forEach(f -> System.out.println("실패: " + f));
@@ -122,6 +123,19 @@ public class DocsCheckTest {
         expect("하네스 문서의 절 번호 참조는 실패가 아니다", result.errors().isEmpty(), result.errors().toString());
         expect(".claude 참조를 센다", result.sectionRefs().get(".claude") == 1, result.sectionRefs().toString());
         expect("CLAUDE.md 참조를 센다", result.sectionRefs().get("CLAUDE.md") == 1, result.sectionRefs().toString());
+    }
+
+    static void src의_문서_이름_언급은_실패한다() throws IOException {
+        var bad = DocsCheck.check(fixture(Map.of("src/main/java/C.java", "// API-명세 GET /polls, ERD report 테이블\nclass C {}\n")));
+        expect("src의 문서 이름은 실패다", hasError(bad, "src/main/java/C.java:1", "문서 이름 언급"), bad.errors().toString());
+
+        var path = DocsCheck.check(fixture(Map.of("src/test/java/D.java", "// 기대값은 docs/ERD.md\nclass D {}\n")));
+        expect("docs 경로도 실패다", hasError(path, "src/test/java/D.java:1", "문서 이름 언급"), path.errors().toString());
+
+        var ok = DocsCheck.check(fixture(Map.of(
+            "src/main/java/E.java", "// ERDiagram, WORLD, docs가 정하지 않았다\nclass E {}\n",
+            "docs/기능.md", "API-명세와 ERD를 본다\n")));
+        expect("일반 낱말과 docs 본문은 통과한다", ok.errors().isEmpty(), ok.errors().toString());
     }
 
     static void 적용된_마이그레이션은_검사하지_않는다() throws IOException {

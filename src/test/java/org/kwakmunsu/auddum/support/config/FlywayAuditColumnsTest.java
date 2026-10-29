@@ -9,7 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * 모든 테이블이 BaseEntity의 created_at·updated_at을 NOT NULL로 가진다(V1 + V2). 기대값은 docs/ERD.md.
+ * 모든 테이블이 BaseEntity의 created_at·updated_at을 NOT NULL로 가진다(V1 + V2).
  */
 @SpringBootTest
 class FlywayAuditColumnsTest {

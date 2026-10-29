@@ -34,7 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * POST /api/v1/polls/{pollId}/reports 를 실제 필터 체인·서비스·DB(H2)로 확인한다.
- * 기준은 UC-14, R-REPORT-01, R-REPORT-02, R-REPORT-03, R-REPORT-04, 예외-정책 P-05·P-18·OP-08, 인증-중복-참여 익명 식별 쿠키, ERD report 테이블.
+ * 기준은 UC-14, R-REPORT-01, R-REPORT-02, R-REPORT-03, R-REPORT-04, P-05·P-18·OP-08, 익명 식별 쿠키, report 테이블.
  * 서비스·저장소의 클래스 이름은 docs에 없으므로 HTTP와 네이티브 쿼리로만 확인한다.
  */
 @AutoConfigureMockMvc
@@ -47,7 +47,7 @@ class ReportSubmitChainTest extends DataIntegrationTestSupport {
     final EntityManager entityManager;
     final AnonCookieProvider anonCookieProvider;
 
-    // ---- 정상 접수 (API-명세, 도메인-모델 submit) ----
+    // ---- 정상 접수 ----
 
     @Test
     void 비회원이_처음_신고하면_201이고_본문이_없고_익명_쿠키를_내리며_PENDING으로_저장된다() {
@@ -161,7 +161,7 @@ class ReportSubmitChainTest extends DataIntegrationTestSupport {
         assertThat(result).hasStatus(201);
     }
 
-    // ---- 노출 상태 불변 (API-명세, 예외-정책 신고 접수된 투표 접근) ----
+    // ---- 노출 상태 불변 ----
 
     @Test
     void 신고가_접수돼도_투표는_PUBLIC으로_남고_조회가_200이다() {
@@ -178,7 +178,7 @@ class ReportSubmitChainTest extends DataIntegrationTestSupport {
         assertThat(detail).bodyJson().extractingPath("$.status").isEqualTo("PUBLIC");
     }
 
-    // ---- 중복 신고 (P-18, API-명세) ----
+    // ---- 중복 신고 (P-18) ----
 
     @Test
     void 받은_쿠키로_같은_투표를_다시_신고하면_409_REPORT_ALREADY_SUBMITTED이고_한_건만_남는다() {
@@ -237,7 +237,7 @@ class ReportSubmitChainTest extends DataIntegrationTestSupport {
         assertThat(reports()).hasSize(3);
     }
 
-    // ---- 숨김·삭제·없는 투표 (API-명세, OP-08) ----
+    // ---- 숨김·삭제·없는 투표 (OP-08) ----
 
     @Test
     void 숨김_투표를_신고하면_404_POLL_NOT_FOUND이고_저장도_쿠키도_없다() {
@@ -424,7 +424,7 @@ class ReportSubmitChainTest extends DataIntegrationTestSupport {
         assertThat(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE)).isEmpty();
     }
 
-    // ---- Origin (인증-중복-참여, API-명세 FORBIDDEN) ----
+    // ---- Origin (FORBIDDEN) ----
 
     @Test
     void Origin_헤더가_없는_신고는_403_FORBIDDEN이고_저장되지_않는다() {

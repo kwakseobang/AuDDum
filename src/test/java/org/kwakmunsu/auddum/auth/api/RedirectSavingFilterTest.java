@@ -7,7 +7,7 @@ import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
-/** API-명세 로그인 시작: `redirect` 파라미터를 세션에 보관한다. 안전한지는 성공 핸들러가 검증한다. */
+/** 로그인 시작: `redirect` 파라미터를 세션에 보관한다. 안전한지는 성공 핸들러가 검증한다. */
 class RedirectSavingFilterTest {
 
     final RedirectSavingFilter filter = new RedirectSavingFilter();

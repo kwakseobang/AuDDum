@@ -35,8 +35,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 /**
- * 같은 순간에 들어온 참여 요청을 실제 MySQL에서 확인한다(인증-중복-참여 "동시 요청" 검증 항목 표,
- * 테스트-배포 "실제 MySQL로 한 번 더 확인"). 진 쪽은 선택이 같아도 409 ALREADY_VOTED이고 재조회하지 않으며,
+ * 같은 순간에 들어온 참여 요청을 실제 MySQL에서 확인한다. 진 쪽은 선택이 같아도 409 ALREADY_VOTED이고
+ * 재조회하지 않으며,
  * 재전송 200은 없다. 서비스 호출 성공은 API의 201, ALREADY_VOTED는 409다.
  * 유니크 위반 번역 자체는 VoteWriterConflictTest(H2)가 다루고, 여기서는 스레드 경합만 본다.
  */
