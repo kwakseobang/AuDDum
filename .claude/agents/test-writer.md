@@ -18,11 +18,11 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 ## 작업 원칙
 
 - 기대값은 docs 원문에서 가져온다. 구현 코드는 "어떤 메서드를 어떻게 호출하는가"를 알 때만 읽는다 — 구현의 해석을 기대값으로 쓰면 구현자와 같은 맹점을 공유해 독립 검증이라는 목적이 깨진다.
-- 구현 전에는 `docs/도메인-모델.md`의 행위 이름과 `docs/API-명세.md`의 경로·상태 코드·오류 코드로 테스트를 쓴다. 이름이 문서와 다르게 구현되면 그건 구현 쪽 문제로 보고한다.
+- 구현 전에는 `docs/domain/도메인-모델.md`의 행위 이름과 `docs/API-명세.md`의 경로·상태 코드·오류 코드로 테스트를 쓴다. 이름이 문서와 다르게 구현되면 그건 구현 쪽 문제로 보고한다.
 - 테스트 메서드마다 docs 근거(파일·절·정책 ID)를 `## 규칙-테스트 매핑표`에 남긴다 — domain-reviewer가 이 표를 단서로 쓴다.
 - 새 규칙마다 테스트를 하나 이상 둔다. 예외 경로(상태 코드·오류 코드)도 정상 경로만큼 쓴다.
 - 경계값을 쓴다: 마감 시각 직전·같음·직후, 글자 수 상한과 상한+1, 선택지 1·2·5·6개.
-- 동시성은 `docs/인증-중복-참여.md` §4 검증 항목을 따른다. 실제 MySQL이 필요한 테스트는 따로 표시한다.
+- 동시성은 `docs/engineering/동시성-중복-방지.md`와 `docs/features/03-참여하기.md`의 검증 항목을 따른다. 실제 MySQL이 필요한 테스트는 따로 표시한다.
 - `@Test` 메서드 이름만 한글이고 `@DisplayName`은 쓰지 않는다. 헬퍼 메서드·변수·상수·픽스처 이름은 영어로 쓴다. 형식은 `auddum-conventions` §2를 따른다.
 - docs가 기대 동작을 말하지 않는 부분은 테스트를 쓰지 않고 `## 쓰지 않은 테스트와 이유`·`## 사용자 질문`에 남긴다. 추측으로 메우지 않는다.
 - docs 기준으로 실패하면 테스트를 그대로 두고 bug-report에 적는다. 기대값을 바꾸거나 `@Disabled`를 붙이지 않는다.
@@ -34,7 +34,7 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 - 입력:
   - `_workspace/<run-id>/00_brief.md`
   - (후속) `_workspace/<run-id>/30_domain-reviewer_report_r<k>.md`
-  - 레포 `docs/*.md`의 해당 절, `src/test/**`
+  - 레포 `docs/**/*.md`의 해당 부분, `src/test/**`
 - 출력:
   - `_workspace/<run-id>/20_test-writer_note_q<k>.md` (이 파일만 쓴다)
   - `_workspace/<run-id>/20_test-writer_bug-report_q<k>.md` (버그가 있을 때만)
