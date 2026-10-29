@@ -350,7 +350,7 @@ INSERT INTO vote (poll_id, option_id, member_id, anon_id, created_at, updated_at
 VALUES (:pollId, :optionId, :memberId, :anonId, :now, :now);
 ```
 
-- 참여 처리 순서와 동시 요청(진 쪽 409)은 `API-명세.md`의 '참여·결과 API'와 `인증-중복-참여.md`의 '중복 참여 방지'가 기준이다. 이 문서는 두 곳에 영향을 주는 스키마 쪽만 적는다.
+- 참여 처리 순서와 동시 요청(진 쪽 409)은 `API-명세.md`의 '참여·결과 API'와 [동시성·중복 방지](engineering/동시성-중복-방지.md)가 기준이다. 이 문서는 두 곳에 영향을 주는 스키마 쪽만 적는다.
 - 요청은 선택지 id가 아니라 표시 순서(position)로 선택지를 가리키고, 서버가 (투표, position)으로 선택지 id를 찾는다. 해당 순서의 선택지가 없으면 400으로 응답한다. 복합 외래키는 그래도 DB 단의 마지막 방어선으로 둔다.
 - 마감 판단은 요청을 받은 시점에 한 번만 한다. (P-11)
 
