@@ -1,0 +1,56 @@
+vars: {
+  d2-config: { layout-engine: dagre }
+}
+
+classes: {
+  step: { shape: rectangle; style: { border-radius: 8; fill: "#F4F6FA"; stroke: "#5B6B8C" } }
+  ask:  { shape: rectangle; style: { border-radius: 24; fill: "#FFF7E0"; stroke: "#C99A2E" } }
+  fail: { shape: rectangle; style: { border-radius: 8; fill: "#FDECEC"; stroke: "#C0392B"; font-color: "#8E2A20" } }
+  ok:   { shape: rectangle; style: { border-radius: 8; fill: "#E8F6EE"; stroke: "#2E8B57"; font-color: "#1E6B41" } }
+  gap:  { shape: rectangle; width: 1; height: 1; style: { opacity: 0 } }
+}
+
+grid-rows: 7
+grid-columns: 3
+grid-gap: 40
+horizontal-gap: 120
+
+g1: "" { class: gap }
+start: "로그인 시작\n(카카오로 이동)" { class: step }
+g2: "" { class: gap }
+
+g3: "" { class: gap }
+consent: "카카오에서 로그인·동의했는가" { class: ask }
+e1: "사용자가 취소\nACCESS_DENIED(오류 화면)" { class: fail }
+
+g4: "" { class: gap }
+valid: "카카오가 돌려준 값이 맞는가\n(state, 인가 코드)" { class: ask }
+e2: "값이 틀림\nINVALID_STATE · SOCIAL_AUTH_FAILED" { class: fail }
+
+g5: "" { class: gap }
+up: "카카오가 정상 응답하는가" { class: ask }
+e3: "카카오 장애\nSOCIAL_UNAVAILABLE(회원은 만들지 않는다)" { class: fail }
+
+g6: "" { class: gap }
+member: "이미 가입한 회원인가" { class: ask }
+newm: "새 회원 만들기\n(정상 상태, 탈퇴한 계정도 새 회원)" { class: step }
+
+g7: "" { class: gap }
+issue: "로그인 상태 발급\n(액세스·리프레시 쿠키)" { class: step }
+g8: "" { class: gap }
+
+g9: "" { class: gap }
+done: "원래 페이지로 돌아간다" { class: ok }
+g10: "" { class: gap }
+
+start -> consent
+consent -> valid: 예
+consent -> e1: 아니오
+valid -> up: 예
+valid -> e2: 아니오
+up -> member: 예
+up -> e3: 아니오
+member -> issue: 예
+member -> newm: 아니오
+newm -> issue
+issue -> done

@@ -1,0 +1,48 @@
+vars: {
+  d2-config: { layout-engine: dagre }
+}
+
+classes: {
+  step: { shape: rectangle; style: { border-radius: 8; fill: "#F4F6FA"; stroke: "#5B6B8C" } }
+  ask:  { shape: rectangle; style: { border-radius: 24; fill: "#FFF7E0"; stroke: "#C99A2E" } }
+  fail: { shape: rectangle; style: { border-radius: 8; fill: "#FDECEC"; stroke: "#C0392B"; font-color: "#8E2A20" } }
+  ok:   { shape: rectangle; style: { border-radius: 8; fill: "#E8F6EE"; stroke: "#2E8B57"; font-color: "#1E6B41" } }
+  gap:  { shape: rectangle; width: 1; height: 1; style: { opacity: 0 } }
+}
+
+grid-rows: 7
+grid-columns: 2
+grid-gap: 40
+horizontal-gap: 120
+
+start: "관리자가 조치를 요청" { class: step }
+g1: "" { class: gap }
+
+auth: "관리자 권한이 있는가" { class: ask }
+e403: "권한이 없다(시도는 기록한다)\n403 FORBIDDEN" { class: fail }
+
+exists: "대상(신고·투표·회원)이 있는가" { class: ask }
+e404: "대상이 없다\n404" { class: fail }
+
+reason: "사유가 올바른가" { class: ask }
+e400: "사유가 없거나 200자를 넘는다\n400 VALIDATION_FAILED" { class: fail }
+
+state: "대상 상태가 조치에 맞는가" { class: ask }
+e409: "이미 처리했거나 맞지 않는 상태다\n409" { class: fail }
+
+do: "한 번에 처리\n대상 상태 변경 · 신고 종료 · 이력 기록\n(실패하면 전부 취소)" { class: step }
+g2: "" { class: gap }
+
+done: "처리 완료\n204" { class: ok }
+g3: "" { class: gap }
+
+start -> auth
+auth -> exists: 예
+auth -> e403: 아니오
+exists -> reason: 예
+exists -> e404: 아니오
+reason -> state: 예
+reason -> e400: 아니오
+state -> do: 예
+state -> e409: 아니오
+do -> done
