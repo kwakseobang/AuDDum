@@ -19,6 +19,7 @@ import java.util.stream.Stream;
  *
  * <p>정의는 정해진 파일에서만 모은다. 정의가 없는 참조, 중복 정의, 형식 오류, 도메인-모델 밖의 R-ID 정의는 실패다.
  * 기능 페이지(docs/features)의 P·OP·UC 정의도 모으고, sketch(docs/records/sketches)의 머리말과 기능 페이지의 이력 링크가 서로를 가리키는지 본다.
+ * docs의 상대 링크가 가리키는 파일이 없으면 실패다. 옮기거나 없앤 문서의 이름(퇴역 이름)을 docs·.claude·CLAUDE.md에서 쓰면 실패다(시점 기록인 docs/records는 제외).
  * src의 문서 이름 언급은 실패다. 절 번호(§) 참조는 docs와 src에서는 실패이고, .claude와 CLAUDE.md는 개수만 보고한다(하네스는 1단계에서 정리한다).
  *
  * <p>사용법: {@code scripts/docs-check [--root <디렉터리>]} (저장소 루트에서 실행)
@@ -57,8 +58,15 @@ public class DocsCheck {
     // 코드 주석은 문서 이름을 쓰지 않는다(문서를 나누거나 이름을 바꾸면 조용히 낡는다). 근거는 ID나 코드 식별자로 단다.
     static final Pattern DOC_NAME = Pattern.compile(
         "API-명세|인증-중복-참여|도메인-모델|예외-정책|설계-결정|사용자-시나리오|테스트-배포|개발-가이드"
+            + "|예외-응답|동시성-중복-방지|테스트-전략|개발-워크플로|로컬-환경"
             + "|아키텍처 설계서|(?<![A-Za-z0-9_])ERD(?![A-Za-z0-9_])|docs/\\S+\\.md");
     static final Set<String> DOC_NAME_FAIL_AREAS = Set.of("src");
+
+    // 옮기거나 없앤 문서의 이름. 다시 쓰면 낡은 안내가 되므로 새 이름으로 바꾸게 한다. 시점 기록(docs/records)은 검사하지 않는다.
+    static final Map<String, String> RETIRED_NAMES = retiredNames();
+    static final String RECORDS_DIR = "docs/records/";
+    static final Set<String> RETIRED_NAME_AREAS = Set.of("docs", ".claude", "CLAUDE.md");
+    static final Pattern MD_LINK = Pattern.compile("\\]\\(([^)\\s]+)\\)");
 
     static final Set<String> SKIPPED_DIRS = Set.of("_workspace", "build", ".git", ".gradle", "node_modules", "out");
     static final List<String> AREAS = List.of("docs", "src", ".claude", "CLAUDE.md");
@@ -66,6 +74,21 @@ public class DocsCheck {
 
     // 이미 적용된 Flyway 마이그레이션은 주석 한 줄만 바꿔도 체크섬이 달라져 검증이 실패하므로 검사하지 않는다.
     static final String MIGRATION_DIR = "src/main/resources/db/migration/";
+
+    private static Map<String, String> retiredNames() {
+        Map<String, String> names = new LinkedHashMap<>();
+        names.put("예외-정책", "예외-응답");
+        names.put("사용자-시나리오", "features/ 기능 페이지");
+        names.put("인증-중복-참여", "인증, 동시성-중복-방지");
+        names.put("개발-가이드", "컨벤션, 개발-워크플로, 로컬-환경");
+        names.put("테스트-배포", "테스트-전략, 배포");
+        names.put("docs/README.md", "docs/index.md");
+        names.put("사용자 시나리오 명세서", "features/ 기능 페이지");
+        names.put("예외·정책 명세서", "예외-응답");
+        names.put("인증·중복 참여 설계서", "인증, 동시성-중복-방지");
+        names.put("테스트·배포 설계서", "테스트-전략, 배포");
+        return names;
+    }
 
     record Result(Map<String, String> definitions, List<String> errors, Map<String, Integer> sectionRefs) {
     }
@@ -115,6 +138,18 @@ public class DocsCheck {
                     errors.add(location + "  문서 이름 언급: " + docName.group() + " (정책·규칙·시나리오 ID나 코드 식별자로 바꾸거나 지운다)");
                 }
 
+                if (RETIRED_NAME_AREAS.contains(area) && !relative.startsWith(RECORDS_DIR)) {
+                    for (var retired : RETIRED_NAMES.entrySet()) {
+                        if (line.contains(retired.getKey())) {
+                            errors.add(location + "  퇴역한 문서 이름: " + retired.getKey() + " (새 이름: " + retired.getValue() + ")");
+                        }
+                    }
+                }
+                if (area.equals("docs") && relative.endsWith(".md")
+                    && !file.getFileName().toString().startsWith("_")) {
+                    checkMarkdownLinks(file, line, location, errors);
+                }
+
                 int sections = countMatches(SECTION_REF, line);
                 sectionRefs.merge(area, sections, Integer::sum);
                 if (sections > 0 && SECTION_REF_FAIL_AREAS.contains(area)) {
@@ -124,6 +159,24 @@ public class DocsCheck {
         }
         checkSketchLinks(root, errors);
         return new Result(definitions, errors, sectionRefs);
+    }
+
+    // 문서를 옮기거나 개명하면 상대 링크가 조용히 깨지므로, 가리키는 파일이 있는지 본다(앵커는 보지 않는다).
+    private static void checkMarkdownLinks(Path file, String line, String location, List<String> errors) {
+        Matcher matcher = MD_LINK.matcher(line);
+        while (matcher.find()) {
+            String target = matcher.group(1);
+            if (target.startsWith("http:") || target.startsWith("https:") || target.startsWith("mailto:") || target.startsWith("#")) {
+                continue;
+            }
+            String path = target.contains("#") ? target.substring(0, target.indexOf('#')) : target;
+            if (path.isEmpty()) {
+                continue;
+            }
+            if (!Files.exists(file.getParent().resolve(path).normalize())) {
+                errors.add(location + "  깨진 링크: " + target);
+            }
+        }
     }
 
     private static void collectDefinitions(Path root, Map<String, String> definitions, List<String> errors) {

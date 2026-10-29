@@ -41,6 +41,8 @@ public class DocsCheckTest {
         sketch만_링크하면_실패한다();
         기능_페이지만_링크하면_실패한다();
         양식_파일은_검사하지_않는다();
+        깨진_상대_링크를_잡는다();
+        퇴역한_문서_이름을_잡는다();
 
         System.out.println(total + "개 중 " + (total - failures.size()) + "개 통과");
         failures.forEach(f -> System.out.println("실패: " + f));
@@ -123,8 +125,8 @@ public class DocsCheckTest {
 
     static void 하네스_문서의_절_번호_참조는_보고만_한다() throws IOException {
         var result = DocsCheck.check(fixture(Map.of(
-            ".claude/skills/x/SKILL.md", "도메인-모델 §3을 읽는다\n",
-            "CLAUDE.md", "개발-가이드 §1\n")));
+            ".claude/skills/x/SKILL.md", "아키텍처 §3을 읽는다\n",
+            "CLAUDE.md", "테스트 §1\n")));
         expect("하네스 문서의 절 번호 참조는 실패가 아니다", result.errors().isEmpty(), result.errors().toString());
         expect(".claude 참조를 센다", result.sectionRefs().get(".claude") == 1, result.sectionRefs().toString());
         expect("CLAUDE.md 참조를 센다", result.sectionRefs().get("CLAUDE.md") == 1, result.sectionRefs().toString());
@@ -206,8 +208,33 @@ public class DocsCheckTest {
         var result = DocsCheck.check(fixture(Map.of(
             "docs/records/sketches/_양식.md", "# 양식\n",
             "docs/features/_양식.md", "[sketch](../records/sketches/0-x.md)\n",
-            "docs/features/README.md", "[sketch](../records/sketches/0-x.md)\n")));
+            "docs/features/README.md", "양식과 README는 건너뛴다\n")));
         expect("_로 시작하는 양식과 README는 건너뛴다", result.errors().isEmpty(), result.errors().toString());
+    }
+
+    static void 깨진_상대_링크를_잡는다() throws IOException {
+        var bad = DocsCheck.check(fixture(Map.of("docs/기능.md", "[없는 문서](없는.md)와 [앵커](#절) [밖](https://example.com)\n")));
+        expect("없는 파일 링크는 실패다", hasError(bad, "docs/기능.md:1", "깨진 링크", "없는.md"), bad.errors().toString());
+        expect("앵커·외부 링크는 통과한다", bad.errors().stream().noneMatch(e -> e.contains("앵커") || e.contains("example")), bad.errors().toString());
+
+        var ok = DocsCheck.check(fixture(Map.of("docs/기능.md", "[도메인](domain/도메인-모델.md#절)\n")));
+        expect("있는 파일 링크는 통과한다", ok.errors().isEmpty(), ok.errors().toString());
+
+        var template = DocsCheck.check(fixture(Map.of("docs/features/_양식.md", "[sketch](../records/<n>.md)\n")));
+        expect("양식(_로 시작)은 링크를 검사하지 않는다", template.errors().isEmpty(), template.errors().toString());
+    }
+
+    static void 퇴역한_문서_이름을_잡는다() throws IOException {
+        var docs = DocsCheck.check(fixture(Map.of("docs/기능.md", "예외-정책과 사용자 시나리오 명세서를 본다\n")));
+        expect("docs의 퇴역 이름은 실패다", hasError(docs, "docs/기능.md:1", "퇴역한 문서 이름", "예외-정책", "예외-응답"), docs.errors().toString());
+        expect("긴 옛 제목도 잡는다", hasError(docs, "퇴역한 문서 이름", "사용자 시나리오 명세서"), docs.errors().toString());
+
+        var harness = DocsCheck.check(fixture(Map.of(".claude/skills/x/SKILL.md", "`docs/개발-가이드.md`를 본다\n", "CLAUDE.md", "인증-중복-참여\n")));
+        expect(".claude의 퇴역 이름은 실패다", hasError(harness, ".claude/skills/x/SKILL.md:1", "개발-가이드"), harness.errors().toString());
+        expect("CLAUDE.md의 퇴역 이름도 실패다", hasError(harness, "CLAUDE.md:1", "인증-중복-참여"), harness.errors().toString());
+
+        var records = DocsCheck.check(fixture(Map.of("docs/records/decisions/1-a.md", "예외-정책에서 옮겼다\n")));
+        expect("시점 기록(records)은 검사하지 않는다", records.errors().isEmpty(), records.errors().toString());
     }
 
     static Path fixture(Map<String, String> overrides) throws IOException {
