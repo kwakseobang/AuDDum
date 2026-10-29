@@ -164,7 +164,7 @@ public class DocsCheck {
             String stem = page.getFileName().toString().replaceFirst("\\.md$", "");
             for (String name : linkedSketches(readLines(page))) {
                 if (!featuresBySketch.containsKey(name)) {
-                    errors.add(relative + "  이력에 링크한 sketch이 없다: " + name);
+                    errors.add(relative + "  이력에 링크한 sketch 파일이 없다: " + name);
                 } else if (!featuresBySketch.get(name).contains(stem)) {
                     errors.add(relative + "  이력에 링크한 sketch " + name + "의 features에 " + stem + "이(가) 없다");
                 }
