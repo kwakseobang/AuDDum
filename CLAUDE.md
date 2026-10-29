@@ -40,6 +40,7 @@
 - 브랜치는 git flow(`feature/{이슈번호}-{요약}` ← `develop` ← `main`), release 브랜치는 없다. `main`·`develop`에 직접 커밋하지 않는다.
 - 테스트 메서드 이름은 한글이고 `@DisplayName`은 쓰지 않는다.
 - 빌드·테스트: `./gradlew build`, `./gradlew test`
+- 문서 ID 검사: `scripts/docs-check` (테스트는 `scripts/test-docs-check`)
 
 ## 구성
 
