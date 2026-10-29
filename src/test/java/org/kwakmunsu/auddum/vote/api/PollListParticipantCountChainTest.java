@@ -29,7 +29,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * GET /api/v1/polls 목록의 participantCount가 실제 참여 수인지 실제 DB로 확인한다.
- * API-명세 GET /polls, ERD 집계 쿼리(P-07: 페이지의 투표 묶음을 한 번에 집계). 구현 위치(클래스)에 의존하지 않고 API로만 본다.
+ * GET /polls, 집계 쿼리(P-07: 페이지의 투표 묶음을 한 번에 집계). 구현 위치(클래스)에 의존하지 않고 API로만 본다.
  * 목록은 PUBLIC 투표만 내려주므로 삭제된 투표의 실제 참여 수는 상세(GET /polls/{pollId})로 확인한다.
  */
 @AutoConfigureMockMvc

@@ -14,7 +14,7 @@ import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * 인증-중복-참여 토큰 표: 액세스 {sub, role, iat, exp} 30분, 리프레시 {sub, jti, iat, exp} 14일, 리프레시에는 role이 없다.
+ * 토큰 표: 액세스 {sub, role, iat, exp} 30분, 리프레시 {sub, jti, iat, exp} 14일, 리프레시에는 role이 없다.
  * 가정한 이름: JwtTokenProvider(JwtProperties), createAccessToken(Long, Role, LocalDateTime now), createRefreshToken(Long, LocalDateTime now),
  * parseAccessToken(String, LocalDateTime now) -> 레코드(memberId(), role()), parseRefreshToken(String, LocalDateTime now) -> 레코드(memberId(), jti()).
  * 무효 토큰은 AuddumException(UNAUTHENTICATED). 만료 판단은 시스템 시계가 아니라 넘긴 now 기준이다.

@@ -40,8 +40,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 관리자 조치 API(신고 기각, 투표 숨김·삭제, 회원 정지)를 실제 필터 체인·서비스·DB(H2)로 확인한다.
  * POST /admin/reports/{id}/dismiss, PATCH /admin/polls/{publicId}/status(HIDDEN·DELETED), POST /admin/members/{id}/suspend.
- * 기준은 API-명세(조치 API 설명), 도메인-모델(Poll.hide, Member.suspend, Report.dismiss, AdminAction), 설계-결정 "조치 API는 별도 기능이다", ERD admin_action.
- * 서비스·저장소 이름에는 기대지 않고 HTTP, 기존 저장소, JdbcTemplate(컬럼 이름은 ERD)로만 확인한다.
+ * 기준은 조치 API 설명, Poll.hide, Member.suspend, Report.dismiss, AdminAction, admin_action. 조치 API는 별도 기능이다.
+ * 서비스·저장소 이름에는 기대지 않고 HTTP, 기존 저장소, JdbcTemplate(컬럼 이름 포함)로만 확인한다.
  * 같은 테스트 트랜잭션 안에서 부르므로 DB 상태는 엔티티 캐시 대신 JdbcTemplate으로 읽는다.
  */
 @AutoConfigureMockMvc
@@ -65,7 +65,7 @@ class AdminReportActionChainTest extends DataIntegrationTestSupport {
 
     }
 
-    // ---- 권한 (API-명세 첫 문단, 인증·인가 구분) ----
+    // ---- 권한 (인증·인가 구분) ----
 
     @ParameterizedTest
     @ValueSource(strings = {"dismiss", "hide", "delete", "suspend"})
@@ -174,7 +174,7 @@ class AdminReportActionChainTest extends DataIntegrationTestSupport {
         assertNothingChanged(scene);
     }
 
-    // ---- 사유 검증 (API-명세 "모든 요청은 { reason }이 필수다(공백뿐이면 없는 것, 200자 이하)") ----
+    // ---- 사유 검증 (필수, 공백뿐이면 없는 것, 200자 이하) ----
 
     @ParameterizedTest
     @ValueSource(strings = {"dismiss", "hide", "delete", "suspend"})
@@ -230,7 +230,7 @@ class AdminReportActionChainTest extends DataIntegrationTestSupport {
         assertNothingChanged(scene);
     }
 
-    // ---- 대상 식별 (API-명세 각 API의 404·400) ----
+    // ---- 대상 식별 (각 API의 404·400) ----
 
     @Test
     void 없는_신고를_기각하면_404_REPORT_NOT_FOUND다() {
@@ -272,7 +272,7 @@ class AdminReportActionChainTest extends DataIntegrationTestSupport {
         assertThat(actionCount()).isZero();
     }
 
-    // ---- 신고 기각 (API-명세 POST dismiss, 도메인-모델 Report.dismiss) ----
+    // ---- 신고 기각 (POST dismiss, Report.dismiss) ----
 
     @Test
     void 기각하면_신고가_DISMISSED이고_투표와_작성자는_그대로이며_처리자와_일시를_기록한다() {
@@ -370,7 +370,7 @@ class AdminReportActionChainTest extends DataIntegrationTestSupport {
         assertThat(reportStatus(other)).isEqualTo("RESOLVED");
     }
 
-    // ---- 투표 숨김 (API-명세 PATCH status(HIDDEN), 도메인-모델 Poll.hide) ----
+    // ---- 투표 숨김 (PATCH status(HIDDEN), Poll.hide) ----
 
     @Test
     void 숨기면_투표가_HIDDEN이고_그_투표의_PENDING_신고가_모두_RESOLVED로_종료된다() {
@@ -481,7 +481,7 @@ class AdminReportActionChainTest extends DataIntegrationTestSupport {
         assertNothingChanged(scene);
     }
 
-    // ---- 투표 삭제 (API-명세 PATCH status(DELETED), 도메인-모델 Poll.deleteByAdmin) ----
+    // ---- 투표 삭제 (PATCH status(DELETED), Poll.deleteByAdmin) ----
 
     @Test
     void 삭제하면_투표가_DELETED이고_그_투표의_PENDING_신고가_모두_RESOLVED로_종료된다() {
@@ -553,7 +553,7 @@ class AdminReportActionChainTest extends DataIntegrationTestSupport {
         assertThat(actionCount()).isZero();
     }
 
-    // ---- 회원 정지 (API-명세 POST suspend, 도메인-모델 Member.suspend) ----
+    // ---- 회원 정지 (POST suspend, Member.suspend) ----
 
     @Test
     void 정지하면_회원이_SUSPENDED이고_정지_일시를_기록하며_신고와_기존_투표는_그대로다() {
@@ -605,7 +605,7 @@ class AdminReportActionChainTest extends DataIntegrationTestSupport {
         assertThat(actionCount()).isZero();
     }
 
-    // ---- 이력 (API-명세, 도메인-모델 AdminAction, ERD admin_action; reportId는 기각에만 채운다) ----
+    // ---- 이력 (AdminAction, admin_action; reportId는 기각에만 채운다) ----
 
     @Test
     void 기각_이력은_처리자_종류_대상_투표_신고_사유를_담고_한_건이다() {
@@ -698,7 +698,7 @@ class AdminReportActionChainTest extends DataIntegrationTestSupport {
         assertThat(actionCount()).isEqualTo(1L);
     }
 
-    // ---- 상세의 actions (API-명세 GET 상세: 이 신고의 기각 이력 + 대상 투표의 숨김·삭제 이력, 시각 순) ----
+    // ---- 상세의 actions (GET 상세: 이 신고의 기각 이력 + 대상 투표의 숨김·삭제 이력, 시각 순) ----
 
     @Test
     void 기각한_뒤_상세의_actions는_기각_이력을_담고_신고_상태와_처리자도_채워진다() {

@@ -20,7 +20,7 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * POST /api/v1/polls/{pollId}/votes 를 실제 필터 체인·서비스·DB로 확인한다. 인증-중복-참여 "요청이 오류로 끝나면
+ * POST /api/v1/polls/{pollId}/votes 를 실제 필터 체인·서비스·DB로 확인한다. 요청이 오류로 끝나면
  * (INVALID_OPTION, POLL_CLOSED 등) 새로 발급한 쿠키도 내리지 않는다"를 새 익명 사용자로 고정한다.
  * 쓰기 요청이라 허용 Origin 헤더가 필요하다.
  */

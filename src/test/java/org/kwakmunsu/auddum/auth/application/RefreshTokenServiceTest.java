@@ -26,7 +26,7 @@ import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * 인증-중복-참여 교체·폐기·재발급 판단 순서, ERD refresh_token(해시만 저장, 회원당 여러 건), 예외-정책 P-20·27(동시 로그인 허용).
+ * 교체·폐기·재발급 판단 순서, refresh_token(해시만 저장, 회원당 여러 건), P-20·27(동시 로그인 허용).
  *
  * 가정한 이름:
  * - RefreshTokenService#issue(Long memberId, Role role, LocalDateTime now) -> IssuedTokens(accessToken(), refreshToken())

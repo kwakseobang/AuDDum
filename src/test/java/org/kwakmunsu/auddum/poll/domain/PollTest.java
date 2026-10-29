@@ -383,7 +383,7 @@ class PollTest {
 
     // ---- 공백 제거 (DR-1) ----
 
-    // ---- 이미 숨김 투표 hide (도메인-모델 Poll.hide: 이미 숨겨졌으면 409 POLL_NOT_PUBLIC) ----
+    // ---- 이미 숨김 투표 hide (Poll.hide: 이미 숨겨졌으면 409 POLL_NOT_PUBLIC) ----
 
     @Test
     void 이미_숨겨진_투표를_숨기면_409_POLL_NOT_PUBLIC이고_상태는_그대로다() {
@@ -558,7 +558,7 @@ class PollTest {
         assertThat(poll.isReadableBy(null, () -> false)).isFalse();
     }
 
-    // ---- 결과 공개 판단 (API-명세 결과 공개 규칙, 예외-정책 P-03·P-25) ----
+    // ---- 결과 공개 판단 (결과 공개 규칙, P-03·P-25) ----
 
     @Test
     void 마감_전에_참여하지_않은_사람에게는_결과를_공개하지_않는다() {

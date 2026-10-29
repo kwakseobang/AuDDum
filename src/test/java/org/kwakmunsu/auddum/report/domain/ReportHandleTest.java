@@ -11,7 +11,7 @@ import org.kwakmunsu.auddum.support.config.TimeConfig;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 
 /**
- * 신고 처리 행위. 기준은 R-REPORT-05, R-REPORT-06, R-REPORT-07, 도메인-모델 Report 행위 표(dismiss), 신고 상태 전이 표, API-명세 REPORT_ALREADY_HANDLED(409).
+ * 신고 처리 행위. 기준은 R-REPORT-05, R-REPORT-06, R-REPORT-07, Report.dismiss, 신고 상태 전이, REPORT_ALREADY_HANDLED(409).
  */
 class ReportHandleTest {
 

@@ -11,8 +11,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 
 /**
- * 관리자 조치 이력. 기준은 R-ACTION-02, 도메인-모델 AdminAction 행위 표 record(...)
- * ("사유가 비어 있거나 200자를 넘으면 거절한다"), 규칙("사유는 필수다"), ActionType 표, ERD admin_action(reason VARCHAR(200)).
+ * 관리자 조치 이력. 기준은 R-ACTION-02, AdminAction.record(...)
+ * ("사유가 비어 있거나 200자를 넘으면 거절한다"), 규칙("사유는 필수다"), ActionType, admin_action.reason VARCHAR(200).
  */
 class AdminActionTest {
 
@@ -77,7 +77,7 @@ class AdminActionTest {
             .isInstanceOf(AuddumException.class);
     }
 
-    // ---- 기록 편의 팩토리 (도메인-모델 AdminAction dismissReport / takedownPoll / suspendMember; 설계-결정 "이력의 reportId는 기각에만 채운다"; dismissReport(adminId, pollId, reportId, reason), takedownPoll(adminId, pollId, takedown, reason), suspendMember(adminId, memberId, reason)) ----
+    // ---- 기록 편의 팩토리 (dismissReport / takedownPoll / suspendMember; reportId는 기각에만 채운다; dismissReport(adminId, pollId, reportId, reason), takedownPoll(adminId, pollId, takedown, reason), suspendMember(adminId, memberId, reason)) ----
 
     @Test
     void dismissReport는_신고_기각_종류와_대상_투표를_채우고_대상_회원은_비운다() {

@@ -15,8 +15,8 @@ import org.kwakmunsu.auddum.support.anon.AnonCookieProvider.Verification;
 import org.slf4j.LoggerFactory;
 
 /**
- * 익명 쿠키 해석 단위 테스트. 기준은 인증-중복-참여 익명 식별 쿠키의 위조·변조 처리(위조는 오류 없이 새로 발급하고 WARN, 원문은 로그에 넣지 않음)
- * 와 설계-결정 "위조 쿠키 로그"이다.
+ * 익명 쿠키 해석 단위 테스트. 기준은 익명 식별 쿠키의 위조·변조 처리(위조는 오류 없이 새로 발급하고 WARN, 원문은 로그에 넣지 않음).
+ * 위조 쿠키 로그에는 원문을 남기지 않는다.
  */
 class AnonIdentityResolverTest {
 

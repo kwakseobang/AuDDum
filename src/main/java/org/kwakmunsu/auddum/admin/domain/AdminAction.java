@@ -22,7 +22,7 @@ import org.kwakmunsu.auddum.support.jpa.BaseEntity;
 @Entity
 public class AdminAction extends BaseEntity {
 
-    /** 사유 글자 수 상한(유니코드 문자 단위). ERD의 reason 컬럼 길이와 맞춘다. */
+    /** 사유 글자 수 상한(유니코드 문자 단위). reason 컬럼 길이와 맞춘다. */
     public static final int REASON_MAX_LENGTH = 200;
 
     @Column(name = "admin_id", nullable = false, updatable = false)

@@ -25,7 +25,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 
 /**
- * POST /api/v1/polls/{pollId}/votes 웹 계층(서비스는 목). API-명세, 인증-중복-참여.
+ * POST /api/v1/polls/{pollId}/votes 웹 계층(서비스는 목).
  * 쿠키는 컨트롤러가 @CookieValue로 받아 서비스에 넘기고, 새로 발급했을 때만 Set-Cookie를 붙인다.
  */
 class VoteWebApiTest extends WebApiTestSupport {

@@ -18,7 +18,7 @@ import java.util.stream.Stream;
  * 문서와 코드 주석의 ID(P-xx, OP-xx, UC-xx, R-애그리거트-xx)를 검사한다.
  *
  * <p>정의는 정해진 파일에서만 모은다. 정의가 없는 참조, 중복 정의, 형식 오류, 도메인-모델 밖의 R-ID 정의는 실패다.
- * 절 번호(§) 참조는 docs와 src에서는 실패이고, .claude와 CLAUDE.md는 개수만 보고한다(하네스는 1단계에서 정리한다).
+ * src의 문서 이름 언급은 실패다. 절 번호(§) 참조는 docs와 src에서는 실패이고, .claude와 CLAUDE.md는 개수만 보고한다(하네스는 1단계에서 정리한다).
  *
  * <p>사용법: {@code scripts/docs-check [--root <디렉터리>]} (저장소 루트에서 실행)
  */
@@ -44,6 +44,12 @@ public class DocsCheck {
 
     static final Pattern CODE_SPAN = Pattern.compile("`[^`]*`");
     static final Pattern SECTION_REF = Pattern.compile("§\\s?\\d");
+
+    // 코드 주석은 문서 이름을 쓰지 않는다(문서를 나누거나 이름을 바꾸면 조용히 낡는다). 근거는 ID나 코드 식별자로 단다.
+    static final Pattern DOC_NAME = Pattern.compile(
+        "API-명세|인증-중복-참여|도메인-모델|예외-정책|설계-결정|사용자-시나리오|테스트-배포|개발-가이드"
+            + "|아키텍처 설계서|(?<![A-Za-z0-9_])ERD(?![A-Za-z0-9_])|docs/\\S+\\.md");
+    static final Set<String> DOC_NAME_FAIL_AREAS = Set.of("src");
 
     static final Set<String> SKIPPED_DIRS = Set.of("_workspace", "build", ".git", ".gradle", "node_modules", "out");
     static final List<String> AREAS = List.of("docs", "src", ".claude", "CLAUDE.md");
@@ -94,6 +100,11 @@ public class DocsCheck {
                 String line = lines.get(i);
                 String location = relative + ":" + (i + 1);
                 checkLine(line, location, relative, definitions, errors);
+
+                Matcher docName = DOC_NAME.matcher(line);
+                if (docName.find() && DOC_NAME_FAIL_AREAS.contains(area)) {
+                    errors.add(location + "  문서 이름 언급: " + docName.group() + " (정책·규칙·시나리오 ID나 코드 식별자로 바꾸거나 지운다)");
+                }
 
                 int sections = countMatches(SECTION_REF, line);
                 sectionRefs.merge(area, sections, Integer::sum);

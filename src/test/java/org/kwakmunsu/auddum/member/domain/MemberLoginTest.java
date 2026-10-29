@@ -6,7 +6,7 @@ import static org.kwakmunsu.auddum.member.domain.MemberFixture.createMember;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 
-/** 도메인-모델 Member 행위 recordLogin(now)와 가입 직후 상태. */
+/** Member.recordLogin(now)와 가입 직후 상태. */
 class MemberLoginTest {
 
     static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 17, 12, 0);

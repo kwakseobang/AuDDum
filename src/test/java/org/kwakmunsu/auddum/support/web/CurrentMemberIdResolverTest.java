@@ -15,7 +15,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
- * 인증-중복-참여 / API-명세: 로그인한 회원의 ID는 인증된 신원에서 꺼내고, 로그인하지 않았으면 401 UNAUTHENTICATED다.
+ * 로그인한 회원의 ID는 인증된 신원에서 꺼내고, 로그인하지 않았으면 401 UNAUTHENTICATED다.
  */
 class CurrentMemberIdResolverTest {
 

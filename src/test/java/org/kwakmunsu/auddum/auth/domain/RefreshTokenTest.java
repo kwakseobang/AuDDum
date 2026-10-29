@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 
 /**
- * 인증-중복-참여 교체·폐기와 재발급 판단 순서(폐기 후 10초 이내는 허용).
+ * 교체·폐기와 재발급 판단 순서(폐기 후 10초 이내는 허용).
  * 가정한 이름: RefreshToken.issue(Long memberId, String tokenHash, LocalDateTime expiresAt), revoke(LocalDateTime now),
  * isRevoked(), isWithinGrace(LocalDateTime now), getRevokedAt(). 유예 경계는 "10초 이내 허용, 10초 초과 재사용"으로 읽어 정확히 10초는 허용이다.
  */
