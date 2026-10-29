@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# 문서 ID 검사. 사용법: scripts/docs-check [--root <디렉터리>]
+set -euo pipefail
+cd "$(dirname "$0")/.."
+exec java scripts/DocsCheck.java "$@"

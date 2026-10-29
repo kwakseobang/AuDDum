@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# DocsCheck가 틀린 입력을 실제로 잡는지 확인한다. 사용법: scripts/test-docs-check
+set -euo pipefail
+cd "$(dirname "$0")/.."
+out="$(mktemp -d)"
+trap 'rm -rf "$out"' EXIT
+javac -encoding UTF-8 -d "$out" scripts/DocsCheck.java scripts/DocsCheckTest.java
+java -cp "$out" DocsCheckTest

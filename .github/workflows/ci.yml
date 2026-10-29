@@ -20,6 +20,13 @@ jobs:
           distribution: liberica
           java-version: 25
 
+      # 문서 ID 검사와 그 테스트. 빌드보다 먼저 돌려 빨리 실패하게 한다.
+      - name: 문서 ID 검사
+        run: scripts/docs-check
+
+      - name: 문서 검사 도구 테스트
+        run: scripts/test-docs-check
+
       - uses: gradle/actions/setup-gradle@v4
 
       # 테스트는 H2로 돌고, 동시 참여 테스트는 Testcontainers(mysql:8.4)로 같이 돈다. runner의 Docker를 쓴다.
