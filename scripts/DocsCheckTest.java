@@ -189,6 +189,9 @@ public class DocsCheckTest {
 
         var noFeatures = DocsCheck.check(fixture(Map.of("docs/records/sketches/7-join.md", "# 머리말 없음\n")));
         expect("머리말에 features가 없으면 실패한다", hasError(noFeatures, "머리말에 features가 없다"), noFeatures.errors().toString());
+
+        var docsOnly = DocsCheck.check(fixture(Map.of("docs/records/sketches/7-join.md", SKETCH.replace("[03-참여하기]", "[없음]"))));
+        expect("features가 [없음]이면 기능 페이지 링크를 요구하지 않는다", docsOnly.errors().isEmpty(), docsOnly.errors().toString());
     }
 
     static void 기능_페이지만_링크하면_실패한다() throws IOException {

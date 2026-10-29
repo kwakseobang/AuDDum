@@ -34,6 +34,7 @@ public class DocsCheck {
 
     // 기능 페이지(01-둘러보기.md처럼 번호로 시작)와 sketch(이슈번호로 시작)만 검사한다. 양식(_로 시작)과 README는 건너뛴다.
     static final String FEATURES_DIR = "docs/features";
+    static final String NO_FEATURE = "없음";
     static final String SKETCH_DIR = "docs/records/sketches";
     static final Pattern FEATURE_PAGE_NAME = Pattern.compile("\\d{2}-.+\\.md");
     static final Pattern SKETCH_NAME = Pattern.compile("\\d+-.+\\.md");
@@ -199,9 +200,12 @@ public class DocsCheck {
             List<String> features = frontMatterList(readLines(sketch), "features");
             featuresBySketch.put(name, features);
             if (features.isEmpty()) {
-                errors.add(relative + ":1  머리말에 features가 없다 (기능 페이지 이름을 [01-둘러보기] 형태로 적는다)");
+                errors.add(relative + ":1  머리말에 features가 없다 (기능 페이지 이름을 [01-둘러보기] 형태로 적는다. 기능과 무관한 문서 작업이면 [없음])");
             }
             for (String feature : features) {
+                if (feature.equals(NO_FEATURE)) {
+                    continue;
+                }
                 Path page = root.resolve(FEATURES_DIR).resolve(feature + ".md");
                 if (!Files.isRegularFile(page)) {
                     errors.add(relative + ":1  features에 적은 기능 페이지가 없다: " + feature);
