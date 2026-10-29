@@ -18,7 +18,7 @@ import java.util.stream.Stream;
  * 문서와 코드 주석의 ID(P-xx, OP-xx, UC-xx, R-애그리거트-xx)를 검사한다.
  *
  * <p>정의는 정해진 파일에서만 모은다. 정의가 없는 참조, 중복 정의, 형식 오류, 도메인-모델 밖의 R-ID 정의는 실패다.
- * § 번호 참조는 개수만 보고한다.
+ * 절 번호(§) 참조는 docs와 src에서는 실패이고, .claude와 CLAUDE.md는 개수만 보고한다(하네스는 1단계에서 정리한다).
  *
  * <p>사용법: {@code scripts/docs-check [--root <디렉터리>]} (저장소 루트에서 실행)
  */
@@ -47,6 +47,10 @@ public class DocsCheck {
 
     static final Set<String> SKIPPED_DIRS = Set.of("_workspace", "build", ".git", ".gradle", "node_modules", "out");
     static final List<String> AREAS = List.of("docs", "src", ".claude", "CLAUDE.md");
+    static final Set<String> SECTION_REF_FAIL_AREAS = Set.of("docs", "src");
+
+    // 이미 적용된 Flyway 마이그레이션은 주석 한 줄만 바꿔도 체크섬이 달라져 검증이 실패하므로 검사하지 않는다.
+    static final String MIGRATION_DIR = "src/main/resources/db/migration/";
 
     record Result(Map<String, String> definitions, List<String> errors, Map<String, Integer> sectionRefs) {
     }
@@ -69,7 +73,7 @@ public class DocsCheck {
             out.println("오류 " + result.errors().size() + "건");
             result.errors().forEach(e -> out.println("  " + e));
         }
-        out.println("§ 참조(보고만 함): " + result.sectionRefs());
+        out.println("절 번호(§) 참조 개수(docs·src는 실패, 나머지는 보고만): " + result.sectionRefs());
 
         System.exit(result.errors().isEmpty() ? 0 : 1);
     }
@@ -87,8 +91,15 @@ public class DocsCheck {
             String area = relative.contains("/") ? relative.substring(0, relative.indexOf('/')) : relative;
             List<String> lines = readLines(file);
             for (int i = 0; i < lines.size(); i++) {
-                checkLine(lines.get(i), relative + ":" + (i + 1), relative, definitions, errors);
-                sectionRefs.merge(area, countMatches(SECTION_REF, lines.get(i)), Integer::sum);
+                String line = lines.get(i);
+                String location = relative + ":" + (i + 1);
+                checkLine(line, location, relative, definitions, errors);
+
+                int sections = countMatches(SECTION_REF, line);
+                sectionRefs.merge(area, sections, Integer::sum);
+                if (sections > 0 && SECTION_REF_FAIL_AREAS.contains(area)) {
+                    errors.add(location + "  절 번호 참조: " + sectionToken(line) + " (정책·규칙·시나리오 ID로 바꾸거나 지운다)");
+                }
             }
         }
         return new Result(definitions, errors, sectionRefs);
@@ -186,6 +197,9 @@ public class DocsCheck {
     }
 
     private static boolean isSkipped(Path root, Path file) {
+        if (relativePath(root, file).startsWith(MIGRATION_DIR)) {
+            return true;
+        }
         for (Path segment : root.relativize(file)) {
             if (SKIPPED_DIRS.contains(segment.toString())) {
                 return true;
@@ -204,6 +218,11 @@ public class DocsCheck {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    private static String sectionToken(String line) {
+        Matcher matcher = SECTION_REF.matcher(line);
+        return matcher.find() ? line.substring(matcher.start(), Math.min(line.length(), matcher.end() + 6)).trim() : "";
     }
 
     private static int countMatches(Pattern pattern, String text) {

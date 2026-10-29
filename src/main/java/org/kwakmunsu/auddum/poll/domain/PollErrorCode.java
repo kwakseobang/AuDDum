@@ -6,7 +6,7 @@ import org.kwakmunsu.auddum.support.error.ErrorCode;
 import org.springframework.boot.logging.LogLevel;
 import org.springframework.http.HttpStatus;
 
-/** 투표 도메인의 오류 코드(API 명세 §7). */
+/** 투표 도메인의 오류 코드. */
 @Getter
 @RequiredArgsConstructor
 public enum PollErrorCode implements ErrorCode {

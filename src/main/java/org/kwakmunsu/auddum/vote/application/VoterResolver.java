@@ -11,7 +11,7 @@ import org.kwakmunsu.auddum.vote.domain.Voter;
 import org.springframework.stereotype.Component;
 
 /**
- * 참여 요청의 참여자를 정한다(인증-중복-참여 §2). 로그인한 회원이면 정상 회원인지 확인하고(정지 403, 탈퇴·없음 401) 회원 ID를 쓰며 익명 쿠키는 보지 않는다.
+ * 참여 요청의 참여자를 정한다. 로그인한 회원이면 정상 회원인지 확인하고(정지 403, 탈퇴·없음 401) 회원 ID를 쓰며 익명 쿠키는 보지 않는다.
  * 비회원이면 쿠키 해석(유효하면 그 UUID, 없거나 위조면 발급)을 {@link AnonIdentityResolver}에 시키고 결과를 {@link Voter}로 감싼다.
  */
 @RequiredArgsConstructor

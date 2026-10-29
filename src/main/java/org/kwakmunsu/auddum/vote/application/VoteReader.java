@@ -18,7 +18,7 @@ import org.kwakmunsu.auddum.vote.infrastructure.VoteJpaRepository.PollCount;
 import org.springframework.stereotype.Component;
 
 /**
- * 참여 기록 읽기. 이 참여자의 기록과 내 선택, 투표 결과를 돌려준다. 결과는 항상 투표 기록(vote)에서 세므로 집계와 기록이 어긋날 수 없다(ERD §6).
+ * 참여 기록 읽기. 이 참여자의 기록과 내 선택, 투표 결과를 돌려준다. 결과는 항상 투표 기록(vote)에서 세므로 집계와 기록이 어긋날 수 없다.
  * 자체 트랜잭션 경계가 없어 부른 서비스의 트랜잭션에 참여한다.
  */
 @RequiredArgsConstructor

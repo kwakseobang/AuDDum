@@ -9,8 +9,8 @@ import org.kwakmunsu.auddum.support.config.TimeConfig;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 
 /**
- * 회원 이용 정지. 기준은 도메인-모델 §3 Member 행위 표 suspend(now):
- * "ACTIVE일 때만 SUSPENDED로 바꾸고 정지 일시를 기록한다. 이미 정지·탈퇴한 회원이면 409 MEMBER_NOT_ACTIVE다." API-명세 §7 MEMBER_NOT_ACTIVE(409).
+ * 회원 이용 정지. 기준은 R-MEMBER-02·R-MEMBER-03, 도메인-모델 Member 행위 표 suspend(now):
+ * "ACTIVE일 때만 SUSPENDED로 바꾸고 정지 일시를 기록한다. 이미 정지·탈퇴한 회원이면 409 MEMBER_NOT_ACTIVE다." API-명세 MEMBER_NOT_ACTIVE(409).
  */
 class MemberSuspendTest {
 

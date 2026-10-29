@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
- * 신고 접수 행위. 기준은 도메인-모델 §6 "submit ... 상태를 PENDING으로 둔다", 신고 상태 절, API-명세 §5.
+ * 신고 접수 행위. 기준은 R-REPORT-01(도메인-모델 "submit ... 상태를 PENDING으로 둔다"), 신고 상태 절, API-명세.
  */
 class ReportTest {
 

@@ -8,7 +8,7 @@ import org.kwakmunsu.auddum.report.application.dto.SubmitResult;
 import org.kwakmunsu.auddum.report.domain.ReportReason;
 import org.kwakmunsu.auddum.support.stereotype.CommandService;
 
-/** 신고 접수(API-명세 §5). 서비스는 처리 순서만 잇고, 규칙의 실행은 구현 클래스에 시킨다. */
+/** 신고 접수. 서비스는 처리 순서만 잇고, 규칙의 실행은 구현 클래스에 시킨다. */
 @RequiredArgsConstructor
 @CommandService
 public class ReportCommandService {

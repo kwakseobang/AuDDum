@@ -17,7 +17,7 @@ import org.kwakmunsu.auddum.support.stereotype.ApplicationService;
 import org.kwakmunsu.auddum.support.stereotype.WebApi;
 
 /**
- * 아키텍처 설계서 §2의 패키지 규칙을 검증한다.
+ * 아키텍처 설계서의 패키지 규칙을 검증한다.
  * 규칙에 해당하는 클래스가 아직 없는 도메인(report, admin 등)이 있어도 통과해야 하므로 allowEmptyShould를 켠다.
  */
 @AnalyzeClasses(packages = ArchitectureTest.ROOT, importOptions = ImportOption.DoNotIncludeTests.class)
@@ -27,7 +27,7 @@ class ArchitectureTest {
 
     private static final List<String> DOMAINS = List.of("member", "auth", "poll", "vote", "report", "admin");
 
-    /** 의존 다이어그램(아키텍처 §2)에서 각 도메인이 쓸 수 있는 다른 도메인. support는 모두가 쓸 수 있다. */
+    /** 의존 다이어그램에서 각 도메인이 쓸 수 있는 다른 도메인. support는 모두가 쓸 수 있다. */
     private static final Map<String, Set<String>> ALLOWED = Map.of(
             "member", Set.of(),
             "poll", Set.of("member"),
@@ -61,7 +61,7 @@ class ArchitectureTest {
 
             noClasses().that().resideInAPackage(ROOT + "." + domain + "..")
                     .should().dependOnClassesThat().resideInAnyPackage(forbidden)
-                    .because(domain + "은(는) 아키텍처 §2 다이어그램에 없는 도메인에 의존할 수 없다")
+                    .because(domain + "은(는) 아키텍처의 애플리케이션 구조 다이어그램에 없는 도메인에 의존할 수 없다")
                     .allowEmptyShould(true)
                     .check(classes);
         }
@@ -119,7 +119,7 @@ class ArchitectureTest {
                 .check(classes);
     }
 
-    /** 서비스는 흐름만 잇고 저장소 접근은 구현 계층 클래스에 시킨다(아키텍처 §2). 구현 계층의 이름은 정해져 있지 않아 이름이 아니라 서비스 쪽을 검사한다. */
+    /** 서비스는 흐름만 잇고 저장소 접근은 구현 계층 클래스에 시킨다. 구현 계층의 이름은 정해져 있지 않아 이름이 아니라 서비스 쪽을 검사한다. */
     @ArchTest
     static void 서비스는_JpaRepository를_직접_쓰지_않는다(JavaClasses classes) {
         noClasses().that(SERVICE)

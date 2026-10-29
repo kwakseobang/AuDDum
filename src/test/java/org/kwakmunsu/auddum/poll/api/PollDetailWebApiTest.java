@@ -29,7 +29,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 /**
  * GET /api/v1/polls/{pollId} 의 참여 정보(myChoice, result, participantCount) 웹 계층(서비스는 목).
- * API-명세 §3·§4 결과 공개 규칙, 인증-중복-참여 §2 읽기 전용 경로.
+ * API-명세 결과 공개 규칙, 인증-중복-참여 읽기 전용 경로.
  * 공개 여부 판단은 서비스의 몫이라 여기서는 서비스가 준 값을 그대로 내리는지, 신원(회원 ID, 쿠키)을 서비스에 넘기는지만 본다.
  * 조회가 Set-Cookie를 내리지 않는 보장은 서비스가 목이면 어떤 구현에서도 통과하므로 PollDetailChainTest(실제 체인)가 한다.
  * 컨트롤러 슬라이스라서 응답 모양과 신원 전달만 본다. 열람 규칙·status·오류 응답은 PollDetailChainTest, HiddenPollViewChainTest와 서비스 테스트가 확인한다.

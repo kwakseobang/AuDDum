@@ -15,7 +15,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 /**
- * 인증-중복-참여 §1 CSRF 대응, API-명세 §7 FORBIDDEN: 쓰기 요청(GET·HEAD·OPTIONS 외)은 Origin이 허용된 프런트 도메인일 때만 받고,
+ * 인증-중복-참여 CSRF 대응, API-명세 FORBIDDEN: 쓰기 요청(GET·HEAD·OPTIONS 외)은 Origin이 허용된 프런트 도메인일 때만 받고,
  * 없거나 다르면 403 FORBIDDEN이다. 허용 주소는 하나(단일 생성자)이거나 여럿(목록 생성자)이고, 둘 다 같은 규칙으로 비교한다.
  */
 class OriginCheckFilterTest {

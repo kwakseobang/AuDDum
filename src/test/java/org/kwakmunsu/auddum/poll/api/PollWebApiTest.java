@@ -24,7 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 
 /**
- * POST /api/v1/polls 웹 계층(서비스는 목). API 명세 §3, §7.
+ * POST /api/v1/polls 웹 계층(서비스는 목). API 명세.
  * 작성자는 로그인한 회원(SecurityContext)에서 읽는다.
  */
 class PollWebApiTest extends WebApiTestSupport {

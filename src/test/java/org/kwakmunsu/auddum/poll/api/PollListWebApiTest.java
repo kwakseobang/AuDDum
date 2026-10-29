@@ -21,7 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 
 /**
- * GET /api/v1/polls 목록 웹 계층(서비스는 목). API 명세 §3.
+ * GET /api/v1/polls 목록 웹 계층(서비스는 목). API 명세.
  * 정상 응답의 모양만 본다. 조회 규칙은 PollQueryServiceTest가, 참여 수 집계는 PollListParticipantCountChainTest가 맡는다.
  * GET /api/v1/polls/{pollId} 상세는 PollDetailWebApiTest가 맡는다.
  */

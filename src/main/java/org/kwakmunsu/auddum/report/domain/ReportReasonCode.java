@@ -1,6 +1,6 @@
 package org.kwakmunsu.auddum.report.domain;
 
-/** 신고 사유(도메인-모델 §6). 허용된 다섯 가지뿐이다. */
+/** 신고 사유. 허용된 다섯 가지뿐이다. */
 public enum ReportReasonCode {
 
     ABUSE_HATE,        // 욕설·혐오 표현

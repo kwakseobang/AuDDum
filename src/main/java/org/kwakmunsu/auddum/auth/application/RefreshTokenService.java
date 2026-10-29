@@ -14,7 +14,7 @@ import org.kwakmunsu.auddum.support.stereotype.CommandService;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 토큰 발급·재발급·로그아웃(인증-중복-참여 §1). 리프레시 토큰은 SHA-256 해시만 저장하고, 재발급할 때마다 교체한다. 폐기된 토큰이 유예(10초)를 넘겨 다시 오면 재사용으로 보고 그 회원의 토큰을 모두 폐기한다.
+ * 토큰 발급·재발급·로그아웃. 리프레시 토큰은 SHA-256 해시만 저장하고, 재발급할 때마다 교체한다. 폐기된 토큰이 유예(10초)를 넘겨 다시 오면 재사용으로 보고 그 회원의 토큰을 모두 폐기한다.
  */
 @Slf4j
 @RequiredArgsConstructor

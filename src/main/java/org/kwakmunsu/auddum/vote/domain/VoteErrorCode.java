@@ -6,7 +6,7 @@ import org.kwakmunsu.auddum.support.error.ErrorCode;
 import org.springframework.boot.logging.LogLevel;
 import org.springframework.http.HttpStatus;
 
-/** 참여 도메인의 오류 코드(API 명세 §7). */
+/** 참여 도메인의 오류 코드. */
 @Getter
 @RequiredArgsConstructor
 public enum VoteErrorCode implements ErrorCode {

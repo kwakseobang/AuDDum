@@ -30,8 +30,8 @@ import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 탈퇴 통합 테스트(H2). 도메인-모델 §3 Member(withdraw, 상태 전이), ERD member/member_auth/refresh_token(P-04·P-14),
- * 인증-중복-참여 §1 "탈퇴하면 그 회원의 리프레시 토큰을 모두 삭제한다".
+ * 탈퇴 통합 테스트(H2). 도메인-모델 Member(withdraw, 상태 전이), ERD member/member_auth/refresh_token(P-04·P-14),
+ * 인증-중복-참여 "탈퇴하면 그 회원의 리프레시 토큰을 모두 삭제한다".
  *
  * 가정한 이름:
  * - MemberCommandService#withdraw(Long memberId) (반환값에 의존하지 않는다)

@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * 참여자 결정 단위 테스트. 쿠키 해석과 위조 로그는 AnonIdentityResolverTest가 검증하고, 여기서는 회원 상태 확인·회원 우선·Voter 포장·find 위임만 본다.
  * 회원이면 먼저 정상 회원인지 확인한다(없거나 탈퇴 401 UNAUTHENTICATED, 정지 403 MEMBER_SUSPENDED).
  * MemberReader는 실제 객체를 쓰고 repository만 목으로 둬 상태별 예외 규칙을 그대로 태운다.
- * 기준은 인증-중복-참여 §2, API-명세 §4 참여 순서(회원 상태 -> 참여자 결정).
+ * 기준은 인증-중복-참여 익명 식별 쿠키, API-명세 참여 순서(회원 상태 -> 참여자 결정).
  */
 class VoterResolverTest {
 
@@ -80,7 +80,7 @@ class VoterResolverTest {
         return event.getFormattedMessage() + " " + arguments + " " + throwable;
     }
 
-    // ---- 회원 상태 확인 (API-명세 §4 "회원 상태: 정지 403, 탈퇴·없음 401") ----
+    // ---- 회원 상태 확인 (API-명세 "회원 상태: 정지 403, 탈퇴·없음 401") ----
 
     @Test
     void 정상_회원이면_회원_ID가_참여자다() {

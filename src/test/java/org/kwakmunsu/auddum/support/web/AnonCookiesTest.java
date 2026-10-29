@@ -7,7 +7,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 /**
- * 익명 식별 쿠키의 속성. 인증-중복-참여 §2: HttpOnly, SameSite=Lax, 경로 `/`, 365일, Secure는 `auddum.auth.cookie-secure`를 따른다.
+ * 익명 식별 쿠키의 속성. 인증-중복-참여: HttpOnly, SameSite=Lax, 경로 `/`, 365일, Secure는 `auddum.auth.cookie-secure`를 따른다.
  */
 class AnonCookiesTest {
 

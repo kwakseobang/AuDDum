@@ -9,7 +9,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.mysql.MySQLContainer;
 
 /**
- * 실제 MySQL이 필요한 동시성 테스트의 공통 설정(테스트-배포 §1 "실제 MySQL로 한 번 더 확인").
+ * 실제 MySQL이 필요한 동시성 테스트의 공통 설정(테스트-배포 "실제 MySQL로 한 번 더 확인").
  * Testcontainers의 MySQL 8.4 컨테이너를 JVM당 하나만 띄워 모든 하위 클래스가 함께 쓰고(종료는 Ryuk), {@code @ServiceConnection}이
  * datasource 접속 값을 컨테이너로 덮어쓴다. 스키마는 Flyway가 만든다. 이 테스트는 @Transactional을 쓰지 않고
  * 실제로 커밋하므로 @AfterEach에서 지운다(참조하는 admin_action·report·vote 기록을 먼저 지운다).

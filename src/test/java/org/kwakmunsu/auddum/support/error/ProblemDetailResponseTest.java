@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 전역 예외 처리(@RestControllerAdvice)가 만드는 오류 응답 형식을 검증한다. (API 명세 §1, §7)
+ * 전역 예외 처리(@RestControllerAdvice)가 만드는 오류 응답 형식을 검증한다.
  */
 @Import(ProblemDetailResponseTest.ErrorProbeController.class)
 class ProblemDetailResponseTest extends WebApiTestSupport {

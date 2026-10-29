@@ -20,7 +20,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * CSRF 대응(인증-중복-참여 §1). 상태를 바꾸는 요청(GET·HEAD·OPTIONS 외)은 {@code Origin} 헤더가 허용 목록에 있을 때만 받고,
+ * CSRF 대응. 상태를 바꾸는 요청(GET·HEAD·OPTIONS 외)은 {@code Origin} 헤더가 허용 목록에 있을 때만 받고,
  * 없거나 목록 밖이면 403 {@code FORBIDDEN}으로 거절한다. 별도 CSRF 토큰은 쓰지 않는다. CORS 설정과 같은 목록을 쓴다.
  */
 @Slf4j

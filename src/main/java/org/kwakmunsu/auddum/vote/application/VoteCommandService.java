@@ -10,7 +10,7 @@ import org.kwakmunsu.auddum.vote.application.dto.CastResult;
 import org.kwakmunsu.auddum.vote.application.dto.PollChoice;
 import org.kwakmunsu.auddum.vote.application.dto.VoterCredential;
 
-/** 투표 참여(인증-중복-참여 §3). 서비스는 처리 순서만 잇고, 규칙의 실행은 구현 클래스에 시킨다. */
+/** 투표 참여. 서비스는 처리 순서만 잇고, 규칙의 실행은 구현 클래스에 시킨다. */
 @RequiredArgsConstructor
 @CommandService
 public class VoteCommandService {

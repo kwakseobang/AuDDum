@@ -169,7 +169,7 @@
 **POST /polls**
 
 - 요청: `{ question, category, options, closesAt }`
-- `question`은 1~500자이고 줄바꿈이 없다(줄바꿈의 범위는 도메인 모델 §4). `options`는 문자열 2~5개이고 각 1~50자이며 서로 달라야 한다. 글자 수는 유니코드 문자 단위이고, 질문과 선택지는 앞뒤 공백을 제거한 뒤 길이를 판단하며 제거한 값을 저장한다.
+- `question`은 1~500자이고 줄바꿈이 없다(줄바꿈의 범위는 R-POLL-01). `options`는 문자열 2~5개이고 각 1~50자이며 서로 달라야 한다. 글자 수는 유니코드 문자 단위이고, 질문과 선택지는 앞뒤 공백을 제거한 뒤 길이를 판단하며 제거한 값을 저장한다.
 - `category`는 `SOME`, `BLIND_DATE`, `CONTACT`, `IN_RELATIONSHIP`, `BREAKUP`, `LOVE_VALUES`, `ETC` 중 하나다.
 - `closesAt`은 선택이다. 있으면 요청 시점보다 미래여야 하고 상한은 없다. 없으면 마감 없는 투표다.
 - 성공 시 `201`, `Location: /api/v1/polls/{id}`, 본문은 만든 투표의 공개 ID 문자열 하나다. 상세는 `GET /polls/{pollId}`로 조회한다.
@@ -316,7 +316,7 @@
 | 6 | 저장 | 유니크 제약 위반(같은 신원의 동시 요청에서 진 쪽)이면 선택과 관계없이 409 `ALREADY_VOTED`, 그 밖의 DB 오류는 500과 전체 롤백 |
 
 - 이미 참여한 사람은 마감 후에도 3단계가 먼저 적용되어 `POLL_CLOSED`가 아니라 `ALREADY_VOTED`(409)를 받는다. 마감 여부의 판정은 P-11을 따른다(요청을 받은 시점의 서버 시각으로 한 번만 판단한다).
-- 같은 신원의 동시 요청은 한 건만 201이고 진 쪽도 409다. 6단계의 유니크 제약이 최종 방어선이다. 동시성 설계는 `인증-중복-참여.md` §3이 기준이다.
+- 같은 신원의 동시 요청은 한 건만 201이고 진 쪽도 409다. 6단계의 유니크 제약이 최종 방어선이다. 동시성 설계는 `인증-중복-참여.md`의 '중복 참여 방지'가 기준이다.
   - 이미 끝난 요청의 재전송(응답 유실 후 재시도 등)은 3단계에서 409로 응답한다.
   - 클라이언트는 `ALREADY_VOTED`를 받으면 투표 상세(`GET /polls/{pollId}`)의 `myChoice`로 화면을 맞춘다.
 - 비회원 참여 기록과 회원 ID는 연결하지 않는다. 비회원으로 참여한 뒤 로그인해 다시 참여하는 것은 막을 수 없는 한계다.
@@ -394,7 +394,7 @@
 
 - 요청 파라미터 `status`(`PENDING`, `RESOLVED`, `DISMISSED`, 기본 `PENDING`), `cursor`, `size`.
 - 항목: `{ id, poll: { id, question, status }, reason, status, createdAt, pollReportCount }`. `pollReportCount`는 같은 투표에 쌓인 신고 수다. 접수 순(`id` 오름차순)으로 정렬하고 커서는 마지막으로 본 신고 id를 담는다. 상태와 상관없이 같다(먼저 접수된 신고부터 처리한다).
-- `status` 값이 위 셋이 아니면 400 `MALFORMED_REQUEST`다. `cursor`·`size`의 형식 오류, `size` 보정(1~50), 빈 `cursor`는 투표 목록(§3)과 같은 규칙이다.
+- `status` 값이 위 셋이 아니면 400 `MALFORMED_REQUEST`다. `cursor`·`size`의 형식 오류, `size` 보정(1~50), 빈 `cursor`는 투표 API의 목록 조회와 같은 규칙이다.
 - 신고 ID가 숫자가 아니면 400 `MALFORMED_REQUEST`다.
 
 `GET /admin/reports` 응답 예시

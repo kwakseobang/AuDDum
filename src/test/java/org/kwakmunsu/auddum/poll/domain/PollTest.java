@@ -558,7 +558,7 @@ class PollTest {
         assertThat(poll.isReadableBy(null, () -> false)).isFalse();
     }
 
-    // ---- 결과 공개 판단 (API-명세 §4 결과 공개 규칙, 예외-정책 P-03·P-25) ----
+    // ---- 결과 공개 판단 (API-명세 결과 공개 규칙, 예외-정책 P-03·P-25) ----
 
     @Test
     void 마감_전에_참여하지_않은_사람에게는_결과를_공개하지_않는다() {

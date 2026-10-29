@@ -15,7 +15,7 @@ import org.kwakmunsu.auddum.vote.domain.VoteErrorCode;
 import org.kwakmunsu.auddum.vote.domain.Voter;
 
 /**
- * 기존 참여 검증 단위 테스트(목 VoteReader). 기준은 API-명세 §4와 예외-정책 P-08·P-12:
+ * 기존 참여 검증 단위 테스트(목 VoteReader). 기준은 API-명세 참여 처리 순서와 예외-정책 P-08·P-12:
  * 이미 참여한 기록이 있으면 선택과 관계없이 409 ALREADY_VOTED이고, 기록이 없으면 통과한다.
  */
 class VoteValidatorTest {

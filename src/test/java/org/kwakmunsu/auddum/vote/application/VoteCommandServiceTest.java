@@ -31,7 +31,7 @@ import org.kwakmunsu.auddum.vote.domain.Voter;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 투표 참여 서비스의 통합 테스트(H2). 기준은 API-명세 §4, 인증-중복-참여 §2·§3, 예외-정책 P-08·P-11·P-12.
+ * 투표 참여 서비스의 통합 테스트(H2). 기준은 R-VOTE-02, R-VOTE-05, 예외-정책 P-08·P-11·P-12, API-명세 참여 처리 순서, 인증-중복-참여(익명 식별 쿠키, 중복 참여 방지).
  * 유니크 위반처럼 트랜잭션 경계가 필요한 시나리오는 VoteWriterConflictTest가 맡는다.
  */
 @RequiredArgsConstructor
@@ -42,7 +42,7 @@ class VoteCommandServiceTest extends VoteIntegrationTestSupport {
     final AnonCookieProvider anonCookieProvider;
     final EntityManager entityManager;
 
-    // ---- 저장 성공과 응답 (API-명세 §4 6단계, 본문 { myChoice, result }) ----
+    // ---- 저장 성공과 응답 (API-명세 6단계, 본문 { myChoice, result }) ----
 
     @Test
     void 회원이_처음_참여하면_내_선택과_결과를_돌려준다() {
@@ -98,7 +98,7 @@ class VoteCommandServiceTest extends VoteIntegrationTestSupport {
         assertThat(saved.get(0).getVoter()).isEqualTo(Voter.member(memberId));
     }
 
-    // ---- 신원 결정 (인증-중복-참여 §2, API-명세 §4 쿠키 발급) ----
+    // ---- 신원 결정 (인증-중복-참여, API-명세 쿠키 발급) ----
 
     @Test
     void 쿠키가_없는_비회원은_새_쿠키를_발급받고_그_UUID로_저장된다() {
@@ -216,7 +216,7 @@ class VoteCommandServiceTest extends VoteIntegrationTestSupport {
             .containsExactlyInAnyOrder(Voter.member(memberId), Voter.anonymous(anonId));
     }
 
-    // ---- 기존 참여 (API-명세 §4 3단계, P-08) ----
+    // ---- 기존 참여 (API-명세 3단계, P-08) ----
 
     @Test
     void 이미_참여한_회원이_같은_선택을_다시_보내도_ALREADY_VOTED이고_기록은_한_건이다() {
@@ -248,7 +248,7 @@ class VoteCommandServiceTest extends VoteIntegrationTestSupport {
         assertThat(voteJpaRepository.count()).isEqualTo(1);
     }
 
-    // ---- 마감 (API-명세 §4 4단계, P-11, P-12) ----
+    // ---- 마감 (API-명세 4단계, P-11, P-12) ----
 
     @Test
     void 마감_시각_전인_투표에는_참여할_수_있다() {
@@ -287,9 +287,9 @@ class VoteCommandServiceTest extends VoteIntegrationTestSupport {
             .doesNotThrowAnyException();
     }
 
-    // ---- 선택지 소속 (API-명세 §4 5단계, §7 INVALID_OPTION) ----
+    // ---- 선택지 소속 (API-명세 5단계 INVALID_OPTION) ----
 
-    // ---- 투표 조회 (API-명세 §4 1단계) ----
+    // ---- 투표 조회 (API-명세 1단계) ----
 
     @Test
     void 없는_투표에는_POLL_NOT_FOUND다() {
@@ -363,7 +363,7 @@ class VoteCommandServiceTest extends VoteIntegrationTestSupport {
             .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
     }
 
-    // ---- 회원 상태 (API-명세 §4 2단계, 인증-중복-참여 §3 3번) ----
+    // ---- 회원 상태 (API-명세 2단계, 인증-중복-참여 3번) ----
 
     @Test
     void 정지_회원은_MEMBER_SUSPENDED이고_저장되지_않는다() {
