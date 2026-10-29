@@ -18,7 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.util.ReflectionTestUtils;
 
 /**
- * GET /api/v1/members/me 웹 계층(서비스는 목). API-명세 §2 GET /members/me, 시각 형식 규칙.
+ * GET /api/v1/members/me 웹 계층(서비스는 목). API-명세 GET /members/me, 시각 형식 규칙.
  * 가정한 이름: MemberQueryService#getMyInfo(Long memberId) -> Member (WebApiTestSupport에서 @MockitoBean).
  */
 class MemberMeWebApiTest extends WebApiTestSupport {

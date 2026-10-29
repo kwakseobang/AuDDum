@@ -11,7 +11,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 /**
  * 결정(사용자 승인): {@code auddum.cors.allowed-origins}는 선택이며 비어 있어도 된다.
- * 비어 있으면 허용 Origin은 {@code auddum.frontend.base-url}의 origin뿐이다. 와일드카드는 쓰지 않는다(테스트-배포 §3).
+ * 비어 있으면 허용 Origin은 {@code auddum.frontend.base-url}의 origin뿐이다. 와일드카드는 쓰지 않는다.
  */
 @TestPropertySource(properties = {
     "auddum.frontend.base-url=https://auddum.example.com",

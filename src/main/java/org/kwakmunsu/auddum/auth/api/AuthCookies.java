@@ -10,7 +10,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
 /**
- * 토큰 쿠키의 이름·경로·속성(인증-중복-참여 §1). 액세스는 경로 `/`, 리프레시는 `/api/v1/auth`(재발급·로그아웃에만 전송)다.
+ * 토큰 쿠키의 이름·경로·속성. 액세스는 경로 `/`, 리프레시는 `/api/v1/auth`(재발급·로그아웃에만 전송)다.
  * HttpOnly, SameSite=Lax는 고정이고 Secure는 설정(`auddum.auth.cookie-secure`)으로 정한다.
  */
 @Component

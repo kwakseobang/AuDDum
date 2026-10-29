@@ -29,7 +29,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.QueryTimeoutException;
 
 /**
- * 참여 기록 쓰기 단위 테스트(목 repository). 기준은 인증-중복-참여 §3 "동시 요청"·"트랜잭션 경계", API-명세 §4 4~6단계:
+ * 참여 기록 쓰기 단위 테스트(목 repository). 기준은 인증-중복-참여 중복 참여 방지의 "동시 요청"·"트랜잭션 경계", API-명세 참여 처리 4~6단계:
  * 저장 전에 공개·마감 전(404, 409)과 선택지 소속(400)을 확인하고, 저장에서는 유니크 제약 위반만 409 ALREADY_VOTED로
  * 바꾸며(원인 예외를 잇는다) 외래키·CHECK 위반과 그 밖의 예외는 그대로 올린다.
  * 실제 DB가 만드는 유니크 위반 end-to-end는 VoteWriterConflictTest가 검증한다.

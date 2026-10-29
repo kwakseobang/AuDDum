@@ -34,7 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * GET /api/v1/admin/reports, GET /api/v1/admin/reports/{reportId} 를 실제 필터 체인·서비스·DB(H2)로 확인한다.
- * 기준은 API-명세 §1(페이징·오류 응답)·§6·§7, 인증-중복-참여 §1(관리자 판정), 예외-정책 관리자 권한 행·OP-01,
+ * 기준은 API-명세(페이징·오류 응답), 인증-중복-참여(관리자 판정), 예외-정책 관리자 권한 행·OP-01,
  * 도메인-모델 신고(Report). 구현 전에 쓰였으므로 서비스·저장소 이름에는 기대지 않고 HTTP와 ReportFixture로만 확인한다.
  * 이 PR에는 AdminAction이 없어 actions는 항상 빈 배열이다.
  */
@@ -49,7 +49,7 @@ class AdminReportChainTest extends DataIntegrationTestSupport {
     final JwtTokenProvider jwtTokenProvider;
     final ReportJpaRepository reportJpaRepository;
 
-    // ---- 권한 (API-명세 §1 인증·인가 실패의 구분, §6, 예외-정책 관리자 권한 행) ----
+    // ---- 권한 (API-명세 인증·인가 실패의 구분, 예외-정책 관리자 권한 행) ----
 
     @Test
     void 관리자는_목록을_조회하면_200이다() {
@@ -131,7 +131,7 @@ class AdminReportChainTest extends DataIntegrationTestSupport {
         assertThat(result).bodyJson().extractingPath("$.code").isEqualTo("UNAUTHENTICATED");
     }
 
-    // ---- 목록: status 필터 (API-명세 §6) ----
+    // ---- 목록: status 필터 ----
 
     @Test
     void status가_없으면_PENDING_신고만_조회한다() {
@@ -172,7 +172,7 @@ class AdminReportChainTest extends DataIntegrationTestSupport {
         assertThat(result).bodyJson().extractingPath("$.code").isEqualTo("MALFORMED_REQUEST");
     }
 
-    // ---- 목록: 항목 필드 (API-명세 §6) ----
+    // ---- 목록: 항목 필드 ----
 
     @Test
     void 목록_항목은_id_poll_reason_status_createdAt_pollReportCount를_담고_내부_투표_ID와_신고자는_담지_않는다() {
@@ -220,7 +220,7 @@ class AdminReportChainTest extends DataIntegrationTestSupport {
         assertThat(ints(result, "$.items[*].pollReportCount")).containsExactly(3, 3, 1);
     }
 
-    // ---- 목록: 숨김·삭제 투표 (API-명세 §6, 도메인-모델 신고) ----
+    // ---- 목록: 숨김·삭제 투표 (API-명세, 도메인-모델 신고) ----
 
     @Test
     void 숨김_투표에_대한_신고도_목록에서_조회되고_poll_status가_HIDDEN이다() {
@@ -247,7 +247,7 @@ class AdminReportChainTest extends DataIntegrationTestSupport {
         assertThat(strings(result, "$.items[*].poll.status")).containsExactly("DELETED");
     }
 
-    // ---- 목록: 접수 순 정렬과 커서 (API-명세 §1 페이징, §6) ----
+    // ---- 목록: 접수 순 정렬과 커서 (API-명세 페이징) ----
 
     @Test
     void 목록은_접수_순_id_오름차순이다() {
@@ -383,7 +383,7 @@ class AdminReportChainTest extends DataIntegrationTestSupport {
         assertThat(longs(result, "$.items[*].id")).containsExactly(ids.get(0), ids.get(1));
     }
 
-    // ---- 상세 (API-명세 §6) ----
+    // ---- 상세 ----
 
     @Test
     void 상세는_신고_내용_대상_투표_다른_신고_빈_조치_이력을_담는다() {

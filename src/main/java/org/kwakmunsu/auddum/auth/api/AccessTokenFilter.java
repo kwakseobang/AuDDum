@@ -19,7 +19,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * 액세스 토큰 쿠키의 서명·만료만 확인해 요청한 회원의 ID(principal)와 권한을 SecurityContext에 둔다(인증-중복-참여 §1).
+ * 액세스 토큰 쿠키의 서명·만료만 확인해 요청한 회원의 ID(principal)와 권한을 SecurityContext에 둔다.
  * 회원 상태는 토큰에 없으므로 여기서 보지 않는다. 토큰이 없거나 무효면 아무것도 두지 않아 비회원으로 취급되고,
  * 로그인이 필요한 곳에서 {@code CurrentMemberIdResolver}가 401을 낸다.
  */

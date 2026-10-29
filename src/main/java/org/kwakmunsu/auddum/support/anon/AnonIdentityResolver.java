@@ -8,7 +8,7 @@ import org.kwakmunsu.auddum.support.anon.AnonCookieProvider.Verification;
 import org.springframework.stereotype.Component;
 
 /**
- * 익명 쿠키 값으로 비회원의 식별자를 정한다(인증-중복-참여 §2). 유효한 쿠키면 그 UUID를 쓰고, 쿠키가 없거나 위조된 경우에는 새로 발급한다.
+ * 익명 쿠키 값으로 비회원의 식별자를 정한다. 유효한 쿠키면 그 UUID를 쓰고, 쿠키가 없거나 위조된 경우에는 새로 발급한다.
  * 위조는 오류 없이 처리하고 WARN으로 남긴다. 위조된 값은 외부 입력이라 로그에 넣지 않고 사유만 남긴다.
  * 회원 여부와 회원 상태는 보지 않는다. 그 판단은 이 클래스를 쓰는 각 도메인의 리졸버가 먼저 한다.
  */

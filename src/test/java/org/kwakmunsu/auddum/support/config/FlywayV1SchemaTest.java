@@ -16,7 +16,7 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Flyway V1 스키마 검증. 기대값은 docs/ERD.md §4·§5, docs/테스트-배포.md §5에서 가져왔다.
+ * Flyway V1 스키마 검증. 기대값은 docs/ERD.md의 테이블 정의·제약조건과 인덱스, docs/테스트-배포.md의 환경 설정에서 가져왔다.
  * 테스트 H2가 같은 마이그레이션 SQL로 스키마를 만든다는 전제다.
  */
 @SpringBootTest
@@ -52,7 +52,7 @@ class FlywayV1SchemaTest {
                 "poll_option", "vote", "report", "admin_action");
     }
 
-    // ---------- 제약용 인덱스 (ERD §5). 조회 최적화 인덱스는 V1에 없다 ----------
+    // ---------- 제약용 인덱스. 조회 최적화 인덱스는 V1에 없다 ----------
 
     @Test
     void 제약용_인덱스가_있다() {
@@ -62,7 +62,7 @@ class FlywayV1SchemaTest {
         assertThat(hasIndex("admin_action", "target_member_id")).isTrue();
     }
 
-    // ---------- 기본값 (ERD §4) ----------
+    // ---------- 기본값 ----------
 
     @Test
     void member_role_기본값은_MEMBER다() {

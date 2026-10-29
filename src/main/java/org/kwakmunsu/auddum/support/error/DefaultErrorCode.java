@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.logging.LogLevel;
 import org.springframework.http.HttpStatus;
 
-/** 도메인과 무관한 기본 오류 코드(API 명세 §7). */
+/** 도메인과 무관한 기본 오류 코드. */
 @Getter
 @RequiredArgsConstructor
 public enum DefaultErrorCode implements ErrorCode {

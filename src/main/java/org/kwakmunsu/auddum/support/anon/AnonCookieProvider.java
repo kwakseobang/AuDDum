@@ -11,7 +11,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Component;
 
 /**
- * 익명 쿠키 값(인증-중복-참여 §2) 발급·검증. 값은 {@code v1.<UUID>.<서명>}이고, 서명은 {@code v1.<UUID>}를 서버 비밀 키로 만든
+ * 익명 쿠키 값 발급·검증. 값은 {@code v1.<UUID>.<서명>}이고, 서명은 {@code v1.<UUID>}를 서버 비밀 키로 만든
  * HMAC-SHA256(Base64url, 패딩 없음)이다. 형식이 틀리거나 서명이 맞지 않으면 무효이고, 예외를 던지지 않는다.
  */
 @EnableConfigurationProperties(AnonCookieProperties.class)

@@ -16,8 +16,8 @@ import org.kwakmunsu.auddum.vote.domain.Voter;
 import org.springframework.dao.DataIntegrityViolationException;
 
 /**
- * 실제 DB(H2)의 유니크 제약 위반이 409 ALREADY_VOTED가 되는지 확인한다(인증-중복-참여 §3 "동시 요청"·"트랜잭션 경계",
- * API-명세 §4 6단계). 이긴 쪽 기록이 이미 커밋된 상태에서 진 쪽이 같은 참여자로 저장하면 사전 조회와 상관없이 저장 시점에
+ * 실제 DB(H2)의 유니크 제약 위반이 409 ALREADY_VOTED가 되는지 확인한다(인증-중복-참여 "동시 요청"·"트랜잭션 경계",
+ * API-명세 6단계). 이긴 쪽 기록이 이미 커밋된 상태에서 진 쪽이 같은 참여자로 저장하면 사전 조회와 상관없이 저장 시점에
  * 제약이 걸린다. 분류 규칙(유니크만 변환, 그 밖의 DB 오류는 그대로)은 VoteWriterTest가 목 repository로 검증한다.
  * 이 클래스는 @Transactional을 붙이지 않는다. 테스트가 트랜잭션을 열어 두면 이미 커밋된 이긴 쪽 기록과 진 쪽의 INSERT 충돌을
  * 저장 한 번의 트랜잭션 경계 그대로 재현할 수 없다. 데이터는 실제로 커밋되므로 @AfterEach에서 지운다.

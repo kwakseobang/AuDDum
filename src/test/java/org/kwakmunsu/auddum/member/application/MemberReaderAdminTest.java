@@ -12,7 +12,7 @@ import org.kwakmunsu.auddum.member.infrastructure.MemberJpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 관리자 확인 통합 테스트(H2). 인증-중복-참여 §1 관리자 API 행(DB의 role이 ADMIN이고 탈퇴하지 않은 회원, 토큰 role은 판단에 쓰지 않는다).
+ * 관리자 확인 통합 테스트(H2). 인증-중복-참여 관리자 API 행(DB의 role이 ADMIN이고 탈퇴하지 않은 회원, 토큰 role은 판단에 쓰지 않는다).
  * MemberReader#isAdmin(Long memberId) -> boolean(던지지 않는다).
  */
 @RequiredArgsConstructor

@@ -11,7 +11,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.kwakmunsu.auddum.support.error.AuddumException;
 
 /**
- * 관리자 조치 이력. 기준은 도메인-모델 §7 AdminAction 행위 표 record(...)
+ * 관리자 조치 이력. 기준은 R-ACTION-02, 도메인-모델 AdminAction 행위 표 record(...)
  * ("사유가 비어 있거나 200자를 넘으면 거절한다"), 규칙("사유는 필수다"), ActionType 표, ERD admin_action(reason VARCHAR(200)).
  */
 class AdminActionTest {

@@ -32,7 +32,9 @@ public class DocsCheckTest {
         색인_표는_정의로_세지_않는다();
         정의_파일이_없으면_실패한다();
         작업_폴더는_검사하지_않는다();
-        절_번호_참조는_개수만_보고한다();
+        절_번호_참조는_docs와_src에서_실패한다();
+        하네스_문서의_절_번호_참조는_보고만_한다();
+        적용된_마이그레이션은_검사하지_않는다();
 
         System.out.println(total + "개 중 " + (total - failures.size()) + "개 통과");
         failures.forEach(f -> System.out.println("실패: " + f));
@@ -104,10 +106,27 @@ public class DocsCheckTest {
         expect("_workspace는 검사하지 않는다", result.errors().isEmpty(), result.errors().toString());
     }
 
-    static void 절_번호_참조는_개수만_보고한다() throws IOException {
-        var result = DocsCheck.check(fixture(Map.of("docs/기능.md", "도메인-모델 §3 과 § 4를 본다\n")));
-        expect("§ 참조는 실패가 아니다", result.errors().isEmpty(), result.errors().toString());
-        expect("§ 참조를 센다", result.sectionRefs().get("docs") == 2, result.sectionRefs().toString());
+    static void 절_번호_참조는_docs와_src에서_실패한다() throws IOException {
+        var docs = DocsCheck.check(fixture(Map.of("docs/기능.md", "도메인-모델 §3 과 § 4를 본다\n")));
+        expect("docs의 절 번호 참조는 실패다", hasError(docs, "docs/기능.md:1", "절 번호 참조"), docs.errors().toString());
+        expect("절 번호 참조를 센다", docs.sectionRefs().get("docs") == 2, docs.sectionRefs().toString());
+
+        var src = DocsCheck.check(fixture(Map.of("src/main/java/B.java", "// 아키텍처 §2를 따른다\nclass B {}\n")));
+        expect("src의 절 번호 참조는 실패다", hasError(src, "src/main/java/B.java:1", "절 번호 참조"), src.errors().toString());
+    }
+
+    static void 하네스_문서의_절_번호_참조는_보고만_한다() throws IOException {
+        var result = DocsCheck.check(fixture(Map.of(
+            ".claude/skills/x/SKILL.md", "도메인-모델 §3을 읽는다\n",
+            "CLAUDE.md", "개발-가이드 §1\n")));
+        expect("하네스 문서의 절 번호 참조는 실패가 아니다", result.errors().isEmpty(), result.errors().toString());
+        expect(".claude 참조를 센다", result.sectionRefs().get(".claude") == 1, result.sectionRefs().toString());
+        expect("CLAUDE.md 참조를 센다", result.sectionRefs().get("CLAUDE.md") == 1, result.sectionRefs().toString());
+    }
+
+    static void 적용된_마이그레이션은_검사하지_않는다() throws IOException {
+        var result = DocsCheck.check(fixture(Map.of("src/main/resources/db/migration/V1__x.sql", "-- 문서 §4 UC-77 P-99\n")));
+        expect("마이그레이션 폴더는 검사하지 않는다", result.errors().isEmpty(), result.errors().toString());
     }
 
     static Path fixture(Map<String, String> overrides) throws IOException {

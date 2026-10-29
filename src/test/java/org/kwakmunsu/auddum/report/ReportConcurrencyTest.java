@@ -29,8 +29,8 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 /**
  * 같은 신고자의 동시 중복 신고를 실제 MySQL(Testcontainers, Docker 필요)에서 확인한다.
- * 기준은 예외-정책 P-18·"같은 신고자의 중복 신고 -> 409, 한 건만 인정", API-명세 §5, ERD report 유니크 제약.
- * 인증-중복-참여 §4 표에 신고 전용 행은 없어 참여의 동시성 기대(1건 저장, 진 쪽 409)를 신고에 같은 방식으로 적용한 것이다.
+ * 기준은 R-REPORT-02, 예외-정책 P-18·"같은 신고자의 중복 신고 -> 409, 한 건만 인정", API-명세, ERD report 유니크 제약.
+ * 인증-중복-참여의 검증 테스트 표에 신고 전용 행은 없어 참여의 동시성 기대(1건 저장, 진 쪽 409)를 신고에 같은 방식으로 적용한 것이다.
  */
 @AutoConfigureMockMvc
 @RequiredArgsConstructor

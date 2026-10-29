@@ -20,7 +20,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Component;
 
 /**
- * JWT 발급·검증(인증-중복-참여 §1). 액세스는 {sub, category, role, iat, exp}, 리프레시는 {sub, category, jti, iat, exp}를 담는다.
+ * JWT 발급·검증. 액세스는 {sub, category, role, iat, exp}, 리프레시는 {sub, category, jti, iat, exp}를 담는다.
  * 두 토큰은 {@code category} 클레임(access, refresh)으로 구분하고, 다른 종류의 토큰은 받아주지 않는다.
  * 시각은 시스템 시계가 아니라 호출자가 넘긴 now를 기준으로 한다. 서명이 틀리거나 만료됐거나 필요한 값이 없으면 UNAUTHENTICATED다.
  */

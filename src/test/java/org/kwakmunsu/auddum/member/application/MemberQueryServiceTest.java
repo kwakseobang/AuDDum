@@ -16,7 +16,7 @@ import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 내 정보 조회 통합 테스트(H2). API-명세 §2 GET /members/me, 인증-중복-참여 §1 회원 상태 확인, 예외-정책 P-22.
+ * 내 정보 조회 통합 테스트(H2). API-명세 GET /members/me, 인증-중복-참여 회원 상태 확인, 예외-정책 P-22.
  * 가정한 이름: MemberQueryService#getMyInfo(Long memberId) -> Member.
  * 정지 행위가 아직 없어 Member의 status 필드를 직접 바꿔 만든다.
  */

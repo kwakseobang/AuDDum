@@ -40,8 +40,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 투표 상세 조회(poll의 PollQueryService#getPollDetail)가 vote의 참여 정보와 이어지는 통합 테스트(H2). 기준은 API-명세 §3 GET /polls/{pollId}, §4 결과 공개 규칙,
- * 인증-중복-참여 §2 발급과 읽기, 예외-정책 P-03·P-11·P-25, 설계-결정 §3.
+ * 투표 상세 조회(poll의 PollQueryService#getPollDetail)가 vote의 참여 정보와 이어지는 통합 테스트(H2). 기준은 API-명세 GET /polls/{pollId}, R-POLL-19(결과 공개 규칙),
+ * 인증-중복-참여 발급과 읽기, 예외-정책 P-03·P-11·P-25, 설계-결정.
  * vote의 실제 구현과 이어 보려고 vote의 테스트 지원(VoteIntegrationTestSupport, VoteFixture)을 쓴다.
  * 조회는 읽기 전용이라 쿠키를 발급하지 않고 투표 기록도 만들지 않는다.
  * 결과 공개·마감 판단의 진리표와 경계는 PollTest(isResultOpen, isClosed)가 검증한다. 이 클래스는 신원(회원·쿠키)이 참여 여부로
@@ -74,7 +74,7 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
         auddumLogger.setLevel(originalLevel);
     }
 
-    // ---- 결과 공개 규칙: 마감 전 (P-03, API-명세 §4 표) ----
+    // ---- 결과 공개 규칙: 마감 전 (P-03, R-POLL-19) ----
 
     @Test
     void 마감_전에_참여한_회원은_myChoice와_result를_받는다() {
@@ -201,7 +201,7 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
         assertThat(detail.result().options()).extracting("count").containsExactly(1L, 0L, 0L, 2L, 0L);
     }
 
-    // ---- myChoice: 신원 (인증-중복-참여 §2, 설계-결정 §3) ----
+    // ---- myChoice: 신원 (인증-중복-참여, 설계-결정) ----
 
     @Test
     void 회원은_자기_참여의_myChoice를_받는다() {
@@ -279,7 +279,7 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
         assertThat(detail.myChoice()).isNull();
     }
 
-    // ---- 위조·형식 오류·빈 쿠키는 쿠키 없음과 같다 (인증-중복-참여 §2 발급과 읽기, 설계-결정 §3) ----
+    // ---- 위조·형식 오류·빈 쿠키는 쿠키 없음과 같다 (인증-중복-참여 발급과 읽기, 설계-결정) ----
 
     // 쿠키를 믿을 수 없는 경우들(서명 위조, 형식 깨짐, 빈 문자열, 쿠키 없음, 다른 키 서명)은 모두 쿠키 없음과 같이 미참여로 본다.
 
@@ -315,7 +315,7 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
         assertThat(detail.result().total()).isEqualTo(1);
     }
 
-    // ---- POST 직후 GET 일관성 (API-명세 §4 "클라이언트는 ALREADY_VOTED를 받으면 상세의 myChoice로 맞춘다") ----
+    // ---- POST 직후 GET 일관성 (API-명세 "클라이언트는 ALREADY_VOTED를 받으면 상세의 myChoice로 맞춘다") ----
 
     @Test
     void 회원이_참여한_직후_상세의_myChoice와_result는_참여_응답과_같다() {
@@ -359,7 +359,7 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
         assertThat(detail.result().total()).isEqualTo(1);
     }
 
-    // ---- 읽기 전용 (인증-중복-참여 §2 "조회만 하는 방문자에게는 발급하지 않는다") ----
+    // ---- 읽기 전용 (인증-중복-참여 "조회만 하는 방문자에게는 발급하지 않는다") ----
 
     @Test
     void 조회는_투표_기록과_회원을_만들지_않는다() {
@@ -373,9 +373,9 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
         assertThat(memberJpaRepository.count()).isEqualTo(membersBefore);
     }
 
-    // ---- 투표 조회 오류 (API-명세 §3) ----
+    // ---- 투표 조회 오류 ----
 
-    // ---- 숨김·삭제 투표 (API-명세 §3, §4 "숨김 투표의 결과는 일반 사용자에게 노출하지 않는다") ----
+    // ---- 숨김·삭제 투표 (API-명세 "숨김 투표의 결과는 일반 사용자에게 노출하지 않는다") ----
 
     @Test
     void 숨김_투표는_참여했던_일반_회원에게도_POLL_NOT_FOUND이고_결과를_내리지_않는다() {
@@ -390,7 +390,7 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
             .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
     }
 
-    // ---- 정지 회원 (API-명세 §3 "조회는 회원 상태를 확인하지 않는다") ----
+    // ---- 정지 회원 (API-명세 "조회는 회원 상태를 확인하지 않는다") ----
 
     @Test
     void 정지_회원도_상세를_조회할_수_있고_자신의_myChoice를_받는다() {
@@ -416,7 +416,7 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
         assertThat(detail.result()).isNull();
     }
 
-    // ---- 숨김·삭제 투표의 참여 정보는 일반 규칙과 같다 (API-명세 §4 결과 공개 규칙, 예외-정책 P-03·P-04·P-25) ----
+    // ---- 숨김·삭제 투표의 참여 정보는 일반 규칙과 같다 (API-명세 결과 공개 규칙, 예외-정책 P-03·P-04·P-25) ----
 
     @Test
     void 작성자가_미참여로_마감_전_숨김_투표를_보면_result가_null이고_participantCount는_전체_참여_수다() {
@@ -483,7 +483,7 @@ class PollQueryServiceParticipationTest extends VoteIntegrationTestSupport {
         assertThat(voteJpaRepository.count()).isEqualTo(2);
     }
 
-    // ---- 조회에서는 위조 쿠키 WARN 로그를 남기지 않는다 (인증-중복-참여 §2 발급과 읽기, 설계-결정 §3) ----
+    // ---- 조회에서는 위조 쿠키 WARN 로그를 남기지 않는다 (인증-중복-참여 발급과 읽기, 설계-결정) ----
 
     @Test
     void 회원이_위조_쿠키를_같이_보내도_쿠키를_보지_않아_로그가_없다() {

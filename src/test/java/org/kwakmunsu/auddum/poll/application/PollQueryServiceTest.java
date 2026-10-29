@@ -235,7 +235,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
         assertThat(found.isClosed(LocalDateTime.now(TimeConfig.KST))).isTrue();
     }
 
-    // ---- 상세: 숨김·삭제 투표의 열람 권한 (API-명세 §3, §6, 인증-중복-참여 §1) ----
+    // ---- 상세: 숨김·삭제 투표의 열람 권한 (API-명세, 인증-중복-참여) ----
 
     @Test
     void 공개_투표는_로그인한_타인도_조회한다() {
@@ -334,7 +334,7 @@ class PollQueryServiceTest extends IntegrationTestSupport {
             .hasMessage(PollErrorCode.POLL_NOT_FOUND.getMessage());
     }
 
-    // ---- 공개 투표 한 건 (신고처럼 공개된 투표만 대상인 쓰기, API-명세 §5, 도메인-모델 §6) ----
+    // ---- 공개 투표 한 건 (신고처럼 공개된 투표만 대상인 쓰기, API-명세, 도메인-모델) ----
 
     @Test
     void 공개_투표는_getPublic으로_조회된다() {

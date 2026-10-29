@@ -23,8 +23,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 관리자 접근 검증 통합 테스트(H2). 기준은 인증-중복-참여 §1 관리자 API 행(DB의 role이 ADMIN이고 정상 상태인 회원만),
- * API-명세 §6과 예외-정책 관리자 권한 행(권한 없음 403 FORBIDDEN, 시도 기록).
+ * 관리자 접근 검증 통합 테스트(H2). 기준은 R-MEMBER-10, 인증-중복-참여 관리자 API 행(DB의 role이 ADMIN이고 정상 상태인 회원만),
+ * API-명세과 예외-정책 관리자 권한 행(권한 없음 403 FORBIDDEN, 시도 기록).
  * 로그 내용은 docs가 정하지 않아 "WARN 이상 1건, 시도한 memberId 포함"만 본다.
  * AdminAccessValidator#validateAdmin(Long memberId): 통과하면 반환, 아니면 AuddumException(FORBIDDEN).
  */

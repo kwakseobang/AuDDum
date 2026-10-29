@@ -23,7 +23,7 @@ class PollWriter {
     private final PollJpaRepository pollRepository;
 
     /**
-     * 새 투표를 만들되 저장하지는 않는다(저장은 {@link #save}). 공개 ID가 이미 있으면 새로 발급해 다시 만든다(도메인 모델 §8). 확인과 저장 사이에 같은 ID가 들어오는
+     * 새 투표를 만들되 저장하지는 않는다(저장은 {@link #save}). 공개 ID가 이미 있으면 새로 발급해 다시 만든다. 확인과 저장 사이에 같은 ID가 들어오는
      * 경쟁은 DB의 유니크 제약이 마지막으로 막는다.
      */
     Poll createWithUniquePublicId(NewPoll newPoll, Long authorId, LocalDateTime now) {

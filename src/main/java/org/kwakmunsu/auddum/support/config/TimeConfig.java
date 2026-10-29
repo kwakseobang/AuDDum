@@ -13,7 +13,7 @@ public class TimeConfig {
 
     public static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
-    /** 응답 시각은 KST 오프셋이 붙은 ISO-8601이다(API 명세 §1). 저장값(LocalDateTime, KST)에 오프셋을 붙인다. */
+    /** 응답 시각은 KST 오프셋이 붙은 ISO-8601이다. 저장값(LocalDateTime, KST)에 오프셋을 붙인다. */
     public static OffsetDateTime toKstOffset(LocalDateTime kst) {
         return kst == null ? null : kst.atZone(KST).toOffsetDateTime();
     }

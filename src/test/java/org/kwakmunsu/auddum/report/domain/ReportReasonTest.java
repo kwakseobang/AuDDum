@@ -14,7 +14,7 @@ import org.kwakmunsu.auddum.support.error.DefaultErrorCode;
 import org.kwakmunsu.auddum.support.error.FieldViolation;
 
 /**
- * 신고 사유 값 객체. 기준은 도메인-모델 §6 신고 사유, §8 ReportReason, API-명세 §5.
+ * 신고 사유 값 객체. 기준은 R-REPORT-03, 도메인-모델 신고 사유·ReportReason, API-명세.
  * 필드별 사유 문구는 docs에 없어 예외 타입만 확인한다.
  */
 class ReportReasonTest {

@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 숨김·삭제 투표 조회를 실제 필터 체인(액세스 토큰 쿠키 -> 신원 인자 -> 서비스 -> DB)으로 확인한다.
- * API-명세 §3 GET /polls/{pollId}(작성자·관리자 200, 그 밖 404 POLL_NOT_FOUND, 응답 status), §6, 인증-중복-참여 §1(관리자 = DB의 role이 ADMIN이고 탈퇴하지 않은 회원, 토큰 role은 판단에 쓰지 않는다).
+ * API-명세 GET /polls/{pollId}(작성자·관리자 200, 그 밖 404 POLL_NOT_FOUND, 응답 status), 인증-중복-참여(관리자 = DB의 role이 ADMIN이고 탈퇴하지 않은 회원, 토큰 role은 판단에 쓰지 않는다).
  * 규칙의 전수 조합은 PollQueryServiceTest가 맡고, 여기서는 쿠키가 신원으로 이어지는지만 본다.
  * MockMvc 요청은 테스트와 같은 스레드라 @Transactional로 만든 데이터가 요청에서 보이고, 끝나면 롤백된다.
  */

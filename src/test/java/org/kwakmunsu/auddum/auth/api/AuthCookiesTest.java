@@ -8,7 +8,7 @@ import org.kwakmunsu.auddum.auth.application.IssuedTokens;
 import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockHttpServletResponse;
 
-/** 인증-중복-참여 §1 쿠키: 이름·경로·속성·수명. 값(JWT)은 확인하지 않는다. */
+/** 인증-중복-참여 쿠키: 이름·경로·속성·수명. 값(JWT)은 확인하지 않는다. */
 class AuthCookiesTest {
 
     static final IssuedTokens TOKENS = new IssuedTokens("access", "refresh");

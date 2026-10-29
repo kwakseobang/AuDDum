@@ -19,8 +19,8 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 테스트-배포 §3: CORS는 프런트 origin 목록만 허용하고 자격 증명(쿠키)을 허용하며 와일드카드는 쓰지 않는다.
- * 쓰기 요청의 Origin 검사도 같은 목록을 쓴다(인증-중복-참여 §1 CSRF, API-명세 §7 FORBIDDEN).
+ * 테스트-배포: CORS는 프런트 origin 목록만 허용하고 자격 증명(쿠키)을 허용하며 와일드카드는 쓰지 않는다.
+ * 쓰기 요청의 Origin 검사도 같은 목록을 쓴다(인증-중복-참여 CSRF, API-명세 FORBIDDEN).
  * 결정(사용자 승인): 허용 Origin = {@code auddum.frontend.base-url}(단일, 필수)의 origin + {@code auddum.cors.allowed-origins}
  * (쉼표 구분, 선택)의 항목들. 항상 합집합이다. 이 클래스는 둘 다 채운 경우(합집합)를 본다.
  */

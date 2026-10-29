@@ -8,7 +8,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
 /**
- * 익명 식별 쿠키의 이름·속성(인증-중복-참여 §2). 영속 쿠키(1년)이고 HttpOnly, SameSite=Lax, 경로 `/`는 고정이다.
+ * 익명 식별 쿠키의 이름·속성. 영속 쿠키(1년)이고 HttpOnly, SameSite=Lax, 경로 `/`는 고정이다.
  * Secure는 토큰 쿠키와 같이 설정(`auddum.auth.cookie-secure`)으로 정한다. 운영은 true, http인 로컬은 false다.
  */
 @Component

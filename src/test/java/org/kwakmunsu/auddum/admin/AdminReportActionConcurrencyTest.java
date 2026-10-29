@@ -29,8 +29,8 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 /**
  * 같은 신고에 기각 요청이 동시에 들어오는 경우(더블클릭·재전송)를 실제 MySQL(Testcontainers, Docker 필요)에서 확인한다.
- * 기준은 API-명세 §6 POST dismiss "같은 신고에 요청이 동시에 들어오면(더블클릭·재전송) 한쪽만 성공하고 나머지는 409 REPORT_ALREADY_HANDLED.
- * 동시 요청은 신고의 낙관적 락(version)으로 가린다", §7 REPORT_ALREADY_HANDLED, ERD report.version.
+ * 기준은 R-REPORT-08·OP-07, API-명세 POST dismiss "같은 신고에 요청이 동시에 들어오면(더블클릭·재전송) 한쪽만 성공하고 나머지는 409 REPORT_ALREADY_HANDLED.
+ * 동시 요청은 신고의 낙관적 락(version)으로 가린다" REPORT_ALREADY_HANDLED, ERD report.version.
  * 이력은 "한 건만" 남아야 하므로 DISMISS_REPORT 이력 1건을 기대한다. 같은 투표 다른 신고 경쟁은 보장 범위 밖이다(설계-결정).
  */
 @AutoConfigureMockMvc

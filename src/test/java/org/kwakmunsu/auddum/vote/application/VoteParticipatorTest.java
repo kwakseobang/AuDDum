@@ -18,7 +18,7 @@ import org.kwakmunsu.auddum.vote.domain.Voter;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 참여 처리 통합 테스트(H2). 기준은 API-명세 §4, 예외-정책 P-08·P-12:
+ * 참여 처리 통합 테스트(H2). 기준은 API-명세 참여 처리 순서, 예외-정책 P-08·P-12:
  * 기록이 없으면 저장하고 결과를 돌려주며, 이미 참여했으면 선택과 관계없이(같은 선택, 마감 후 포함) 409 ALREADY_VOTED이고
  * 기존 기록은 그대로다. 참여 우선순위(이미 참여 > 마감 > 선택지 범위)는 이 클래스가 정본이고, 회원 상태·공개 ID 조회의 오류 경로는
  * VoteCommandServiceTest가 보장한다.
