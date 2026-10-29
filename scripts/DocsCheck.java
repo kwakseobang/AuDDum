@@ -18,6 +18,7 @@ import java.util.stream.Stream;
  * 문서와 코드 주석의 ID(P-xx, OP-xx, UC-xx, R-애그리거트-xx)를 검사한다.
  *
  * <p>정의는 정해진 파일에서만 모은다. 정의가 없는 참조, 중복 정의, 형식 오류, 도메인-모델 밖의 R-ID 정의는 실패다.
+ * 기능 페이지(docs/features)의 P·OP·UC 정의도 모으고, 밑그림(docs/records/sketches)의 머리말과 기능 페이지의 이력 링크가 서로를 가리키는지 본다.
  * src의 문서 이름 언급은 실패다. 절 번호(§) 참조는 docs와 src에서는 실패이고, .claude와 CLAUDE.md는 개수만 보고한다(하네스는 1단계에서 정리한다).
  *
  * <p>사용법: {@code scripts/docs-check [--root <디렉터리>]} (저장소 루트에서 실행)
@@ -30,6 +31,13 @@ public class DocsCheck {
     static final String POLICY_FILE = "docs/예외-정책.md";
     static final String SCENARIO_FILE = "docs/사용자-시나리오.md";
     static final String DOMAIN_FILE = "docs/도메인-모델.md";
+
+    // 기능 페이지(01-둘러보기.md처럼 번호로 시작)와 밑그림(이슈번호로 시작)만 검사한다. 양식(_로 시작)과 README는 건너뛴다.
+    static final String FEATURES_DIR = "docs/features";
+    static final String SKETCH_DIR = "docs/records/sketches";
+    static final Pattern FEATURE_PAGE_NAME = Pattern.compile("\\d{2}-.+\\.md");
+    static final Pattern SKETCH_NAME = Pattern.compile("\\d+-.+\\.md");
+    static final Pattern SKETCH_LINK = Pattern.compile("records/sketches/([^)\\s#]+\\.md)");
 
     // 표의 첫 칸이 ID로 시작하는 행이 정의다. (P-28처럼 아직 정하지 않은 항목도 이 형태로 정의한다)
     static final Pattern ROW_DEFINITION = Pattern.compile("^\\|\\s*((?:P|OP)-\\d{2})(?![A-Za-z0-9])");
@@ -113,6 +121,7 @@ public class DocsCheck {
                 }
             }
         }
+        checkSketchLinks(root, errors);
         return new Result(definitions, errors, sectionRefs);
     }
 
@@ -120,6 +129,85 @@ public class DocsCheck {
         collectFromLines(root, POLICY_FILE, ROW_DEFINITION, false, definitions, errors);
         collectFromLines(root, SCENARIO_FILE, HEADING_DEFINITION, false, definitions, errors);
         collectFromLines(root, DOMAIN_FILE, BOLD_RULE_DEFINITION, true, definitions, errors);
+        for (Path page : markdownFiles(root, FEATURES_DIR, FEATURE_PAGE_NAME)) {
+            String relative = relativePath(root, page);
+            collectFromLines(root, relative, ROW_DEFINITION, false, definitions, errors);
+            collectFromLines(root, relative, HEADING_DEFINITION, false, definitions, errors);
+        }
+    }
+
+    // 밑그림 머리말의 features와 기능 페이지 이력의 밑그림 링크가 양쪽 모두 있어야 한다.
+    private static void checkSketchLinks(Path root, List<String> errors) {
+        Map<String, List<String>> featuresBySketch = new TreeMap<>();
+        for (Path sketch : markdownFiles(root, SKETCH_DIR, SKETCH_NAME)) {
+            String relative = relativePath(root, sketch);
+            String name = sketch.getFileName().toString();
+            List<String> features = frontMatterList(readLines(sketch), "features");
+            featuresBySketch.put(name, features);
+            if (features.isEmpty()) {
+                errors.add(relative + ":1  머리말에 features가 없다 (기능 페이지 이름을 [01-둘러보기] 형태로 적는다)");
+            }
+            for (String feature : features) {
+                Path page = root.resolve(FEATURES_DIR).resolve(feature + ".md");
+                if (!Files.isRegularFile(page)) {
+                    errors.add(relative + ":1  features에 적은 기능 페이지가 없다: " + feature);
+                } else if (!linkedSketches(readLines(page)).contains(name)) {
+                    errors.add(relative + ":1  기능 페이지 " + feature + "의 이력에 이 밑그림 링크가 없다");
+                }
+            }
+        }
+        for (Path page : markdownFiles(root, FEATURES_DIR, FEATURE_PAGE_NAME)) {
+            String relative = relativePath(root, page);
+            String stem = page.getFileName().toString().replaceFirst("\\.md$", "");
+            for (String name : linkedSketches(readLines(page))) {
+                if (!featuresBySketch.containsKey(name)) {
+                    errors.add(relative + "  이력에 링크한 밑그림이 없다: " + name);
+                } else if (!featuresBySketch.get(name).contains(stem)) {
+                    errors.add(relative + "  이력에 링크한 밑그림 " + name + "의 features에 " + stem + "이(가) 없다");
+                }
+            }
+        }
+    }
+
+    private static List<String> linkedSketches(List<String> lines) {
+        List<String> names = new ArrayList<>();
+        for (String line : lines) {
+            Matcher matcher = SKETCH_LINK.matcher(line);
+            while (matcher.find()) {
+                names.add(matcher.group(1));
+            }
+        }
+        return names;
+    }
+
+    // 머리말(--- 사이)에서 "key: [a, b]" 목록을 읽는다.
+    private static List<String> frontMatterList(List<String> lines, String key) {
+        if (lines.isEmpty() || !lines.get(0).trim().equals("---")) {
+            return List.of();
+        }
+        for (int i = 1; i < lines.size() && !lines.get(i).trim().equals("---"); i++) {
+            String line = lines.get(i).trim();
+            if (line.startsWith(key + ":")) {
+                String value = line.substring(key.length() + 1).replaceAll("[\\[\\]]", "").trim();
+                return value.isEmpty() ? List.of() : List.of(value.split("\\s*,\\s*"));
+            }
+        }
+        return List.of();
+    }
+
+    private static List<Path> markdownFiles(Path root, String directory, Pattern namePattern) {
+        Path start = root.resolve(directory);
+        if (!Files.isDirectory(start)) {
+            return List.of();
+        }
+        try (Stream<Path> list = Files.list(start)) {
+            return list.filter(Files::isRegularFile)
+                .filter(p -> namePattern.matcher(p.getFileName().toString()).matches())
+                .sorted()
+                .toList();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private static void collectFromLines(

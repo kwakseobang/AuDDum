@@ -36,6 +36,11 @@ public class DocsCheckTest {
         하네스_문서의_절_번호_참조는_보고만_한다();
         적용된_마이그레이션은_검사하지_않는다();
         src의_문서_이름_언급은_실패한다();
+        기능_페이지의_정의도_모은다();
+        밑그림과_기능_페이지가_서로_링크하면_통과한다();
+        밑그림만_링크하면_실패한다();
+        기능_페이지만_링크하면_실패한다();
+        양식_파일은_검사하지_않는다();
 
         System.out.println(total + "개 중 " + (total - failures.size()) + "개 통과");
         failures.forEach(f -> System.out.println("실패: " + f));
@@ -141,6 +146,62 @@ public class DocsCheckTest {
     static void 적용된_마이그레이션은_검사하지_않는다() throws IOException {
         var result = DocsCheck.check(fixture(Map.of("src/main/resources/db/migration/V1__x.sql", "-- 문서 §4 UC-77 P-99\n")));
         expect("마이그레이션 폴더는 검사하지 않는다", result.errors().isEmpty(), result.errors().toString());
+    }
+
+    static final String SKETCH = "---\nissue: 7\nfeatures: [03-참여하기]\nids: [P-01]\n---\n# 밑그림\n";
+    static final String PAGE_WITH_LINK = "# 참여하기\n| #7 | 변경 | [밑그림](../records/sketches/7-join.md) |\n";
+
+    static void 기능_페이지의_정의도_모은다() throws IOException {
+        var result = DocsCheck.check(fixture(Map.of(
+            "docs/features/03-참여하기.md", "### UC-03 투표 참여\n| P-08 | 중복 참여 | UC-03 |\n",
+            "docs/기능.md", "UC-03과 P-08을 본다\n")));
+        expect("기능 페이지의 UC·P 정의를 모은다", result.errors().isEmpty(), result.errors().toString());
+        expect("UC-03이 기능 페이지에 정의된다",
+            "docs/features/03-참여하기.md:1".equals(result.definitions().get("UC-03")), result.definitions().toString());
+
+        var dup = DocsCheck.check(fixture(Map.of("docs/features/03-참여하기.md", "| P-01 | 또 정의 | UC-02 |\n")));
+        expect("기능 페이지와 정책 문서의 중복 정의를 잡는다", hasError(dup, "중복 정의", "P-01"), dup.errors().toString());
+    }
+
+    static void 밑그림과_기능_페이지가_서로_링크하면_통과한다() throws IOException {
+        var result = DocsCheck.check(fixture(Map.of(
+            "docs/records/sketches/7-join.md", SKETCH, "docs/features/03-참여하기.md", PAGE_WITH_LINK)));
+        expect("양쪽 링크가 맞으면 통과한다", result.errors().isEmpty(), result.errors().toString());
+    }
+
+    static void 밑그림만_링크하면_실패한다() throws IOException {
+        var noLink = DocsCheck.check(fixture(Map.of(
+            "docs/records/sketches/7-join.md", SKETCH, "docs/features/03-참여하기.md", "# 참여하기\n")));
+        expect("기능 페이지 이력에 링크가 없으면 실패한다",
+            hasError(noLink, "7-join.md:1", "이력에 이 밑그림 링크가 없다"), noLink.errors().toString());
+
+        var noPage = DocsCheck.check(fixture(Map.of("docs/records/sketches/7-join.md", SKETCH)));
+        expect("features에 적은 페이지가 없으면 실패한다",
+            hasError(noPage, "7-join.md:1", "기능 페이지가 없다", "03-참여하기"), noPage.errors().toString());
+
+        var noFeatures = DocsCheck.check(fixture(Map.of("docs/records/sketches/7-join.md", "# 머리말 없음\n")));
+        expect("머리말에 features가 없으면 실패한다", hasError(noFeatures, "머리말에 features가 없다"), noFeatures.errors().toString());
+    }
+
+    static void 기능_페이지만_링크하면_실패한다() throws IOException {
+        var missing = DocsCheck.check(fixture(Map.of("docs/features/03-참여하기.md", PAGE_WITH_LINK)));
+        expect("링크한 밑그림이 없으면 실패한다",
+            hasError(missing, "03-참여하기.md", "링크한 밑그림이 없다", "7-join.md"), missing.errors().toString());
+
+        var other = DocsCheck.check(fixture(Map.of(
+            "docs/records/sketches/7-join.md", SKETCH.replace("03-참여하기", "01-둘러보기"),
+            "docs/features/01-둘러보기.md", PAGE_WITH_LINK,
+            "docs/features/03-참여하기.md", PAGE_WITH_LINK)));
+        expect("밑그림 features에 없는 페이지가 링크하면 실패한다",
+            hasError(other, "03-참여하기.md", "features에 03-참여하기이(가) 없다"), other.errors().toString());
+    }
+
+    static void 양식_파일은_검사하지_않는다() throws IOException {
+        var result = DocsCheck.check(fixture(Map.of(
+            "docs/records/sketches/_양식.md", "# 양식\n",
+            "docs/features/_양식.md", "[밑그림](../records/sketches/0-x.md)\n",
+            "docs/features/README.md", "[밑그림](../records/sketches/0-x.md)\n")));
+        expect("_로 시작하는 양식과 README는 건너뛴다", result.errors().isEmpty(), result.errors().toString());
     }
 
     static Path fixture(Map<String, String> overrides) throws IOException {
