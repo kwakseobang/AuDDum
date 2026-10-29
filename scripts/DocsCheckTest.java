@@ -13,7 +13,7 @@ public class DocsCheckTest {
 
     static final Map<String, String> BASE = Map.of(
         "docs/engineering/예외-응답.md", "| ID | 확정 내용 | 관련 UC |\n| --- | --- | --- |\n| P-01 | 숨김 정책 | UC-02 |\n| OP-01 | 신고 접수 | 검토 |\n",
-        "docs/사용자-시나리오.md", "### UC-02 상세 조회\n",
+        "docs/features/01-둘러보기.md", "| UC-02 | 상세 조회 | 보여 준다 |\n",
         "docs/domain/도메인-모델.md", "- **R-POLL-01** 질문은 1~500자\n"
     );
 
