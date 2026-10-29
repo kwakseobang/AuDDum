@@ -31,7 +31,7 @@ tools: Read, Glob, Grep
   - `_workspace/<run-id>/00_brief.md`
   - `_workspace/<run-id>/00_diff-r<k>.patch`
   - `_workspace/<run-id>/20_test-writer_note_q<k>.md` (있으면)
-  - 레포 `docs/*.md`의 해당 절, `src/**`
+  - 레포 `docs/**/*.md`의 해당 부분, `src/**`
 - 출력: 아래 형식의 리포트 전문을 **최종 응답**으로 돌려준다. 읽기 전용이라 파일을 쓰지 않는다. 오케스트레이터가 `_workspace/<run-id>/30_domain-reviewer_report_r<k>.md`에 저장한다.
 - 형식:
 
