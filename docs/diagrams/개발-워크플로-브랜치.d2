@@ -1,0 +1,22 @@
+vars: {
+  d2-config: { layout-engine: dagre }
+}
+
+classes: {
+  step: { style: { border-radius: 8; fill: "#F4F6FA"; stroke: "#5B6B8C" } }
+  ask:  { style: { border-radius: 24; fill: "#FFF7E0"; stroke: "#C99A2E" } }
+  fail: { style: { border-radius: 8; fill: "#FDECEC"; stroke: "#C0392B"; font-color: "#8E2A20" } }
+  ok:   { style: { border-radius: 8; fill: "#E8F6EE"; stroke: "#2E8B57"; font-color: "#1E6B41" } }
+  ext:  { style: { border-radius: 8; fill: "#EEF3FB"; stroke: "#3F6FB5" } }
+}
+
+direction: right
+f: "feature/{이슈번호}-{요약}\n기능 작업" { class: step }
+d: "develop\n통합" { class: ask }
+m: "main\n배포(태그 v0.1.0)" { class: ok }
+h: "hotfix/{요약}\n긴급 수정" { class: fail }
+f -> d: "PR 병합"
+d -> m: "릴리스 병합"
+m -> h: "분기"
+h -> m: "병합(태그 v0.1.1)"
+h -> d: "병합"

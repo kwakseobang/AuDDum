@@ -1,0 +1,74 @@
+vars: {
+  d2-config: { layout-engine: dagre }
+}
+
+classes: {
+  step: { style: { border-radius: 8; fill: "#F4F6FA"; stroke: "#5B6B8C" } }
+  ask:  { style: { border-radius: 24; fill: "#FFF7E0"; stroke: "#C99A2E" } }
+  fail: { style: { border-radius: 8; fill: "#FDECEC"; stroke: "#C0392B"; font-color: "#8E2A20" } }
+  ok:   { style: { border-radius: 8; fill: "#E8F6EE"; stroke: "#2E8B57"; font-color: "#1E6B41" } }
+  ext:  { style: { border-radius: 8; fill: "#EEF3FB"; stroke: "#3F6FB5" } }
+}
+
+direction: right
+Member: Member {
+  shape: class
+  "<<Aggregate Root>>": ""
+  "MemberStatus status": ""
+  "Role role": ""
+  "suspend()": ""
+  "unsuspend()": ""
+  "withdraw()": ""
+}
+MemberAuth: "MemberAuth\n<<Entity>>"
+RefreshToken: "RefreshToken\n<<Entity>>"
+Poll: Poll {
+  shape: class
+  "<<Aggregate Root>>": ""
+  "PublicId publicId": ""
+  "PollQuestion question": ""
+  "Category category": ""
+  "ClosesAt closesAt": ""
+  "PollStatus status": ""
+  "isClosed(now)": ""
+  "hide()": ""
+  "restore()": ""
+  "delete()": ""
+}
+PollOption: PollOption {
+  shape: class
+  "<<Entity>>": ""
+  "Position position": ""
+  "OptionContent content": ""
+}
+Vote: Vote {
+  shape: class
+  "<<Aggregate Root>>": ""
+  "Voter voter": ""
+}
+Report: Report {
+  shape: class
+  "<<Aggregate Root>>": ""
+  "Reporter reporter": ""
+  "ReportReason reason": ""
+  "ReportStatus status": ""
+  "dismiss()": ""
+}
+AdminAction: AdminAction {
+  shape: class
+  "<<Aggregate Root>>": ""
+  "ActionType type": ""
+}
+vo: "값 객체 <<Value Object>>\nVoter · Reporter · AnonId · PublicId\nPollQuestion · OptionContent · Position\nClosesAt · ReportReason" { class: ext }
+
+Member -> MemberAuth: 포함
+Member -> RefreshToken: 포함
+Poll -> PollOption: "포함 (2~5개)"
+Poll -> vo: 포함
+Vote -> vo: "Voter 포함"
+Report -> vo: "Reporter·ReportReason 포함"
+Vote -> Poll: "pollId 참조" { style.stroke-dash: 4 }
+Vote -> PollOption: "optionId 참조" { style.stroke-dash: 4 }
+Poll -> Member: "authorId 참조" { style.stroke-dash: 4 }
+Report -> Poll: "pollId 참조" { style.stroke-dash: 4 }
+AdminAction -> Report: "reportId 참조" { style.stroke-dash: 4 }
