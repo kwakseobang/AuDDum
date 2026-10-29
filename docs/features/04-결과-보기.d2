@@ -1,0 +1,44 @@
+vars: {
+  d2-config: { layout-engine: dagre }
+}
+
+classes: {
+  step: { shape: rectangle; style: { border-radius: 8; fill: "#F4F6FA"; stroke: "#5B6B8C" } }
+  ask:  { shape: rectangle; style: { border-radius: 24; fill: "#FFF7E0"; stroke: "#C99A2E" } }
+  fail: { shape: rectangle; style: { border-radius: 8; fill: "#FDECEC"; stroke: "#C0392B"; font-color: "#8E2A20" } }
+  ok:   { shape: rectangle; style: { border-radius: 8; fill: "#E8F6EE"; stroke: "#2E8B57"; font-color: "#1E6B41" } }
+  gap:  { shape: rectangle; width: 1; height: 1; style: { opacity: 0 } }
+}
+
+grid-rows: 5
+grid-columns: 3
+grid-gap: 40
+horizontal-gap: 120
+
+g1: "" { class: gap }
+start: "결과를 보려는 요청" { class: step }
+g2: "" { class: gap }
+
+g3: "" { class: gap }
+exists: "투표가 있고 볼 수 있는가" { class: ask }
+e404: "없거나 숨김·삭제된 투표\n404 POLL_NOT_FOUND" { class: fail }
+
+g4: "" { class: gap }
+closed: "마감되었는가" { class: ask }
+g5: "" { class: gap }
+
+g6: "" { class: gap }
+joined: "내가 참여했는가" { class: ask }
+open: "결과 공개\n선택지별 득표 수와 전체 참여 수" { class: ok }
+
+g7: "" { class: gap }
+hidden: "결과 비공개\n선택지와 전체 참여 수만 보여 준다" { class: step }
+g8: "" { class: gap }
+
+start -> exists
+exists -> closed: 예
+exists -> e404: 아니오
+closed -> open: 예
+closed -> joined: 아니오
+joined -> open: 예
+joined -> hidden: 아니오

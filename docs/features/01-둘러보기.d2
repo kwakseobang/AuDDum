@@ -1,0 +1,45 @@
+vars: {
+  d2-config: { layout-engine: dagre }
+}
+
+classes: {
+  step: { shape: rectangle; style: { border-radius: 8; fill: "#F4F6FA"; stroke: "#5B6B8C" } }
+  ask:  { shape: rectangle; style: { border-radius: 24; fill: "#FFF7E0"; stroke: "#C99A2E" } }
+  fail: { shape: rectangle; style: { border-radius: 8; fill: "#FDECEC"; stroke: "#C0392B"; font-color: "#8E2A20" } }
+  ok:   { shape: rectangle; style: { border-radius: 8; fill: "#E8F6EE"; stroke: "#2E8B57"; font-color: "#1E6B41" } }
+  gap:  { shape: rectangle; width: 1; height: 1; style: { opacity: 0 } }
+}
+
+grid-rows: 5
+grid-columns: 3
+grid-gap: 40
+horizontal-gap: 120
+
+g1: "" { class: gap }
+start: "투표 열기 요청" { class: step }
+g2: "" { class: gap }
+
+g3: "" { class: gap }
+exists: "투표가 있는가" { class: ask }
+e404a: "없는 투표\n404 POLL_NOT_FOUND" { class: fail }
+
+g4: "" { class: gap }
+pub: "공개 상태인가" { class: ask }
+who: "작성자나 관리자인가" { class: ask }
+
+g5: "" { class: gap }
+show: "투표를 보여 준다\n(숨김·삭제면 상태도 함께 표시)" { class: ok }
+e404b: "일반 사용자에게는 없는 투표\n404 POLL_NOT_FOUND" { class: fail }
+
+g6: "" { class: gap }
+result: "결과는 마감되었거나 참여했을 때만\n함께 보여 준다 (04-결과-보기)" { class: step }
+g7: "" { class: gap }
+
+start -> exists
+exists -> pub: 예
+exists -> e404a: 아니오
+pub -> show: 예
+pub -> who: 아니오
+who -> show: 예
+who -> e404b: 아니오
+show -> result

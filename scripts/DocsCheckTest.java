@@ -191,8 +191,8 @@ public class DocsCheckTest {
 
     static void 기능_페이지만_링크하면_실패한다() throws IOException {
         var missing = DocsCheck.check(fixture(Map.of("docs/features/03-참여하기.md", PAGE_WITH_LINK)));
-        expect("링크한 sketch이 없으면 실패한다",
-            hasError(missing, "03-참여하기.md", "링크한 sketch이 없다", "7-join.md"), missing.errors().toString());
+        expect("링크한 sketch 파일이 없으면 실패한다",
+            hasError(missing, "03-참여하기.md", "링크한 sketch 파일이 없다", "7-join.md"), missing.errors().toString());
 
         var other = DocsCheck.check(fixture(Map.of(
             "docs/records/sketches/7-join.md", SKETCH.replace("03-참여하기", "01-둘러보기"),

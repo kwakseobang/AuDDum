@@ -1,0 +1,48 @@
+vars: {
+  d2-config: { layout-engine: dagre }
+}
+
+classes: {
+  step: { shape: rectangle; style: { border-radius: 8; fill: "#F4F6FA"; stroke: "#5B6B8C" } }
+  ask:  { shape: rectangle; style: { border-radius: 24; fill: "#FFF7E0"; stroke: "#C99A2E" } }
+  fail: { shape: rectangle; style: { border-radius: 8; fill: "#FDECEC"; stroke: "#C0392B"; font-color: "#8E2A20" } }
+  ok:   { shape: rectangle; style: { border-radius: 8; fill: "#E8F6EE"; stroke: "#2E8B57"; font-color: "#1E6B41" } }
+  gap:  { shape: rectangle; width: 1; height: 1; style: { opacity: 0 } }
+}
+
+grid-rows: 7
+grid-columns: 2
+grid-gap: 40
+horizontal-gap: 120
+
+start: "신고 요청" { class: step }
+g1: "" { class: gap }
+
+valid: "사유와 상세가 올바른가" { class: ask }
+e400: "잘못된 신고 내용\n400 VALIDATION_FAILED" { class: fail }
+
+exists: "투표가 있고 공개 상태인가" { class: ask }
+e404: "없거나 숨김·삭제된 투표\n404 POLL_NOT_FOUND" { class: fail }
+
+active: "회원이면 정지 상태가 아닌가" { class: ask }
+e403: "정지된 회원은 신고할 수 없다\n403 MEMBER_SUSPENDED" { class: fail }
+
+dup: "이미 신고했는가" { class: ask }
+e409: "이미 신고했다\n409 REPORT_ALREADY_SUBMITTED" { class: fail }
+
+save: "접수 상태로 저장\n(투표의 상태는 바뀌지 않는다)" { class: step }
+g2: "" { class: gap }
+
+done: "신고 접수 완료\n201" { class: ok }
+g3: "" { class: gap }
+
+start -> valid
+valid -> exists: 예
+valid -> e400: 아니오
+exists -> active: 예
+exists -> e404: 아니오
+active -> dup: 예
+active -> e403: 아니오
+dup -> save: 아니오
+dup -> e409: 이미 신고
+save -> done
