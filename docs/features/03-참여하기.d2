@@ -1,0 +1,69 @@
+vars: {
+  d2-config: { layout-engine: dagre }
+}
+
+classes: {
+  step: { shape: rectangle; style: { border-radius: 8; fill: "#F4F6FA"; stroke: "#5B6B8C" } }
+  ask:  { shape: rectangle; style: { border-radius: 24; fill: "#FFF7E0"; stroke: "#C99A2E" } }
+  fail: { shape: rectangle; style: { border-radius: 8; fill: "#FDECEC"; stroke: "#C0392B"; font-color: "#8E2A20" } }
+  ok:   { shape: rectangle; style: { border-radius: 8; fill: "#E8F6EE"; stroke: "#2E8B57"; font-color: "#1E6B41" } }
+  anon: { shape: rectangle; style: { border-radius: 8; fill: "#EEF3FB"; stroke: "#3C6FB6" } }
+  gap:  { shape: rectangle; width: 1; height: 1; style: { opacity: 0 } }
+}
+
+grid-rows: 9
+grid-columns: 3
+grid-gap: 40
+horizontal-gap: 120
+
+g1: "" { class: gap }
+start: "참여 요청" { class: step }
+g2: "" { class: gap }
+
+g3: "" { class: gap }
+exists: "투표가 있고 공개 상태인가" { class: ask }
+e404: "없거나 숨김·삭제된 투표\n404 POLL_NOT_FOUND" { class: fail }
+
+g4: "" { class: gap }
+who: "로그인했는가" { class: ask }
+g5: "" { class: gap }
+
+guest: "비회원\n익명 쿠키로 알아본다\n(없거나 위조면 새로 발급)" { class: anon }
+active: "회원\n정지 상태가 아닌가" { class: ask }
+e403: "정지된 회원은 참여할 수 없다\n403 MEMBER_SUSPENDED" { class: fail }
+
+g6: "" { class: gap }
+voted: "이미 참여했는가\n(회원은 회원 기준, 비회원은 쿠키 기준)" { class: ask }
+e409a: "이미 참여했다\n409 ALREADY_VOTED" { class: fail }
+
+g7: "" { class: gap }
+closed: "마감되었는가" { class: ask }
+e409c: "마감되었다\n409 POLL_CLOSED" { class: fail }
+
+g8: "" { class: gap }
+belongs: "고른 선택지가 이 투표의 것인가" { class: ask }
+e400: "잘못된 선택지\n400 INVALID_OPTION" { class: fail }
+
+g9: "" { class: gap }
+save: "저장\n(동시에 보내도 DB가 한 건만 통과시킨다)" { class: step }
+g10: "" { class: gap }
+
+g11: "" { class: gap }
+done: "참여 완료, 결과를 돌려준다\n201" { class: ok }
+g12: "" { class: gap }
+
+start -> exists
+exists -> who: 예
+exists -> e404: 아니오
+who -> active: 예(회원)
+who -> guest: 아니오(비회원)
+active -> voted: 예
+active -> e403: 아니오
+guest -> voted
+voted -> closed: 아니오
+voted -> e409a: 이미 참여
+closed -> belongs: 아니오
+closed -> e409c: 예
+belongs -> save: 예
+belongs -> e400: 아니오
+save -> done
