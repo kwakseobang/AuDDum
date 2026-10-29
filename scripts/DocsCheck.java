@@ -18,7 +18,7 @@ import java.util.stream.Stream;
  * 문서와 코드 주석의 ID(P-xx, OP-xx, UC-xx, R-애그리거트-xx)를 검사한다.
  *
  * <p>정의는 정해진 파일에서만 모은다. 정의가 없는 참조, 중복 정의, 형식 오류, 도메인-모델 밖의 R-ID 정의는 실패다.
- * 기능 페이지(docs/features)의 P·OP·UC 정의도 모으고, 밑그림(docs/records/sketches)의 머리말과 기능 페이지의 이력 링크가 서로를 가리키는지 본다.
+ * 기능 페이지(docs/features)의 P·OP·UC 정의도 모으고, sketch(docs/records/sketches)의 머리말과 기능 페이지의 이력 링크가 서로를 가리키는지 본다.
  * src의 문서 이름 언급은 실패다. 절 번호(§) 참조는 docs와 src에서는 실패이고, .claude와 CLAUDE.md는 개수만 보고한다(하네스는 1단계에서 정리한다).
  *
  * <p>사용법: {@code scripts/docs-check [--root <디렉터리>]} (저장소 루트에서 실행)
@@ -32,7 +32,7 @@ public class DocsCheck {
     static final String SCENARIO_FILE = "docs/사용자-시나리오.md";
     static final String DOMAIN_FILE = "docs/도메인-모델.md";
 
-    // 기능 페이지(01-둘러보기.md처럼 번호로 시작)와 밑그림(이슈번호로 시작)만 검사한다. 양식(_로 시작)과 README는 건너뛴다.
+    // 기능 페이지(01-둘러보기.md처럼 번호로 시작)와 sketch(이슈번호로 시작)만 검사한다. 양식(_로 시작)과 README는 건너뛴다.
     static final String FEATURES_DIR = "docs/features";
     static final String SKETCH_DIR = "docs/records/sketches";
     static final Pattern FEATURE_PAGE_NAME = Pattern.compile("\\d{2}-.+\\.md");
@@ -41,6 +41,8 @@ public class DocsCheck {
 
     // 표의 첫 칸이 ID로 시작하는 행이 정의다. (P-28처럼 아직 정하지 않은 항목도 이 형태로 정의한다)
     static final Pattern ROW_DEFINITION = Pattern.compile("^\\|\\s*((?:P|OP)-\\d{2})(?![A-Za-z0-9])");
+    // 기능 페이지에서는 UC도 표의 첫 칸으로 정의할 수 있다.
+    static final Pattern UC_ROW_DEFINITION = Pattern.compile("^\\|\\s*(UC-\\d{2})(?![A-Za-z0-9])");
     static final Pattern HEADING_DEFINITION = Pattern.compile("^#{3}\\s+(UC-\\d{2})(?![A-Za-z0-9])");
     static final Pattern BOLD_RULE_DEFINITION = Pattern.compile("\\*\\*(R-(?:" + AGGREGATES + ")-\\d{2})\\*\\*");
 
@@ -133,10 +135,11 @@ public class DocsCheck {
             String relative = relativePath(root, page);
             collectFromLines(root, relative, ROW_DEFINITION, false, definitions, errors);
             collectFromLines(root, relative, HEADING_DEFINITION, false, definitions, errors);
+            collectFromLines(root, relative, UC_ROW_DEFINITION, false, definitions, errors);
         }
     }
 
-    // 밑그림 머리말의 features와 기능 페이지 이력의 밑그림 링크가 양쪽 모두 있어야 한다.
+    // sketch 머리말의 features와 기능 페이지 이력의 sketch 링크가 양쪽 모두 있어야 한다.
     private static void checkSketchLinks(Path root, List<String> errors) {
         Map<String, List<String>> featuresBySketch = new TreeMap<>();
         for (Path sketch : markdownFiles(root, SKETCH_DIR, SKETCH_NAME)) {
@@ -152,7 +155,7 @@ public class DocsCheck {
                 if (!Files.isRegularFile(page)) {
                     errors.add(relative + ":1  features에 적은 기능 페이지가 없다: " + feature);
                 } else if (!linkedSketches(readLines(page)).contains(name)) {
-                    errors.add(relative + ":1  기능 페이지 " + feature + "의 이력에 이 밑그림 링크가 없다");
+                    errors.add(relative + ":1  기능 페이지 " + feature + "의 이력에 이 sketch 링크가 없다");
                 }
             }
         }
@@ -161,9 +164,9 @@ public class DocsCheck {
             String stem = page.getFileName().toString().replaceFirst("\\.md$", "");
             for (String name : linkedSketches(readLines(page))) {
                 if (!featuresBySketch.containsKey(name)) {
-                    errors.add(relative + "  이력에 링크한 밑그림이 없다: " + name);
+                    errors.add(relative + "  이력에 링크한 sketch이 없다: " + name);
                 } else if (!featuresBySketch.get(name).contains(stem)) {
-                    errors.add(relative + "  이력에 링크한 밑그림 " + name + "의 features에 " + stem + "이(가) 없다");
+                    errors.add(relative + "  이력에 링크한 sketch " + name + "의 features에 " + stem + "이(가) 없다");
                 }
             }
         }

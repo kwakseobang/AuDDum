@@ -37,8 +37,8 @@ public class DocsCheckTest {
         적용된_마이그레이션은_검사하지_않는다();
         src의_문서_이름_언급은_실패한다();
         기능_페이지의_정의도_모은다();
-        밑그림과_기능_페이지가_서로_링크하면_통과한다();
-        밑그림만_링크하면_실패한다();
+        sketch과_기능_페이지가_서로_링크하면_통과한다();
+        sketch만_링크하면_실패한다();
         기능_페이지만_링크하면_실패한다();
         양식_파일은_검사하지_않는다();
 
@@ -148,8 +148,8 @@ public class DocsCheckTest {
         expect("마이그레이션 폴더는 검사하지 않는다", result.errors().isEmpty(), result.errors().toString());
     }
 
-    static final String SKETCH = "---\nissue: 7\nfeatures: [03-참여하기]\nids: [P-01]\n---\n# 밑그림\n";
-    static final String PAGE_WITH_LINK = "# 참여하기\n| #7 | 변경 | [밑그림](../records/sketches/7-join.md) |\n";
+    static final String SKETCH = "---\nissue: 7\nfeatures: [03-참여하기]\nids: [P-01]\n---\n# sketch\n";
+    static final String PAGE_WITH_LINK = "# 참여하기\n| #7 | 변경 | [sketch](../records/sketches/7-join.md) |\n";
 
     static void 기능_페이지의_정의도_모은다() throws IOException {
         var result = DocsCheck.check(fixture(Map.of(
@@ -159,21 +159,27 @@ public class DocsCheckTest {
         expect("UC-03이 기능 페이지에 정의된다",
             "docs/features/03-참여하기.md:1".equals(result.definitions().get("UC-03")), result.definitions().toString());
 
+        var row = DocsCheck.check(fixture(Map.of(
+            "docs/features/03-참여하기.md", "| UC-03 | 비회원 참여 | 201 |\n",
+            "docs/기능.md", "UC-03을 본다\n")));
+        expect("기능 페이지는 UC를 표의 첫 칸으로도 정의할 수 있다", row.errors().isEmpty(), row.errors().toString());
+        expect("표로 정의한 UC-03이 정의에 있다", row.definitions().containsKey("UC-03"), row.definitions().toString());
+
         var dup = DocsCheck.check(fixture(Map.of("docs/features/03-참여하기.md", "| P-01 | 또 정의 | UC-02 |\n")));
         expect("기능 페이지와 정책 문서의 중복 정의를 잡는다", hasError(dup, "중복 정의", "P-01"), dup.errors().toString());
     }
 
-    static void 밑그림과_기능_페이지가_서로_링크하면_통과한다() throws IOException {
+    static void sketch과_기능_페이지가_서로_링크하면_통과한다() throws IOException {
         var result = DocsCheck.check(fixture(Map.of(
             "docs/records/sketches/7-join.md", SKETCH, "docs/features/03-참여하기.md", PAGE_WITH_LINK)));
         expect("양쪽 링크가 맞으면 통과한다", result.errors().isEmpty(), result.errors().toString());
     }
 
-    static void 밑그림만_링크하면_실패한다() throws IOException {
+    static void sketch만_링크하면_실패한다() throws IOException {
         var noLink = DocsCheck.check(fixture(Map.of(
             "docs/records/sketches/7-join.md", SKETCH, "docs/features/03-참여하기.md", "# 참여하기\n")));
         expect("기능 페이지 이력에 링크가 없으면 실패한다",
-            hasError(noLink, "7-join.md:1", "이력에 이 밑그림 링크가 없다"), noLink.errors().toString());
+            hasError(noLink, "7-join.md:1", "이력에 이 sketch 링크가 없다"), noLink.errors().toString());
 
         var noPage = DocsCheck.check(fixture(Map.of("docs/records/sketches/7-join.md", SKETCH)));
         expect("features에 적은 페이지가 없으면 실패한다",
@@ -185,22 +191,22 @@ public class DocsCheckTest {
 
     static void 기능_페이지만_링크하면_실패한다() throws IOException {
         var missing = DocsCheck.check(fixture(Map.of("docs/features/03-참여하기.md", PAGE_WITH_LINK)));
-        expect("링크한 밑그림이 없으면 실패한다",
-            hasError(missing, "03-참여하기.md", "링크한 밑그림이 없다", "7-join.md"), missing.errors().toString());
+        expect("링크한 sketch이 없으면 실패한다",
+            hasError(missing, "03-참여하기.md", "링크한 sketch이 없다", "7-join.md"), missing.errors().toString());
 
         var other = DocsCheck.check(fixture(Map.of(
             "docs/records/sketches/7-join.md", SKETCH.replace("03-참여하기", "01-둘러보기"),
             "docs/features/01-둘러보기.md", PAGE_WITH_LINK,
             "docs/features/03-참여하기.md", PAGE_WITH_LINK)));
-        expect("밑그림 features에 없는 페이지가 링크하면 실패한다",
+        expect("sketch features에 없는 페이지가 링크하면 실패한다",
             hasError(other, "03-참여하기.md", "features에 03-참여하기이(가) 없다"), other.errors().toString());
     }
 
     static void 양식_파일은_검사하지_않는다() throws IOException {
         var result = DocsCheck.check(fixture(Map.of(
             "docs/records/sketches/_양식.md", "# 양식\n",
-            "docs/features/_양식.md", "[밑그림](../records/sketches/0-x.md)\n",
-            "docs/features/README.md", "[밑그림](../records/sketches/0-x.md)\n")));
+            "docs/features/_양식.md", "[sketch](../records/sketches/0-x.md)\n",
+            "docs/features/README.md", "[sketch](../records/sketches/0-x.md)\n")));
         expect("_로 시작하는 양식과 README는 건너뛴다", result.errors().isEmpty(), result.errors().toString());
     }
 
