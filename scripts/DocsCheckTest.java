@@ -12,9 +12,9 @@ import java.util.Map;
 public class DocsCheckTest {
 
     static final Map<String, String> BASE = Map.of(
-        "docs/예외-정책.md", "| ID | 확정 내용 | 관련 UC |\n| --- | --- | --- |\n| P-01 | 숨김 정책 | UC-02 |\n| OP-01 | 신고 접수 | 검토 |\n",
+        "docs/engineering/예외-응답.md", "| ID | 확정 내용 | 관련 UC |\n| --- | --- | --- |\n| P-01 | 숨김 정책 | UC-02 |\n| OP-01 | 신고 접수 | 검토 |\n",
         "docs/사용자-시나리오.md", "### UC-02 상세 조회\n",
-        "docs/도메인-모델.md", "- **R-POLL-01** 질문은 1~500자\n"
+        "docs/domain/도메인-모델.md", "- **R-POLL-01** 질문은 1~500자\n"
     );
 
     static final List<String> failures = new ArrayList<>();
@@ -66,7 +66,7 @@ public class DocsCheckTest {
 
     static void 중복_정의를_잡는다() throws IOException {
         var policy = "| P-01 | 숨김 정책 | UC-02 |\n| P-01 | 같은 번호를 또 정의 | UC-02 |\n";
-        var result = DocsCheck.check(fixture(Map.of("docs/예외-정책.md", policy)));
+        var result = DocsCheck.check(fixture(Map.of("docs/engineering/예외-응답.md", policy)));
         expect("중복 정의를 잡는다", hasError(result, "중복 정의", "P-01"), result.errors().toString());
     }
 
@@ -89,7 +89,7 @@ public class DocsCheckTest {
 
     static void 표의_첫_칸이_ID인_행은_정의다() throws IOException {
         var policy = "| P-01 | 숨김 정책 | UC-02 |\n| P-28 운영 세부 값 | 구현 단계 | 세부 값 |\n| OP-01 | 신고 접수 | 검토 |\n";
-        var result = DocsCheck.check(fixture(Map.of("docs/예외-정책.md", policy, "docs/기능.md", "미확정은 P-28이다\n")));
+        var result = DocsCheck.check(fixture(Map.of("docs/engineering/예외-응답.md", policy, "docs/기능.md", "미확정은 P-28이다\n")));
         expect("첫 칸이 ID로 시작하는 행을 정의로 센다", result.errors().isEmpty(), result.errors().toString());
         expect("P-28이 정의에 있다", result.definitions().containsKey("P-28"), result.definitions().toString());
     }
@@ -102,7 +102,7 @@ public class DocsCheckTest {
 
     static void 정의_파일이_없으면_실패한다() throws IOException {
         var root = fixture(Map.of());
-        Files.delete(root.resolve("docs/도메인-모델.md"));
+        Files.delete(root.resolve("docs/domain/도메인-모델.md"));
         var result = DocsCheck.check(root);
         expect("정의 파일이 없으면 실패한다", hasError(result, "정의 파일이 없다", "도메인-모델.md"), result.errors().toString());
     }

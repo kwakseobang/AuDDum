@@ -5,7 +5,7 @@
 | 버전 | v1 |
 | 작성일 | 2026-10-12 |
 | 작성자 | 태풍 |
-| 관련 문서 | [AuDDum 예외·정책 명세서](예외-정책.md), [AuDDum ERD 설계](ERD.md), [AuDDum 인증·중복 참여 설계서](인증-중복-참여.md) |
+| 관련 문서 | [AuDDum 예외·정책 명세서](engineering/예외-응답.md), [AuDDum ERD 설계](ERD.md), [AuDDum 인증·중복 참여 설계서](인증-중복-참여.md) |
 
 ## 요약
 
