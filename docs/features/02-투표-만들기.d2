@@ -1,0 +1,48 @@
+vars: {
+  d2-config: { layout-engine: dagre }
+}
+
+classes: {
+  step: { shape: rectangle; style: { border-radius: 8; fill: "#F4F6FA"; stroke: "#5B6B8C" } }
+  ask:  { shape: rectangle; style: { border-radius: 24; fill: "#FFF7E0"; stroke: "#C99A2E" } }
+  fail: { shape: rectangle; style: { border-radius: 8; fill: "#FDECEC"; stroke: "#C0392B"; font-color: "#8E2A20" } }
+  ok:   { shape: rectangle; style: { border-radius: 8; fill: "#E8F6EE"; stroke: "#2E8B57"; font-color: "#1E6B41" } }
+  gap:  { shape: rectangle; width: 1; height: 1; style: { opacity: 0 } }
+}
+
+grid-rows: 7
+grid-columns: 2
+grid-gap: 40
+horizontal-gap: 120
+
+start: "투표 만들기 요청" { class: step }
+g1: "" { class: gap }
+
+active: "회원이 정지 상태가 아닌가" { class: ask }
+e403: "정지된 회원은 만들 수 없다\n403 MEMBER_SUSPENDED" { class: fail }
+
+valid: "입력이 규칙에 맞는가\n(질문·선택지·카테고리·마감 시각)" { class: ask }
+e400: "틀린 항목을 모두 알려 준다\n400 VALIDATION_FAILED" { class: fail }
+
+dup: "직전과 같은 질문인가" { class: ask }
+e409: "같은 질문은 연달아 만들 수 없다\n409 DUPLICATE_POLL" { class: fail }
+
+rate: "직전 생성 후 30초가 지났는가" { class: ask }
+e429: "너무 빨리 만들었다\n429 POLL_RATE_LIMITED" { class: fail }
+
+save: "투표와 선택지를 한 번에 저장\n(중간에 실패하면 전부 취소)" { class: step }
+g2: "" { class: gap }
+
+done: "바로 공개되고 투표 ID를 돌려준다\n201" { class: ok }
+g3: "" { class: gap }
+
+start -> active
+active -> valid: 예
+active -> e403: 아니오
+valid -> dup: 예
+valid -> e400: 아니오
+dup -> rate: 아니오
+dup -> e409: 예
+rate -> save: 예
+rate -> e429: 아니오
+save -> done
