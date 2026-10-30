@@ -143,6 +143,9 @@ public class DocsCheckTest {
             "src/main/java/E.java", "// ERDiagram, WORLD, docs가 정하지 않았다\nclass E {}\n",
             "docs/기능.md", "API-명세와 ERD를 본다\n")));
         expect("일반 낱말과 docs 본문은 통과한다", ok.errors().isEmpty(), ok.errors().toString());
+
+        var generated = DocsCheck.check(fixture(Map.of("src/test/java/F.java", "// 쓰는 곳: docs/generated/오류-코드.md\nclass F {}\n")));
+        expect("생성 문서 경로는 생성기가 알아야 하므로 통과한다", generated.errors().isEmpty(), generated.errors().toString());
     }
 
     static void 적용된_마이그레이션은_검사하지_않는다() throws IOException {

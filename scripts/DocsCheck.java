@@ -57,10 +57,11 @@ public class DocsCheck {
     static final Pattern SECTION_REF = Pattern.compile("§\\s?\\d");
 
     // 코드 주석은 문서 이름을 쓰지 않는다(문서를 나누거나 이름을 바꾸면 조용히 낡는다). 근거는 ID나 코드 식별자로 단다.
+    // docs/generated는 코드가 만드는 문서라 생성기가 경로를 알아야 하므로 예외다.
     static final Pattern DOC_NAME = Pattern.compile(
         "API-명세|인증-중복-참여|도메인-모델|예외-정책|설계-결정|사용자-시나리오|테스트-배포|개발-가이드"
             + "|예외-응답|동시성-중복-방지|테스트-전략|개발-워크플로|로컬-환경"
-            + "|아키텍처 설계서|(?<![A-Za-z0-9_])ERD(?![A-Za-z0-9_])|docs/\\S+\\.md");
+            + "|아키텍처 설계서|(?<![A-Za-z0-9_])ERD(?![A-Za-z0-9_])|docs/(?!generated/)\\S+\\.md");
     static final Set<String> DOC_NAME_FAIL_AREAS = Set.of("src");
 
     // 옮기거나 없앤 문서의 이름. 다시 쓰면 낡은 안내가 되므로 새 이름으로 바꾸게 한다. 시점 기록(docs/records)은 검사하지 않는다.
