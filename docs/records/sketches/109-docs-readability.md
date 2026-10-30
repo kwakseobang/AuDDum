@@ -6,7 +6,7 @@ decisions: []
 status: 진행 중
 ---
 
-# 문서 재편 확장 4 — Mermaid를 D2로, 읽기 쉽게
+# Mermaid를 D2로 바꾸고 읽기 쉽게 한다
 
 ## 왜 하나
 
