@@ -58,7 +58,7 @@ class ErrorCodeDocTest {
     }
 
     /** ErrorCode를 구현한 enum을 모두 찾는다. 새 enum을 더해도 목록을 손으로 고치지 않는다. */
-    private static List<ErrorCode> errorCodes() {
+    static List<ErrorCode> errorCodes() {
         var classes = new ClassFileImporter()
                 .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
                 .importPackages(ROOT);
