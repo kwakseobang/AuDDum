@@ -1,11 +1,6 @@
-# AuDDum ERD 설계
+# ERD
 
-| 항목 | 내용 |
-| --- | --- |
-| 버전 | v2 |
-| 작성일 | 2026-10-11 |
-| 작성자 | 태풍 |
-| 관련 문서 | [동시성·중복 방지](engineering/동시성-중복-방지.md), [AuDDum 도메인 모델](domain/도메인-모델.md), [API 목록](generated/API-목록.md) |
+관련 문서: [동시성·중복 방지](engineering/동시성-중복-방지.md), [도메인 모델](domain/도메인-모델.md), [API 목록](generated/API-목록.md)
 
 ## 요약
 
@@ -62,7 +57,7 @@ AuDDum(어떰)의 확정 정책과 [도메인 모델](domain/도메인-모델.md
 | Report | Report | report |
 | AdminAction | AdminAction | admin_action |
 
-용어집, 값 객체(VO), 클래스 다이어그램, 애그리거트별 속성·행위·규칙, 상태 전이는 [AuDDum 도메인 모델](domain/도메인-모델.md)에 있다. 이 문서는 그 모델을 테이블로 옮긴 결과와 설계 이유를 다룬다.
+용어는 [용어집](domain/용어집.md)에, 값 객체(VO), 클래스 다이어그램, 애그리거트별 속성·행위·규칙, 상태 전이는 [도메인 모델](domain/도메인-모델.md)에 있다. 이 문서는 그 모델을 테이블로 옮긴 결과와 설계 이유를 다룬다.
 
 ### 설계 결정
 

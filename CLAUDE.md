@@ -8,7 +8,8 @@
 |---|---|
 | 문서 읽는 순서, 규칙의 정본, P·UC·OP 번호 범례, 문서 지도 | `docs/index.md` |
 | 기능 하나의 시나리오·정책(UC·P)·규칙 요약·흐름도·테스트 위치(7개 기능) | `docs/features/` |
-| 용어, 애그리거트, 행위, 규칙, 상태 전이 | `docs/domain/도메인-모델.md` |
+| 용어와 영문 이름 | `docs/domain/용어집.md` |
+| 애그리거트, 행위, 규칙, 상태 전이 | `docs/domain/도메인-모델.md` |
 | 엔드포인트와 오류 코드(자동 생성), 요청·응답 필드 | `docs/generated/API-목록.md`, `docs/generated/openapi.json` |
 | API 공통 규칙(기본 경로, 페이징, 오류 응답 형식) | `docs/engineering/API-공통-규칙.md` |
 | 오류 코드와 상태 코드 | `docs/generated/오류-코드.md` |
