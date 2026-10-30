@@ -16,7 +16,7 @@ import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * 생성 문서(docs/generated/openapi.json)가 코드의 OpenAPI 문서와 같은지 검사한다.
+ * 생성 문서(docs/generated/openapi.json, API-목록.md)가 코드의 OpenAPI 문서와 같은지 검사한다.
  * 다르면 실패한다. 환경 변수 DOCS_UPDATE=1로 돌리면 파일을 다시 쓴다.
  * 예: DOCS_UPDATE=1 ./gradlew test --tests '*OpenApiDocTest'
  */
@@ -25,6 +25,8 @@ import tools.jackson.databind.json.JsonMapper;
 class OpenApiDocTest extends IntegrationTestSupport {
 
     private static final Path TARGET = Path.of("docs/generated/openapi.json");
+    private static final Path LIST_TARGET = Path.of("docs/generated/API-목록.md");
+    private static final Path FEATURES = Path.of("docs/features");
 
     private static final JsonMapper sortedMapper = JsonMapper.builder()
         .enable(SerializationFeature.INDENT_OUTPUT)
@@ -45,14 +47,29 @@ class OpenApiDocTest extends IntegrationTestSupport {
         assertThat(TARGET).as("DOCS_UPDATE=1 ./gradlew test --tests '*OpenApiDocTest' 로 다시 만든다").hasContent(expected);
     }
 
+    @Test
+    void API_목록이_코드와_같다() throws IOException {
+        String expected = ApiListRenderer.render(document(), FEATURES, ErrorCodeDocTest.errorCodes());
+
+        if ("1".equals(System.getenv("DOCS_UPDATE"))) {
+            Files.writeString(LIST_TARGET, expected, StandardCharsets.UTF_8);
+        }
+
+        assertThat(LIST_TARGET).as("DOCS_UPDATE=1 ./gradlew test --tests '*OpenApiDocTest' 로 다시 만든다").hasContent(expected);
+    }
+
     /** 사람이 diff로 읽도록 들여쓰고 키 순서를 고정한다. 서버 주소는 실행 환경마다 달라 뺀다. */
     private String render() throws IOException {
+        return sortedMapper.writeValueAsString(document()) + "\n";
+    }
+
+    private Map<String, Object> document() throws IOException {
         String body = mvcTester.get().uri("/v3/api-docs").exchange().getResponse().getContentAsString(StandardCharsets.UTF_8);
         @SuppressWarnings("unchecked")
         Map<String, Object> document = jsonMapper.readValue(body, Map.class);
         document.remove("servers");
 
-        return sortedMapper.writeValueAsString(document) + "\n";
+        return document;
     }
 
 }
