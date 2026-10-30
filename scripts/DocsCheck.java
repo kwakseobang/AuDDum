@@ -29,7 +29,6 @@ public class DocsCheck {
     static final String AGGREGATES = "MEMBER|POLL|VOTE|REPORT|ACTION";
 
     // 정의 파일. 문서를 기능 단위로 다시 나눌 때 이 경로를 함께 고친다.
-    static final String POLICY_FILE = "docs/engineering/예외-응답.md";
     static final String DOMAIN_FILE = "docs/domain/도메인-모델.md";
 
     // 기능 페이지(01-둘러보기.md처럼 번호로 시작)와 sketch(이슈번호로 시작)만 검사한다. 양식(_로 시작)과 README는 건너뛴다.
@@ -79,14 +78,15 @@ public class DocsCheck {
 
     private static Map<String, String> retiredNames() {
         Map<String, String> names = new LinkedHashMap<>();
-        names.put("예외-정책", "예외-응답");
+        names.put("예외-정책", "features/ 기능 페이지");
         names.put("사용자-시나리오", "features/ 기능 페이지");
         names.put("인증-중복-참여", "인증, 동시성-중복-방지");
         names.put("개발-가이드", "컨벤션, 개발-워크플로, 로컬-환경");
         names.put("테스트-배포", "테스트-전략, 배포");
         names.put("docs/README.md", "docs/index.md");
         names.put("사용자 시나리오 명세서", "features/ 기능 페이지");
-        names.put("예외·정책 명세서", "예외-응답");
+        names.put("예외·정책 명세서", "features/ 기능 페이지");
+        names.put("예외-응답", "features/ 기능 페이지, generated/오류-코드");
         names.put("인증·중복 참여 설계서", "인증, 동시성-중복-방지");
         names.put("테스트·배포 설계서", "테스트-전략, 배포");
         return names;
@@ -182,7 +182,6 @@ public class DocsCheck {
     }
 
     private static void collectDefinitions(Path root, Map<String, String> definitions, List<String> errors) {
-        collectFromLines(root, POLICY_FILE, ROW_DEFINITION, false, definitions, errors);
         collectFromLines(root, DOMAIN_FILE, BOLD_RULE_DEFINITION, true, definitions, errors);
         for (Path page : markdownFiles(root, FEATURES_DIR, FEATURE_PAGE_NAME)) {
             String relative = relativePath(root, page);

@@ -9,12 +9,12 @@
 | 문서 읽는 순서, 규칙의 정본, P·UC·OP 번호 범례, 문서 지도 | `docs/index.md` |
 | 기능 하나의 시나리오·정책(UC·P)·규칙 요약·흐름도·테스트 위치(7개 기능) | `docs/features/` |
 | 용어, 애그리거트, 행위, 규칙, 상태 전이 | `docs/domain/도메인-모델.md` |
-| 엔드포인트, 요청·응답, 오류 코드 | `docs/API-명세.md` |
+| 엔드포인트, 요청·응답 | `docs/API-명세.md` |
+| 오류 코드와 상태 코드 | `docs/generated/오류-코드.md` |
 | 테이블·제약·인덱스 | `docs/ERD.md` |
 | 패키지 구조, 서비스·응답 규칙 | `docs/engineering/아키텍처.md` |
 | 로그인·토큰·익명 쿠키 | `docs/engineering/인증.md` |
 | 중복 참여 방지, 동시 요청 | `docs/engineering/동시성-중복-방지.md` |
-| 예외 응답, 정책 색인 | `docs/engineering/예외-응답.md` |
 | 코드·테스트 컨벤션 | `docs/engineering/컨벤션.md` |
 | 다른 docs에 없는 확정 결정·코드 관행(리뷰에서 다시 지적하지 않음) | `docs/engineering/설계-결정.md` |
 | 브랜치·커밋·PR | `docs/howto/개발-워크플로.md` |

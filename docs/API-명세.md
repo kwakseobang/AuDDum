@@ -5,7 +5,7 @@
 | 버전 | v1 |
 | 작성일 | 2026-10-12 |
 | 작성자 | 태풍 |
-| 관련 문서 | [AuDDum 예외 응답과 동시성](engineering/예외-응답.md), [AuDDum ERD 설계](ERD.md), [AuDDum 인증 설계서](engineering/인증.md) |
+| 관련 문서 | [동시성·중복 방지](engineering/동시성-중복-방지.md), [AuDDum ERD 설계](ERD.md), [AuDDum 인증 설계서](engineering/인증.md) |
 
 ## 요약
 
@@ -122,7 +122,7 @@
 
   - 로그인 처리 중 서버 오류(DB 장애 등)도 회원을 만들지 않고 `SOCIAL_AUTH_FAILED`로 보내며 원인은 로그로 남긴다. 브라우저 이동 중이라 500 화면 대신 프런트 오류 화면으로 보내 재시도를 안내한다.
   - 같은 계정의 첫 로그인이 동시에 들어와 유니크 제약으로 한쪽이 실패하면 다시 조회해 로그인시킨다. 어느 경우도 회원을 만들지 않는다.
-  - 괄호의 HTTP 상태는 오류 코드 목록(7절)의 구분용이고, 이 경로에서는 응답 코드가 아니라 `code` 쿼리로 전달한다.
+  - 괄호의 HTTP 상태는 [오류 코드 표](generated/오류-코드.md)와 구분하려고 적은 값이고, 이 경로에서는 응답 코드가 아니라 `code` 쿼리로 전달한다.
 
 **POST /auth/refresh**
 
@@ -450,34 +450,10 @@
 
 ## 7. 오류 코드 목록
 
-시나리오·예외 명세의 코드를 확정하고 이 명세에서 새로 필요한 코드를 더했다. 오류 코드와 상태 코드는 이 표가 기준이다.
+JSON으로 돌려주는 오류 코드와 상태 코드는 코드에서 만든 [오류 코드 표](generated/오류-코드.md)가 기준이다. 이 문서에서 손으로 관리하지 않는다. 표에 없는 코드는 두 가지다.
 
-| 코드 | 상태 | 의미 |
-| --- | --- | --- |
-| `MALFORMED_REQUEST` | 400 | ID·커서·본문 형식 오류 |
-| `VALIDATION_FAILED` | 400 | 입력 값 검증 실패(`errors`에 필드별 사유) |
-| `INVALID_OPTION` | 400 | 존재하지 않거나 이 투표에 속하지 않는 선택지 |
-| `INVALID_STATE` | 400 | 소셜 로그인의 state 불일치·누락 |
-| `UNAUTHENTICATED` | 401 | 로그인이 필요하거나 토큰이 무효하다 |
-| `SOCIAL_AUTH_FAILED` | 401 | 인가 코드 만료·재사용 등 소셜 인증 실패. 로그인 처리 중 서버 오류도 이 코드로 안내한다. |
-| `FORBIDDEN` | 403 | 권한 없음(작성자가 아님, 관리자 아님). 쓰기 요청의 `Origin`이 없거나 허용된 프런트 주소가 아닐 때도 이 코드다. |
-| `MEMBER_SUSPENDED` | 403 | 정지 회원의 쓰기 요청(로그아웃·탈퇴 제외) |
-| `POLL_NOT_DELETABLE` | 403 | 관리자가 숨긴 투표는 작성자가 삭제할 수 없다 |
-| `POLL_NOT_FOUND` | 404 | 없는 투표, 또는 일반 사용자에게 숨김·삭제된 투표 |
-| `REPORT_NOT_FOUND` | 404 | 없는 신고 |
-| `MEMBER_NOT_FOUND` | 404 | 없는 회원 |
-| `ALREADY_VOTED` | 409 | 이미 참여했다(선택과 관계없이, 마감 후에도), 또는 동시 요청에서 진 쪽 |
-| `POLL_CLOSED` | 409 | 마감된 투표에 참여(기록이 없는 경우만) |
-| `DUPLICATE_POLL` | 409 | 직전과 같은 질문으로 연속 생성 |
-| `REPORT_ALREADY_SUBMITTED` | 409 | 같은 투표를 이미 신고했다 |
-| `REPORT_ALREADY_HANDLED` | 409 | 이미 처리된 신고를 기각하려 했거나 동시 처리에서 졌다 |
-| `POLL_NOT_PUBLIC` | 409 | 공개 상태가 아닌(이미 숨겨진) 투표를 숨기려 했다 |
-| `MEMBER_NOT_ACTIVE` | 409 | 정상 상태가 아닌(이미 정지·탈퇴한) 회원을 정지하려 했다 |
-| `POLL_NOT_HIDDEN` | 409 | 숨김 상태가 아닌 투표를 복구하려 했다 |
-| `MEMBER_NOT_SUSPENDED` | 409 | 정지 상태가 아닌 회원의 정지를 해제하려 했다 |
-| `POLL_RATE_LIMITED` | 429 | 연속 생성 간격 위반 |
-| `INTERNAL_ERROR` | 500 | 서버 내부 오류(상세는 노출하지 않는다) |
-| `SOCIAL_UNAVAILABLE` | 502 | 소셜 제공자 장애·타임아웃 |
+- 소셜 로그인 실패 코드(`INVALID_STATE`, `SOCIAL_AUTH_FAILED`, `SOCIAL_UNAVAILABLE`, `ACCESS_DENIED`)는 JSON이 아니라 `code` 쿼리로 전달한다. 2절의 카카오 로그인 콜백에 있다.
+- `MEMBER_NOT_SUSPENDED`(정지 상태가 아닌 회원의 정지를 해제하려 했다, 409)는 정지 해제 API와 함께 구현한다(#20). 구현되면 표에 나타난다.
 
 ## 8. 미정 항목
 

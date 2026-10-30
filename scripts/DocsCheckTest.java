@@ -12,8 +12,7 @@ import java.util.Map;
 public class DocsCheckTest {
 
     static final Map<String, String> BASE = Map.of(
-        "docs/engineering/예외-응답.md", "| ID | 확정 내용 | 관련 UC |\n| --- | --- | --- |\n| P-01 | 숨김 정책 | UC-02 |\n| OP-01 | 신고 접수 | 검토 |\n",
-        "docs/features/01-둘러보기.md", "| UC-02 | 상세 조회 | 보여 준다 |\n",
+        "docs/features/01-둘러보기.md", "| UC-02 | 상세 조회 | 보여 준다 |\n| P-01 | 숨김 정책 | UC-02 |\n| OP-01 | 신고 접수 | 검토 |\n",
         "docs/domain/도메인-모델.md", "- **R-POLL-01** 질문은 1~500자\n"
     );
 
@@ -68,7 +67,7 @@ public class DocsCheckTest {
 
     static void 중복_정의를_잡는다() throws IOException {
         var policy = "| P-01 | 숨김 정책 | UC-02 |\n| P-01 | 같은 번호를 또 정의 | UC-02 |\n";
-        var result = DocsCheck.check(fixture(Map.of("docs/engineering/예외-응답.md", policy)));
+        var result = DocsCheck.check(fixture(Map.of("docs/features/02-투표-만들기.md", policy)));
         expect("중복 정의를 잡는다", hasError(result, "중복 정의", "P-01"), result.errors().toString());
     }
 
@@ -91,7 +90,7 @@ public class DocsCheckTest {
 
     static void 표의_첫_칸이_ID인_행은_정의다() throws IOException {
         var policy = "| P-01 | 숨김 정책 | UC-02 |\n| P-28 운영 세부 값 | 구현 단계 | 세부 값 |\n| OP-01 | 신고 접수 | 검토 |\n";
-        var result = DocsCheck.check(fixture(Map.of("docs/engineering/예외-응답.md", policy, "docs/기능.md", "미확정은 P-28이다\n")));
+        var result = DocsCheck.check(fixture(Map.of("docs/features/01-둘러보기.md", "| UC-02 | 상세 조회 | 보여 준다 |\n" + policy, "docs/기능.md", "미확정은 P-28이다\n")));
         expect("첫 칸이 ID로 시작하는 행을 정의로 센다", result.errors().isEmpty(), result.errors().toString());
         expect("P-28이 정의에 있다", result.definitions().containsKey("P-28"), result.definitions().toString());
     }
@@ -232,7 +231,7 @@ public class DocsCheckTest {
 
     static void 퇴역한_문서_이름을_잡는다() throws IOException {
         var docs = DocsCheck.check(fixture(Map.of("docs/기능.md", "예외-정책과 사용자 시나리오 명세서를 본다\n")));
-        expect("docs의 퇴역 이름은 실패다", hasError(docs, "docs/기능.md:1", "퇴역한 문서 이름", "예외-정책", "예외-응답"), docs.errors().toString());
+        expect("docs의 퇴역 이름은 실패다", hasError(docs, "docs/기능.md:1", "퇴역한 문서 이름", "예외-정책", "기능 페이지"), docs.errors().toString());
         expect("긴 옛 제목도 잡는다", hasError(docs, "퇴역한 문서 이름", "사용자 시나리오 명세서"), docs.errors().toString());
 
         var harness = DocsCheck.check(fixture(Map.of(".claude/skills/x/SKILL.md", "`docs/개발-가이드.md`를 본다\n", "CLAUDE.md", "인증-중복-참여\n")));
