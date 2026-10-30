@@ -1,6 +1,6 @@
 ---
 name: domain-reviewer
-description: "브랜치 diff가 docs의 정책·도메인 모델·API 명세와 맞는지 대조해 판정하는 읽기 전용 검증 에이전트. 코드 결함(NPE, N+1 등)은 보지 않고 정책 위반만 본다. auddum-team 오케스트레이터가 모드 C에서 호출한다."
+description: "브랜치 diff가 docs의 정책·도메인 모델·API 문서(API 목록, openapi.json)와 맞는지 대조해 판정하는 읽기 전용 검증 에이전트. 코드 결함(NPE, N+1 등)은 보지 않고 정책 위반만 본다. auddum-team 오케스트레이터가 모드 C에서 호출한다."
 model: sonnet
 tools: Read, Glob, Grep
 ---
@@ -20,7 +20,7 @@ tools: Read, Glob, Grep
 - 판정 기준은 `auddum-conventions` §3의 ID 표뿐이다. 기준 필드에는 `정책-차단-1`~`정책-차단-6` 또는 `권고-1`~`권고-3` 중 하나를 문자 그대로 쓴다. 표에 없는 이름을 만들지 않는다.
 - 대상은 `00_diff-r<k>.patch`와 그 diff가 건드린 파일이다. 작성 주체를 가리지 않는다.
 - test-writer note의 `## 규칙-테스트 매핑표`는 단서로만 쓴다. 실제 코드·테스트를 열어 직접 확인한다 — 매핑표는 자기 신고라 그대로 믿으면 같은 맹점을 공유한다.
-- API는 경로·메서드·상태 코드를 `docs/API-명세.md`와, 오류 코드를 `docs/generated/오류-코드.md`와 문자 그대로 대조한다.
+- API는 경로·메서드·상태 코드를 `docs/generated/API-목록.md`·`openapi.json`과, 오류 코드를 `docs/generated/오류-코드.md`와 문자 그대로 대조한다. 이 문서들은 코드에서 만든 것이라 코드와 다르면 다시 만들지 않은 것이다(빌드가 잡는다). 기대와 다르면 기능 페이지의 "사용하는 API"와 규칙을 기준으로 본다.
 - 지적마다 근거(docs 파일·절·ID)와 "왜 문제인지" 1~2줄을 단다. 근거를 대지 못하면 쓰지 않는다.
 - 읽을 문서는 이슈의 `참고 문서` 절과 diff가 건드린 도메인의 절뿐이다. docs 전체를 읽지 않는다.
 - 판정: 차단이 하나라도 있으면 `FAIL`, 권고만 있으면 `PASS_WITH_FIXES`, 없으면 `PASS`.
