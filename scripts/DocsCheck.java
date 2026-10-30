@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -68,6 +69,17 @@ public class DocsCheck {
     static final String RECORDS_DIR = "docs/records/";
     static final Set<String> RETIRED_NAME_AREAS = Set.of("docs", ".claude", "CLAUDE.md");
     static final Pattern MD_LINK = Pattern.compile("\\]\\(([^)\\s]+)\\)");
+
+    // 기능 페이지가 적은 사실(오류 코드와 상태, 테스트 클래스 이름)이 코드와 같은지 본다.
+    // 아직 구현하지 않은 것은 같은 줄에 "구현 전"이라고 적으면 넘어간다.
+    static final Pattern ERROR_CODE_ENTRY = Pattern.compile("^\\s+([A-Z][A-Z0-9_]+)\\s*\\(HttpStatus\\.([A-Z_]+)");
+    static final Pattern STATUS_AND_CODE = Pattern.compile("(\\d{3})\\s*`([A-Z][A-Z0-9_]+)`");
+    static final Pattern CODE_NAME = Pattern.compile("`([A-Z]+(?:_[A-Z]+)+)`");
+    static final Pattern TEST_NAME = Pattern.compile("`([A-Z][A-Za-z0-9]*Test)`");
+    static final String NOT_YET = "구현 전";
+    static final Map<String, Integer> HTTP_STATUS = Map.of(
+        "BAD_REQUEST", 400, "UNAUTHORIZED", 401, "FORBIDDEN", 403, "NOT_FOUND", 404,
+        "CONFLICT", 409, "TOO_MANY_REQUESTS", 429, "INTERNAL_SERVER_ERROR", 500, "BAD_GATEWAY", 502);
 
     static final Set<String> SKIPPED_DIRS = Set.of("_workspace", "build", ".git", ".gradle", "node_modules", "out");
     static final List<String> AREAS = List.of("docs", "src", ".claude", "CLAUDE.md");
@@ -160,7 +172,94 @@ public class DocsCheck {
             }
         }
         checkSketchLinks(root, errors);
+        checkFeatureFacts(root, errors);
         return new Result(definitions, errors, sectionRefs);
+    }
+
+    // 기능 페이지가 적은 오류 코드와 테스트 이름이 코드에 있는지 본다. 코드나 테스트가 없는 저장소(검사 도구 시험)에서는 해당 검사를 건너뛴다.
+    private static void checkFeatureFacts(Path root, List<String> errors) {
+        Map<String, Integer> codes = errorCodes(root);
+        Set<String> tests = testClassNames(root);
+        for (Path page : markdownFiles(root, FEATURES_DIR, FEATURE_PAGE_NAME)) {
+            String relative = relativePath(root, page);
+            List<String> lines = readLines(page);
+            for (int i = 0; i < lines.size(); i++) {
+                String line = lines.get(i);
+                if (line.contains(NOT_YET)) {
+                    continue;
+                }
+                String location = relative + ":" + (i + 1);
+                if (!codes.isEmpty()) {
+                    Matcher entry = STATUS_AND_CODE.matcher(line);
+                    while (entry.find()) {
+                        Integer status = codes.get(entry.group(2));
+                        if (status == null) {
+                            errors.add(location + "  코드에 없는 오류 코드: " + entry.group(2) + " (아직 구현하지 않았다면 같은 줄에 '구현 전'이라고 적는다)");
+                        } else if (status != Integer.parseInt(entry.group(1))) {
+                            errors.add(location + "  오류 코드의 상태가 다르다: " + entry.group(2) + " 문서 " + entry.group(1) + ", 코드 " + status);
+                        }
+                    }
+                    if (line.startsWith("|")) {
+                        String[] cells = line.split("\\|", -1);
+                        if (cells.length > 4) {
+                            Matcher name = CODE_NAME.matcher(cells[2]);
+                            while (name.find()) {
+                                if (!codes.containsKey(name.group(1))) {
+                                    errors.add(location + "  코드에 없는 오류 코드: " + name.group(1) + " (아직 구현하지 않았다면 같은 줄에 '구현 전'이라고 적는다)");
+                                }
+                            }
+                        }
+                    }
+                }
+                if (!tests.isEmpty()) {
+                    Matcher test = TEST_NAME.matcher(line);
+                    while (test.find()) {
+                        if (!tests.contains(test.group(1))) {
+                            errors.add(location + "  없는 테스트 클래스: " + test.group(1));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // src/main의 오류 코드 enum에서 이름과 HTTP 상태를 읽는다(ErrorCode를 구현한 파일).
+    private static Map<String, Integer> errorCodes(Path root) {
+        Map<String, Integer> codes = new TreeMap<>();
+        for (Path file : javaFiles(root, "src/main/java")) {
+            List<String> lines = readLines(file);
+            if (lines.stream().noneMatch(l -> l.contains("implements ErrorCode"))) {
+                continue;
+            }
+            for (String line : lines) {
+                Matcher entry = ERROR_CODE_ENTRY.matcher(line);
+                if (entry.find() && HTTP_STATUS.containsKey(entry.group(2))) {
+                    codes.put(entry.group(1), HTTP_STATUS.get(entry.group(2)));
+                }
+            }
+        }
+        return codes;
+    }
+
+    private static Set<String> testClassNames(Path root) {
+        Set<String> names = new TreeSet<>();
+        for (Path file : javaFiles(root, "src/test/java")) {
+            String name = file.getFileName().toString();
+            names.add(name.substring(0, name.length() - ".java".length()));
+        }
+        return names;
+    }
+
+    private static List<Path> javaFiles(Path root, String directory) {
+        Path base = root.resolve(directory);
+        if (!Files.isDirectory(base)) {
+            return List.of();
+        }
+        try (var stream = Files.walk(base)) {
+            return stream.filter(p -> p.toString().endsWith(".java")).sorted().toList();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     // 문서를 옮기거나 개명하면 상대 링크가 조용히 깨지므로, 가리키는 파일이 있는지 본다(앵커는 보지 않는다).
