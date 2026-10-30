@@ -22,8 +22,9 @@ import java.util.stream.Stream;
  * 기능 페이지(docs/features)의 P·OP·UC 정의도 모으고, sketch(docs/records/sketches)의 머리말과 기능 페이지의 이력 링크가 서로를 가리키는지 본다.
  * docs의 상대 링크가 가리키는 파일이 없으면 실패다. 옮기거나 없앤 문서의 이름(퇴역 이름)을 docs·.claude·CLAUDE.md에서 쓰면 실패다(시점 기록인 docs/records는 제외).
  * src의 문서 이름 언급은 실패다. 절 번호(§) 참조는 docs와 src에서는 실패이고, .claude와 CLAUDE.md는 개수만 보고한다(하네스는 1단계에서 정리한다).
+ * docs의 가독성(긴 문장, #### 제목, 줄 전체 굵은 글씨, 알림 상자 초과, 굵은 글씨가 많은 절)은 개수만 보고한다. 기준은 docs/index.md의 표기 규칙이다.
  *
- * <p>사용법: {@code scripts/docs-check [--root <디렉터리>]} (저장소 루트에서 실행)
+ * <p>사용법: {@code scripts/docs-check [--root <디렉터리>] [--readability]} (저장소 루트에서 실행, --readability는 가독성 위치를 모두 보인다)
  */
 public class DocsCheck {
 
@@ -94,6 +95,24 @@ public class DocsCheck {
     static final List<String> AREAS = List.of("docs", "src", ".claude", "CLAUDE.md");
     static final Set<String> SECTION_REF_FAIL_AREAS = Set.of("docs", "src");
 
+    // 가독성은 기계 기준이라 틀리게 잡을 수 있어 실패시키지 않고 보고만 한다. 시점 기록(records)과 생성 문서(generated)는 보지 않는다.
+    static final String GENERATED_DIR = "docs/generated/";
+    static final int LONG_SENTENCE = 100;
+    static final int MAX_ALERTS = 2;
+    static final int MAX_INLINE_BOLDS = 1;
+    static final String LONG = "긴 문장";
+    static final String DEEP_HEADING = "#### 제목";
+    static final String BOLD_LINE = "줄 전체 굵은 글씨";
+    static final String TOO_MANY_ALERTS = "알림 상자 초과";
+    static final String BOLD_HEAVY = "굵은 글씨가 많은 절";
+    static final Pattern ALERT = Pattern.compile("^>\\s*\\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)]");
+    static final Pattern BOLD_ONLY_LINE = Pattern.compile("^\\*\\*[^*]+\\*\\*(\\([^)]*\\))?(\\s+—\\s+.{1,40})?:?$");
+    static final Pattern BOLD = Pattern.compile("\\*\\*([^*]+)\\*\\*");
+    static final Pattern LIST_LABEL = Pattern.compile("^\\s*(?:[-*]|\\d+\\.|>)\\s*\\*\\*[^*]+\\*\\*");
+    static final Pattern CELL_LABEL = Pattern.compile("\\|\\s*\\*\\*[^*]+\\*\\*");
+    static final Pattern LINK_TARGET = Pattern.compile("\\]\\([^)]*\\)");
+    static final Pattern SENTENCE_END = Pattern.compile("(?<=[.?!])\\s+");
+
     // 이미 적용된 Flyway 마이그레이션은 주석 한 줄만 바꿔도 체크섬이 달라져 검증이 실패하므로 검사하지 않는다.
     static final String MIGRATION_DIR = "src/main/resources/db/migration/";
 
@@ -114,14 +133,20 @@ public class DocsCheck {
         return names;
     }
 
-    record Result(Map<String, String> definitions, List<String> errors, Map<String, Integer> sectionRefs) {
+    record Result(Map<String, String> definitions, List<String> errors, Map<String, Integer> sectionRefs, List<Readability> readability) {
+    }
+
+    record Readability(String kind, String location) {
     }
 
     public static void main(String[] args) {
         Path root = Path.of(".");
+        boolean showReadability = false;
         for (int i = 0; i < args.length; i++) {
             if (args[i].equals("--root") && i + 1 < args.length) {
                 root = Path.of(args[++i]);
+            } else if (args[i].equals("--readability")) {
+                showReadability = true;
             }
         }
         PrintStream out = new PrintStream(System.out, true, StandardCharsets.UTF_8);
@@ -136,6 +161,13 @@ public class DocsCheck {
             result.errors().forEach(e -> out.println("  " + e));
         }
         out.println("절 번호(§) 참조 개수(docs·src는 실패, 나머지는 보고만): " + result.sectionRefs());
+        Map<String, Integer> byKind = new LinkedHashMap<>();
+        List.of(LONG, DEEP_HEADING, BOLD_LINE, TOO_MANY_ALERTS, BOLD_HEAVY).forEach(kind -> byKind.put(kind, 0));
+        result.readability().forEach(r -> byKind.merge(r.kind(), 1, Integer::sum));
+        out.println("가독성(보고만, 위치는 --readability): " + byKind);
+        if (showReadability) {
+            result.readability().forEach(r -> out.println("  " + r.location() + "  " + r.kind()));
+        }
 
         System.exit(result.errors().isEmpty() ? 0 : 1);
     }
@@ -147,11 +179,16 @@ public class DocsCheck {
 
         Map<String, Integer> sectionRefs = new LinkedHashMap<>();
         AREAS.forEach(area -> sectionRefs.put(area, 0));
+        List<Readability> readability = new ArrayList<>();
 
         for (Path file : scanFiles(root)) {
             String relative = relativePath(root, file);
             String area = relative.contains("/") ? relative.substring(0, relative.indexOf('/')) : relative;
             List<String> lines = readLines(file);
+            if (area.equals("docs") && relative.endsWith(".md") && !relative.startsWith(RECORDS_DIR)
+                && !relative.startsWith(GENERATED_DIR) && !file.getFileName().toString().startsWith("_")) {
+                checkReadability(lines, relative, readability);
+            }
             for (int i = 0; i < lines.size(); i++) {
                 String line = lines.get(i);
                 String location = relative + ":" + (i + 1);
@@ -184,7 +221,89 @@ public class DocsCheck {
         checkSketchLinks(root, errors);
         checkFeatureFacts(root, errors);
         checkFeatureApis(root, errors);
-        return new Result(definitions, errors, sectionRefs);
+        return new Result(definitions, errors, sectionRefs, readability);
+    }
+
+    // docs/index.md 표기 규칙의 기계로 셀 수 있는 부분만 센다. 코드 블록은 보지 않는다.
+    private static void checkReadability(List<String> lines, String relative, List<Readability> found) {
+        boolean inCode = false;
+        int alerts = 0;
+        int sectionStart = 1;
+        int sectionBolds = 0;
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            String location = relative + ":" + (i + 1);
+            if (line.strip().startsWith("```")) {
+                inCode = !inCode;
+                continue;
+            }
+            if (inCode) {
+                continue;
+            }
+            if (line.startsWith("#")) {
+                if (sectionBolds > MAX_INLINE_BOLDS) {
+                    found.add(new Readability(BOLD_HEAVY, relative + ":" + sectionStart + " (" + sectionBolds + "개)"));
+                }
+                sectionStart = i + 1;
+                sectionBolds = 0;
+                if (line.startsWith("####")) {
+                    found.add(new Readability(DEEP_HEADING, location));
+                }
+                continue;
+            }
+            String text = CODE_SPAN.matcher(line).replaceAll("`x`");
+            if (BOLD_ONLY_LINE.matcher(text.strip()).matches()) {
+                found.add(new Readability(BOLD_LINE, location));
+                continue;
+            }
+            if (ALERT.matcher(line).find()) {
+                alerts++;
+            }
+            sectionBolds += countInlineBolds(text);
+            for (String sentence : sentences(text)) {
+                if (sentence.codePointCount(0, sentence.length()) > LONG_SENTENCE) {
+                    found.add(new Readability(LONG, location));
+                    break;
+                }
+            }
+        }
+        if (sectionBolds > MAX_INLINE_BOLDS) {
+            found.add(new Readability(BOLD_HEAVY, relative + ":" + sectionStart + " (" + sectionBolds + "개)"));
+        }
+        if (alerts > MAX_ALERTS) {
+            found.add(new Readability(TOO_MANY_ALERTS, relative + " (" + alerts + "개)"));
+        }
+    }
+
+    // 목록·표 칸의 머리 라벨, R-ID 정의, 숫자 강조는 규칙이 허용하므로 세지 않는다.
+    private static int countInlineBolds(String text) {
+        String rest = LIST_LABEL.matcher(text).replaceFirst("");
+        if (rest.startsWith("|")) {
+            rest = CELL_LABEL.matcher(rest).replaceAll("|");
+        }
+        int count = 0;
+        Matcher bold = BOLD.matcher(rest);
+        while (bold.find()) {
+            String inner = bold.group(1);
+            if (VALID_ID_FULL.matcher(inner).matches() || inner.chars().anyMatch(Character::isDigit)) {
+                continue;
+            }
+            count++;
+        }
+        return count;
+    }
+
+    // 표는 칸마다, 나머지는 줄을 문장으로 나눈다. 링크 주소와 서식 기호는 길이에 넣지 않는다.
+    private static List<String> sentences(String line) {
+        if (line.startsWith("!") || line.startsWith("<")) {
+            return List.of();
+        }
+        String text = LINK_TARGET.matcher(line).replaceAll("]").replace("**", "");
+        List<String> result = new ArrayList<>();
+        for (String part : text.startsWith("|") ? text.split("\\|") : new String[] {text}) {
+            result.addAll(List.of(SENTENCE_END.split(part.strip())));
+        }
+        return result;
     }
 
     // 기능 페이지가 적은 오류 코드와 테스트 이름이 코드에 있는지 본다. 코드나 테스트가 없는 저장소(검사 도구 시험)에서는 해당 검사를 건너뛴다.
