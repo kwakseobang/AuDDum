@@ -81,6 +81,15 @@ public class DocsCheck {
         "BAD_REQUEST", 400, "UNAUTHORIZED", 401, "FORBIDDEN", 403, "NOT_FOUND", 404,
         "CONFLICT", 409, "TOO_MANY_REQUESTS", 429, "INTERNAL_SERVER_ERROR", 500, "BAD_GATEWAY", 502);
 
+    // 기능 페이지의 "사용하는 API"가 코드의 OpenAPI 문서(docs/generated/openapi.json)와 맞는지 본다.
+    // 컨트롤러가 아니라 필터가 처리하는 카카오 로그인 경로는 OpenAPI 문서에 없어서 따로 허용한다.
+    static final String OPENAPI_FILE = "docs/generated/openapi.json";
+    static final String API_PREFIX = "/api/v1";
+    static final Pattern OPENAPI_PATH = Pattern.compile("^ {4}\"(/[^\"]*)\" : \\{");
+    static final Pattern OPENAPI_METHOD = Pattern.compile("^ {6}\"(get|post|put|patch|delete)\" : \\{");
+    static final Pattern API_ROW = Pattern.compile("^\\|\\s*`(GET|POST|PUT|PATCH|DELETE) (/[^`\\s]*)`");
+    static final Set<String> FILTER_PROVIDED_APIS = Set.of("GET /oauth2/authorization/kakao", "GET /login/oauth2/code/kakao");
+
     static final Set<String> SKIPPED_DIRS = Set.of("_workspace", "build", ".git", ".gradle", "node_modules", "out");
     static final List<String> AREAS = List.of("docs", "src", ".claude", "CLAUDE.md");
     static final Set<String> SECTION_REF_FAIL_AREAS = Set.of("docs", "src");
@@ -173,6 +182,7 @@ public class DocsCheck {
         }
         checkSketchLinks(root, errors);
         checkFeatureFacts(root, errors);
+        checkFeatureApis(root, errors);
         return new Result(definitions, errors, sectionRefs);
     }
 
@@ -219,6 +229,49 @@ public class DocsCheck {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    // 기능 페이지의 "사용하는 API" 표와 OpenAPI 문서가 서로를 빠뜨리지 않는지 본다. 아직 구현하지 않은 API는 줄에 "구현 전"이라고 적는다.
+    private static void checkFeatureApis(Path root, List<String> errors) {
+        Path openApi = root.resolve(OPENAPI_FILE);
+        if (!Files.exists(openApi)) {
+            return;
+        }
+        Set<String> inCode = new TreeSet<>();
+        String path = null;
+        for (String line : readLines(openApi)) {
+            Matcher p = OPENAPI_PATH.matcher(line);
+            if (p.find()) {
+                path = p.group(1).startsWith(API_PREFIX) ? p.group(1).substring(API_PREFIX.length()) : p.group(1);
+                continue;
+            }
+            Matcher m = OPENAPI_METHOD.matcher(line);
+            if (m.find() && path != null) {
+                inCode.add(m.group(1).toUpperCase() + " " + path);
+            }
+        }
+
+        Set<String> inDocs = new TreeSet<>();
+        for (Path page : markdownFiles(root, FEATURES_DIR, FEATURE_PAGE_NAME)) {
+            String relative = relativePath(root, page);
+            List<String> lines = readLines(page);
+            for (int i = 0; i < lines.size(); i++) {
+                Matcher row = API_ROW.matcher(lines.get(i));
+                if (!row.find()) {
+                    continue;
+                }
+                String api = row.group(1) + " " + row.group(2);
+                inDocs.add(api);
+                if (!inCode.contains(api) && !FILTER_PROVIDED_APIS.contains(api) && !lines.get(i).contains(NOT_YET)) {
+                    errors.add(relative + ":" + (i + 1) + "  코드에 없는 API: " + api + " (아직 구현하지 않았다면 같은 줄에 '구현 전'이라고 적는다)");
+                }
+            }
+        }
+        for (String api : inCode) {
+            if (!inDocs.contains(api)) {
+                errors.add(OPENAPI_FILE + "  어느 기능 페이지의 '사용하는 API'에도 없는 API: " + api);
             }
         }
     }
