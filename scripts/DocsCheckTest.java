@@ -42,6 +42,8 @@ public class DocsCheckTest {
         양식_파일은_검사하지_않는다();
         깨진_상대_링크를_잡는다();
         퇴역한_문서_이름을_잡는다();
+        기능_페이지의_오류_코드와_상태를_코드와_맞춰_본다();
+        기능_페이지의_테스트_클래스_이름을_코드와_맞춰_본다();
 
         System.out.println(total + "개 중 " + (total - failures.size()) + "개 통과");
         failures.forEach(f -> System.out.println("실패: " + f));
@@ -240,6 +242,47 @@ public class DocsCheckTest {
 
         var records = DocsCheck.check(fixture(Map.of("docs/records/decisions/1-a.md", "예외-정책에서 옮겼다\n")));
         expect("시점 기록(records)은 검사하지 않는다", records.errors().isEmpty(), records.errors().toString());
+    }
+
+    static final String ENUM = "public enum PollErrorCode implements ErrorCode {\n    POLL_CLOSED (HttpStatus.CONFLICT, \"마감\", LogLevel.INFO),\n    INVALID_OPTION (HttpStatus.BAD_REQUEST, \"선택지\", LogLevel.INFO),\n}\n";
+    static final String PAGE_HEAD = "| UC-02 | 상세 조회 | 보여 준다 |\n| P-01 | 숨김 정책 | UC-02 |\n| OP-01 | 신고 접수 | 검토 |\n";
+
+    static void 기능_페이지의_오류_코드와_상태를_코드와_맞춰_본다() throws IOException {
+        var ok = DocsCheck.check(fixture(Map.of(
+            "src/main/java/PollErrorCode.java", ENUM,
+            "docs/features/01-둘러보기.md", PAGE_HEAD + "| 마감 뒤 참여 | 거절(409 `POLL_CLOSED`) | `INVALID_OPTION` |\n")));
+        expect("코드와 상태가 같으면 통과한다", ok.errors().isEmpty(), ok.errors().toString());
+
+        var status = DocsCheck.check(fixture(Map.of(
+            "src/main/java/PollErrorCode.java", ENUM,
+            "docs/features/01-둘러보기.md", PAGE_HEAD + "| 마감 뒤 참여 | 거절(400 `POLL_CLOSED`) | - |\n")));
+        expect("상태가 다르면 실패다", hasError(status, "01-둘러보기.md:4", "상태가 다르다", "POLL_CLOSED", "문서 400", "코드 409"), status.errors().toString());
+
+        var missing = DocsCheck.check(fixture(Map.of(
+            "src/main/java/PollErrorCode.java", ENUM,
+            "docs/features/01-둘러보기.md", PAGE_HEAD + "| 마감 뒤 참여 | 거절(409 `POLL_GONE`) | - |\n| 어긋나면 | `POLL_MISSING` | - |\n")));
+        expect("코드에 없는 코드는 실패다", hasError(missing, "01-둘러보기.md:4", "코드에 없는 오류 코드", "POLL_GONE"), missing.errors().toString());
+        expect("규칙 표의 둘째 칸 코드도 본다", hasError(missing, "01-둘러보기.md:5", "POLL_MISSING"), missing.errors().toString());
+
+        var notYet = DocsCheck.check(fixture(Map.of(
+            "src/main/java/PollErrorCode.java", ENUM,
+            "docs/features/01-둘러보기.md", PAGE_HEAD + "| 복구 | 거절(409 `POLL_NOT_HIDDEN`) | 구현 전 |\n")));
+        expect("구현 전이라고 적은 줄은 넘어간다", notYet.errors().isEmpty(), notYet.errors().toString());
+
+        var noEnum = DocsCheck.check(fixture(Map.of("docs/features/01-둘러보기.md", PAGE_HEAD + "| 참여 | 거절(409 `POLL_CLOSED`) | - |\n")));
+        expect("오류 코드 enum이 없는 저장소에서는 건너뛴다", noEnum.errors().isEmpty(), noEnum.errors().toString());
+    }
+
+    static void 기능_페이지의_테스트_클래스_이름을_코드와_맞춰_본다() throws IOException {
+        var ok = DocsCheck.check(fixture(Map.of(
+            "src/test/java/org/x/VoteTest.java", "class VoteTest {}\n",
+            "docs/features/01-둘러보기.md", PAGE_HEAD + "| 규칙 | 거절 | P-01 · `VoteTest` |\n")));
+        expect("있는 테스트 클래스는 통과한다", ok.errors().isEmpty(), ok.errors().toString());
+
+        var bad = DocsCheck.check(fixture(Map.of(
+            "src/test/java/org/x/VoteTest.java", "class VoteTest {}\n",
+            "docs/features/01-둘러보기.md", PAGE_HEAD + "| 규칙 | 거절 | `VoteGoneTest` |\n")));
+        expect("없는 테스트 클래스는 실패다", hasError(bad, "01-둘러보기.md:4", "없는 테스트 클래스", "VoteGoneTest"), bad.errors().toString());
     }
 
     static Path fixture(Map<String, String> overrides) throws IOException {
