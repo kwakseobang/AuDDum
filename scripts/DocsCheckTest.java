@@ -44,6 +44,7 @@ public class DocsCheckTest {
         퇴역한_문서_이름을_잡는다();
         기능_페이지의_오류_코드와_상태를_코드와_맞춰_본다();
         기능_페이지의_테스트_클래스_이름을_코드와_맞춰_본다();
+        기능_페이지의_API_목록을_OpenAPI_문서와_맞춰_본다();
 
         System.out.println(total + "개 중 " + (total - failures.size()) + "개 통과");
         failures.forEach(f -> System.out.println("실패: " + f));
@@ -283,6 +284,34 @@ public class DocsCheckTest {
             "src/test/java/org/x/VoteTest.java", "class VoteTest {}\n",
             "docs/features/01-둘러보기.md", PAGE_HEAD + "| 규칙 | 거절 | `VoteGoneTest` |\n")));
         expect("없는 테스트 클래스는 실패다", hasError(bad, "01-둘러보기.md:4", "없는 테스트 클래스", "VoteGoneTest"), bad.errors().toString());
+    }
+
+    static final String OPENAPI = "{\n  \"paths\" : {\n    \"/api/v1/polls\" : {\n      \"get\" : {\n      },\n      \"post\" : {\n      }\n    },\n    \"/api/v1/polls/{pollId}\" : {\n      \"get\" : {\n      }\n    }\n  }\n}\n";
+    static final String API_ROWS = "| `GET /polls` | 목록 |\n| `POST /polls` | 만든다 |\n| `GET /polls/{pollId}` | 상세 |\n";
+
+    static void 기능_페이지의_API_목록을_OpenAPI_문서와_맞춰_본다() throws IOException {
+        var ok = DocsCheck.check(fixture(Map.of(
+            "docs/generated/openapi.json", OPENAPI,
+            "docs/features/01-둘러보기.md", PAGE_HEAD + API_ROWS + "| `GET /oauth2/authorization/kakao` | 필터가 처리한다 |\n")));
+        expect("API가 서로 맞으면 통과한다(필터가 처리하는 로그인 경로는 허용한다)", ok.errors().isEmpty(), ok.errors().toString());
+
+        var missingInCode = DocsCheck.check(fixture(Map.of(
+            "docs/generated/openapi.json", OPENAPI,
+            "docs/features/01-둘러보기.md", PAGE_HEAD + API_ROWS + "| `DELETE /polls/{pollId}` | 삭제 |\n")));
+        expect("코드에 없는 API는 실패다", hasError(missingInCode, "01-둘러보기.md:7", "코드에 없는 API", "DELETE /polls/{pollId}"), missingInCode.errors().toString());
+
+        var notYet = DocsCheck.check(fixture(Map.of(
+            "docs/generated/openapi.json", OPENAPI,
+            "docs/features/01-둘러보기.md", PAGE_HEAD + API_ROWS + "| `DELETE /polls/{pollId}` | 삭제(구현 전) |\n")));
+        expect("구현 전이라고 적은 API는 넘어간다", notYet.errors().isEmpty(), notYet.errors().toString());
+
+        var missingInDocs = DocsCheck.check(fixture(Map.of(
+            "docs/generated/openapi.json", OPENAPI,
+            "docs/features/01-둘러보기.md", PAGE_HEAD + "| `GET /polls` | 목록 |\n| `POST /polls` | 만든다 |\n")));
+        expect("기능 페이지 어디에도 없는 API는 실패다", hasError(missingInDocs, "어느 기능 페이지", "GET /polls/{pollId}"), missingInDocs.errors().toString());
+
+        var noFile = DocsCheck.check(fixture(Map.of("docs/features/01-둘러보기.md", PAGE_HEAD + API_ROWS)));
+        expect("OpenAPI 문서가 없는 저장소에서는 건너뛴다", noFile.errors().isEmpty(), noFile.errors().toString());
     }
 
     static Path fixture(Map<String, String> overrides) throws IOException {
