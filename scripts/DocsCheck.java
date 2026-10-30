@@ -108,6 +108,7 @@ public class DocsCheck {
         names.put("사용자 시나리오 명세서", "features/ 기능 페이지");
         names.put("예외·정책 명세서", "features/ 기능 페이지");
         names.put("예외-응답", "features/ 기능 페이지, generated/오류-코드");
+        names.put("API-명세", "engineering/API-공통-규칙, generated/API-목록");
         names.put("인증·중복 참여 설계서", "인증, 동시성-중복-방지");
         names.put("테스트·배포 설계서", "테스트-전략, 배포");
         return names;

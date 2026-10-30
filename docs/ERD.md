@@ -5,7 +5,7 @@
 | 버전 | v2 |
 | 작성일 | 2026-10-11 |
 | 작성자 | 태풍 |
-| 관련 문서 | [동시성·중복 방지](engineering/동시성-중복-방지.md), [AuDDum 도메인 모델](domain/도메인-모델.md), [AuDDum API 명세서](API-명세.md) |
+| 관련 문서 | [동시성·중복 방지](engineering/동시성-중복-방지.md), [AuDDum 도메인 모델](domain/도메인-모델.md), [API 목록](generated/API-목록.md) |
 
 ## 요약
 
@@ -211,7 +211,7 @@ vote는 poll이 아니라 poll_option을 통해 poll에 연결된다. (poll_id, 
 | reporter_anon_id | CHAR(36) | Y | 비회원 신고자의 익명 식별자 |
 | reason | VARCHAR(30) | N | ABUSE_HATE, SEXUAL_HARASSMENT, PERSONAL_INFO, SPAM, ETC |
 | detail | VARCHAR(200) | Y | 신고 상세 텍스트. `ETC`에서 필수, 다른 사유에서는 선택이며 입력 그대로 저장. 상한 200(임시, 유니코드 문자 단위) |
-| status | VARCHAR(20) | N | PENDING(기본값), RESOLVED, DISMISSED (API 명세에서 확정) |
+| status | VARCHAR(20) | N | PENDING(기본값), RESOLVED, DISMISSED |
 | created_at, updated_at | DATETIME(6) | N | 접수·수정 시각 |
 | handled_at | DATETIME(6) | Y | 처리 시각 |
 | handled_by | BIGINT | Y | FK → member. 처리한 관리자 |
@@ -350,7 +350,7 @@ INSERT INTO vote (poll_id, option_id, member_id, anon_id, created_at, updated_at
 VALUES (:pollId, :optionId, :memberId, :anonId, :now, :now);
 ```
 
-- 참여 처리 순서와 동시 요청(진 쪽 409)은 `API-명세.md`의 '참여·결과 API'와 [동시성·중복 방지](engineering/동시성-중복-방지.md)가 기준이다. 이 문서는 두 곳에 영향을 주는 스키마 쪽만 적는다.
+- 참여 처리 순서와 동시 요청(진 쪽 409)은 [03-참여하기](features/03-참여하기.md)와 [동시성·중복 방지](engineering/동시성-중복-방지.md)가 기준이다. 이 문서는 두 곳에 영향을 주는 스키마 쪽만 적는다.
 - 요청은 선택지 id가 아니라 표시 순서(position)로 선택지를 가리키고, 서버가 (투표, position)으로 선택지 id를 찾는다. 해당 순서의 선택지가 없으면 400으로 응답한다. 복합 외래키는 그래도 DB 단의 마지막 방어선으로 둔다.
 - 마감 판단은 요청을 받은 시점에 한 번만 한다. (P-11)
 
