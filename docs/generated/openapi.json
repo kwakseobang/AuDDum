@@ -1,0 +1,1179 @@
+{
+  "components" : {
+    "schemas" : {
+      "ActionHistory" : {
+        "description" : "조치 이력 한 건",
+        "properties" : {
+          "actionType" : {
+            "type" : "string"
+          },
+          "adminId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "reason" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminPollTakedownRequest" : {
+        "description" : "관리자 투표 조치 요청",
+        "properties" : {
+          "reason" : {
+            "description" : "조치 사유. 필수, 200자 이하, 회원에게 노출하지 않는다",
+            "example" : "특정인 비방 내용 확인",
+            "type" : "string"
+          },
+          "status" : {
+            "description" : "바꿀 투표 상태. HIDDEN(숨김, 복구 가능) 또는 DELETED(삭제, 복구 불가)",
+            "enum" : [ "HIDDEN", "DELETED" ],
+            "example" : "HIDDEN",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminReasonRequest" : {
+        "description" : "관리자 조치 요청",
+        "properties" : {
+          "reason" : {
+            "description" : "조치 사유. 필수, 200자 이하, 회원에게 노출하지 않는다",
+            "example" : "특정인 비방 내용 확인",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminReportDetailResponse" : {
+        "description" : "관리자 신고 상세",
+        "properties" : {
+          "actions" : {
+            "description" : "이 신고와 연결된 조치 이력(시각 순)",
+            "items" : {
+              "$ref" : "#/components/schemas/ActionHistory"
+            },
+            "type" : "array"
+          },
+          "createdAt" : {
+            "description" : "접수 시각(KST 오프셋)",
+            "example" : "2026-10-12T14:20:00+09:00",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "detail" : {
+            "description" : "신고 상세 설명",
+            "type" : [ "string", "null" ]
+          },
+          "handledAt" : {
+            "description" : "처리 시각. 처리 전에는 null",
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "handledBy" : {
+            "description" : "처리한 관리자 회원 id. 처리 전에는 null",
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "otherReports" : {
+            "description" : "같은 투표의 이 신고를 뺀 신고(접수 순)",
+            "items" : {
+              "$ref" : "#/components/schemas/OtherReport"
+            },
+            "type" : "array"
+          },
+          "poll" : {
+            "$ref" : "#/components/schemas/PollInfo"
+          },
+          "reason" : {
+            "enum" : [ "ABUSE_HATE", "SEXUAL_HARASSMENT", "PERSONAL_INFO", "SPAM", "ETC" ],
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "PENDING", "RESOLVED", "DISMISSED" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminReportListResponse" : {
+        "description" : "관리자 신고 목록 한 페이지",
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AdminReportSummaryResponse"
+            },
+            "type" : "array"
+          },
+          "nextCursor" : {
+            "description" : "다음 페이지 커서. 마지막이면 null",
+            "example" : "eyJpZCI6MTd9",
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "AdminReportSummaryResponse" : {
+        "description" : "관리자 신고 목록 항목",
+        "properties" : {
+          "createdAt" : {
+            "description" : "접수 시각(KST 오프셋)",
+            "example" : "2026-10-12T14:20:00+09:00",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "description" : "신고 내부 id",
+            "example" : 17,
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "poll" : {
+            "$ref" : "#/components/schemas/PollInfo"
+          },
+          "pollReportCount" : {
+            "description" : "같은 투표에 쌓인 신고 수(처리된 신고 포함)",
+            "example" : 3,
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "reason" : {
+            "enum" : [ "ABUSE_HATE", "SEXUAL_HARASSMENT", "PERSONAL_INFO", "SPAM", "ETC" ],
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "PENDING", "RESOLVED", "DISMISSED" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "MemberResponse" : {
+        "description" : "내 정보",
+        "properties" : {
+          "createdAt" : {
+            "description" : "가입 시각(KST 오프셋)",
+            "example" : "2026-10-12T13:00:00+09:00",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "role" : {
+            "enum" : [ "MEMBER", "ADMIN" ],
+            "example" : "MEMBER",
+            "type" : "string"
+          },
+          "status" : {
+            "description" : "회원 상태. 탈퇴 회원은 조회할 수 없어 ACTIVE 또는 SUSPENDED다",
+            "enum" : [ "ACTIVE", "SUSPENDED", "WITHDRAWN" ],
+            "example" : "ACTIVE",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "Option" : {
+        "description" : "선택지 하나의 득표 수",
+        "properties" : {
+          "count" : {
+            "description" : "득표 수",
+            "example" : 10,
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "position" : {
+            "description" : "선택지 순번",
+            "example" : 1,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "OptionResponse" : {
+        "properties" : {
+          "content" : {
+            "type" : "string"
+          },
+          "position" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "OtherReport" : {
+        "description" : "같은 투표의 다른 신고",
+        "properties" : {
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "detail" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "reason" : {
+            "enum" : [ "ABUSE_HATE", "SEXUAL_HARASSMENT", "PERSONAL_INFO", "SPAM", "ETC" ],
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "PENDING", "RESOLVED", "DISMISSED" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PollCreateRequest" : {
+        "description" : "투표 생성 요청",
+        "properties" : {
+          "category" : {
+            "description" : "카테고리",
+            "enum" : [ "SOME", "BLIND_DATE", "CONTACT", "IN_RELATIONSHIP", "BREAKUP", "LOVE_VALUES", "ETC" ],
+            "example" : "SOME",
+            "type" : "string"
+          },
+          "closesAt" : {
+            "description" : "마감 시각(선택). 현재보다 미래여야 하고, 없으면 마감 없는 투표",
+            "example" : "2026-10-19T23:59:00+09:00",
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "options" : {
+            "description" : "선택지 2~5개. 각 앞뒤 공백 제거 후 1~50자, 서로 달라야 한다",
+            "example" : [ "관심 없음", "그냥 바쁜 것", "더 지켜봐야 함" ],
+            "items" : {
+              "minLength" : 1,
+              "type" : "string"
+            },
+            "maxItems" : 5,
+            "minItems" : 2,
+            "type" : "array"
+          },
+          "question" : {
+            "description" : "질문. 앞뒤 공백 제거 후 1~500자, 줄바꿈 불가",
+            "example" : "읽씹 3시간 뒤 답장, 이거 관심 없는 걸까요?",
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "category", "options", "question" ],
+        "type" : "object"
+      },
+      "PollDetailResponse" : {
+        "description" : "투표 상세",
+        "properties" : {
+          "category" : {
+            "enum" : [ "SOME", "BLIND_DATE", "CONTACT", "IN_RELATIONSHIP", "BREAKUP", "LOVE_VALUES", "ETC" ],
+            "type" : "string"
+          },
+          "closed" : {
+            "type" : "boolean"
+          },
+          "closesAt" : {
+            "description" : "마감 시각(KST 오프셋). 마감 없으면 null",
+            "example" : "2026-10-19T23:59:00+09:00",
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "description" : "공개 ID",
+            "example" : "aB3dE5fG7hJk",
+            "type" : "string"
+          },
+          "myChoice" : {
+            "description" : "내가 고른 선택지 position. 참여하지 않았으면 null",
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "options" : {
+            "items" : {
+              "$ref" : "#/components/schemas/OptionResponse"
+            },
+            "type" : "array"
+          },
+          "participantCount" : {
+            "description" : "전체 참여 수. 결과를 공개하지 않아도 내려간다",
+            "example" : 42,
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "question" : {
+            "type" : "string"
+          },
+          "result" : {
+            "$ref" : "#/components/schemas/PollResultResponse",
+            "description" : "결과. 마감되었거나 내가 참여했을 때만 내려가고 아니면 null",
+            "type" : "null"
+          },
+          "status" : {
+            "description" : "노출 상태. 숨김·삭제는 작성자와 관리자에게만 내려간다",
+            "enum" : [ "PUBLIC", "HIDDEN", "DELETED" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PollInfo" : {
+        "description" : "신고 대상 투표 요약",
+        "properties" : {
+          "id" : {
+            "description" : "공개 ID",
+            "example" : "aB3dE5fG7hJk",
+            "type" : "string"
+          },
+          "question" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "PUBLIC", "HIDDEN", "DELETED" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PollListResponse" : {
+        "description" : "투표 목록 한 페이지",
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PollSummaryResponse"
+            },
+            "type" : "array"
+          },
+          "nextCursor" : {
+            "description" : "다음 페이지 커서. 마지막이면 null",
+            "example" : "eyJpZCI6MTIzfQ",
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "PollResultResponse" : {
+        "description" : "투표 결과",
+        "properties" : {
+          "options" : {
+            "description" : "선택지별 득표 수. 순번 오름차순, 득표가 없는 선택지도 포함",
+            "items" : {
+              "$ref" : "#/components/schemas/Option"
+            },
+            "type" : "array"
+          },
+          "total" : {
+            "description" : "전체 참여 수",
+            "example" : 42,
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "PollSummaryResponse" : {
+        "description" : "투표 목록 항목",
+        "properties" : {
+          "category" : {
+            "enum" : [ "SOME", "BLIND_DATE", "CONTACT", "IN_RELATIONSHIP", "BREAKUP", "LOVE_VALUES", "ETC" ],
+            "type" : "string"
+          },
+          "closed" : {
+            "type" : "boolean"
+          },
+          "closesAt" : {
+            "description" : "마감 시각(KST 오프셋). 마감 없으면 null",
+            "example" : "2026-10-19T23:59:00+09:00",
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "createdAt" : {
+            "description" : "생성 시각(KST 오프셋)",
+            "example" : "2026-10-12T13:00:00+09:00",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "description" : "공개 ID",
+            "example" : "aB3dE5fG7hJk",
+            "type" : "string"
+          },
+          "participantCount" : {
+            "description" : "전체 참여 수",
+            "example" : 42,
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "question" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ReportSubmitRequest" : {
+        "description" : "투표 신고 요청",
+        "properties" : {
+          "detail" : {
+            "description" : "상세 내용. 사유가 ETC일 때 필수이고 200자 이하(임시)",
+            "example" : "특정인을 지목하는 내용입니다.",
+            "type" : [ "string", "null" ]
+          },
+          "reason" : {
+            "description" : "신고 사유",
+            "enum" : [ "ABUSE_HATE", "SEXUAL_HARASSMENT", "PERSONAL_INFO", "SPAM", "ETC" ],
+            "example" : "SPAM",
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "VoteCastRequest" : {
+        "description" : "투표 참여 요청",
+        "properties" : {
+          "position" : {
+            "description" : "선택지 순번(1부터)",
+            "example" : 2,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "position" ],
+        "type" : "object"
+      },
+      "VoteCastResponse" : {
+        "description" : "투표 참여 응답",
+        "properties" : {
+          "myChoice" : {
+            "description" : "내가 고른 선택지 순번",
+            "example" : 2,
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "result" : {
+            "$ref" : "#/components/schemas/PollResultResponse",
+            "description" : "현재 결과"
+          }
+        },
+        "type" : "object"
+      }
+    }
+  },
+  "info" : {
+    "title" : "OpenAPI definition",
+    "version" : "v0"
+  },
+  "openapi" : "3.1.0",
+  "paths" : {
+    "/api/v1/admin/members/{memberId}/suspend" : {
+      "post" : {
+        "description" : "정상 회원을 정지한다. 기간 없이 해제할 때까지 유지되고, 그 회원의 기존 투표와 신고 상태는 바꾸지 않는다.",
+        "operationId" : "suspendMember",
+        "parameters" : [ {
+          "description" : "회원 내부 id",
+          "example" : 5,
+          "in" : "path",
+          "name" : "memberId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminReasonRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "정지됨"
+          },
+          "400" : {
+            "description" : "VALIDATION_FAILED: 사유 규칙 위반, MALFORMED_REQUEST: 회원 ID 형식 오류·본문 형식 오류"
+          },
+          "401" : {
+            "description" : "UNAUTHENTICATED"
+          },
+          "403" : {
+            "description" : "FORBIDDEN: 관리자가 아님(정지·탈퇴한 관리자 포함)"
+          },
+          "404" : {
+            "description" : "MEMBER_NOT_FOUND"
+          },
+          "409" : {
+            "description" : "MEMBER_NOT_ACTIVE: 이미 정지·탈퇴한 회원"
+          }
+        },
+        "summary" : "회원 정지",
+        "tags" : [ "관리자 회원" ]
+      }
+    },
+    "/api/v1/admin/polls/{pollId}/status" : {
+      "patch" : {
+        "description" : "투표를 숨기거나(HIDDEN) 삭제하고(DELETED) 그 투표의 대기 신고를 모두 조치 완료로 종료한다. 상태 변경, 신고 종료, 이력 기록은 한 트랜잭션이다. 숨김은 공개 투표만 가능하고 복구할 수 있다. 삭제는 공개·숨김 투표에서 가능하고 복구할 수 없다.",
+        "operationId" : "takedownPoll",
+        "parameters" : [ {
+          "description" : "투표 공개 ID(12자 영숫자)",
+          "example" : "aB3dE5fG7hJk",
+          "in" : "path",
+          "name" : "pollId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminPollTakedownRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "조치됨"
+          },
+          "400" : {
+            "description" : "VALIDATION_FAILED: 상태 누락·사유 규칙 위반, MALFORMED_REQUEST: 투표 ID 형식 오류·본문 형식 오류·허용되지 않은 상태 값"
+          },
+          "401" : {
+            "description" : "UNAUTHENTICATED"
+          },
+          "403" : {
+            "description" : "FORBIDDEN: 관리자가 아님(정지·탈퇴한 관리자 포함)"
+          },
+          "404" : {
+            "description" : "POLL_NOT_FOUND: 없거나 삭제된 투표"
+          },
+          "409" : {
+            "description" : "POLL_NOT_PUBLIC: 이미 숨겨진 투표를 숨기려 했다"
+          }
+        },
+        "summary" : "투표 숨김·삭제",
+        "tags" : [ "관리자 투표" ]
+      }
+    },
+    "/api/v1/admin/reports" : {
+      "get" : {
+        "description" : "상태별(기본 PENDING) 신고를 접수 순(id 오름차순)으로 내린다. 각 항목에 같은 투표에 쌓인 신고 수(pollReportCount)가 있다. cursor는 이전 응답의 nextCursor를 그대로 넘기는 불투명한 값이다.",
+        "operationId" : "getReports",
+        "parameters" : [ {
+          "description" : "신고 상태. 기본 PENDING",
+          "example" : "PENDING",
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "이전 응답의 nextCursor. 없으면 첫 페이지",
+          "in" : "query",
+          "name" : "cursor",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "한 페이지 개수. 기본 20, 1보다 작으면 1, 50을 넘으면 50으로 보정",
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AdminReportListResponse"
+                }
+              }
+            },
+            "description" : "목록. 신고가 없으면 빈 items"
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AdminReportListResponse"
+                }
+              }
+            },
+            "description" : "MALFORMED_REQUEST: status가 PENDING·RESOLVED·DISMISSED가 아님, cursor 형식 오류, size가 숫자가 아님"
+          },
+          "401" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AdminReportListResponse"
+                }
+              }
+            },
+            "description" : "UNAUTHENTICATED"
+          },
+          "403" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AdminReportListResponse"
+                }
+              }
+            },
+            "description" : "FORBIDDEN: 관리자가 아님(정지·탈퇴한 관리자 포함)"
+          }
+        },
+        "summary" : "신고 목록",
+        "tags" : [ "관리자 신고" ]
+      }
+    },
+    "/api/v1/admin/reports/{reportId}" : {
+      "get" : {
+        "description" : "신고 내용과 대상 투표(숨김·삭제여도), 같은 투표의 다른 신고, 조치 이력을 내린다. 신고자는 노출하지 않는다.",
+        "operationId" : "getReport",
+        "parameters" : [ {
+          "description" : "신고 내부 id",
+          "example" : 17,
+          "in" : "path",
+          "name" : "reportId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AdminReportDetailResponse"
+                }
+              }
+            },
+            "description" : "상세"
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AdminReportDetailResponse"
+                }
+              }
+            },
+            "description" : "MALFORMED_REQUEST: 신고 ID가 숫자가 아님"
+          },
+          "401" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AdminReportDetailResponse"
+                }
+              }
+            },
+            "description" : "UNAUTHENTICATED"
+          },
+          "403" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AdminReportDetailResponse"
+                }
+              }
+            },
+            "description" : "FORBIDDEN: 관리자가 아님(정지·탈퇴한 관리자 포함)"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AdminReportDetailResponse"
+                }
+              }
+            },
+            "description" : "REPORT_NOT_FOUND"
+          }
+        },
+        "summary" : "신고 상세",
+        "tags" : [ "관리자 신고" ]
+      }
+    },
+    "/api/v1/admin/reports/{reportId}/dismiss" : {
+      "post" : {
+        "description" : "신고를 기각하고 같은 투표의 다른 대기 신고도 함께 기각한다. 투표와 회원의 상태는 바꾸지 않는다. 신고 상태 변경과 이력 기록은 한 트랜잭션이다.",
+        "operationId" : "dismissReport",
+        "parameters" : [ {
+          "description" : "신고 내부 id",
+          "example" : 17,
+          "in" : "path",
+          "name" : "reportId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminReasonRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "기각됨"
+          },
+          "400" : {
+            "description" : "VALIDATION_FAILED: 사유 규칙 위반, MALFORMED_REQUEST: 신고 ID 형식 오류·본문 형식 오류"
+          },
+          "401" : {
+            "description" : "UNAUTHENTICATED"
+          },
+          "403" : {
+            "description" : "FORBIDDEN: 관리자가 아님(정지·탈퇴한 관리자 포함)"
+          },
+          "404" : {
+            "description" : "REPORT_NOT_FOUND"
+          },
+          "409" : {
+            "description" : "REPORT_ALREADY_HANDLED: 이미 처리됐거나 동시 처리에서 졌다"
+          }
+        },
+        "summary" : "신고 기각",
+        "tags" : [ "관리자 신고" ]
+      }
+    },
+    "/api/v1/auth/logout" : {
+      "post" : {
+        "description" : "현재 기기의 리프레시 토큰을 폐기하고 쿠키를 지운다. 다른 기기의 로그인은 유지된다. 이미 로그아웃된 상태여도 204다.",
+        "operationId" : "logout",
+        "responses" : {
+          "204" : {
+            "description" : "로그아웃됨"
+          }
+        },
+        "summary" : "로그아웃",
+        "tags" : [ "인증" ]
+      }
+    },
+    "/api/v1/auth/refresh" : {
+      "post" : {
+        "description" : "리프레시 토큰 쿠키를 검증해 새 액세스·리프레시 토큰 쿠키를 내린다. 이전 리프레시 토큰은 폐기된다. 폐기된 토큰이 10초를 넘겨 다시 오면 재사용으로 보고 그 회원의 모든 기기를 로그아웃시킨다.",
+        "operationId" : "refresh",
+        "responses" : {
+          "204" : {
+            "description" : "재발급됨. 본문 없음, Set-Cookie로 전달"
+          },
+          "401" : {
+            "description" : "UNAUTHENTICATED: 토큰이 없거나 만료·폐기됐거나 재사용으로 감지됨"
+          }
+        },
+        "summary" : "토큰 재발급",
+        "tags" : [ "인증" ]
+      }
+    },
+    "/api/v1/members/me" : {
+      "delete" : {
+        "description" : "회원을 탈퇴 처리하고 소셜 연동 정보와 리프레시 토큰을 삭제한 뒤 쿠키를 지운다. 정지 중에도 할 수 있다. 되돌릴 수 없고, 같은 소셜 계정으로 다시 가입하면 새 회원이다.",
+        "operationId" : "withdraw",
+        "responses" : {
+          "204" : {
+            "description" : "탈퇴됨. 액세스·리프레시 쿠키 삭제"
+          },
+          "401" : {
+            "description" : "UNAUTHENTICATED: 로그인하지 않았거나 이미 탈퇴한 회원"
+          }
+        },
+        "summary" : "회원 탈퇴",
+        "tags" : [ "회원" ]
+      },
+      "get" : {
+        "description" : "로그인한 회원의 상태·역할·가입 시각을 내린다. 정지 회원도 조회할 수 있다. 프런트엔드는 status로 화면을 다르게 보여주되 최종 검증은 서버가 한다.",
+        "operationId" : "getMyInfo",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MemberResponse"
+                }
+              }
+            },
+            "description" : "내 정보"
+          },
+          "401" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MemberResponse"
+                }
+              }
+            },
+            "description" : "UNAUTHENTICATED: 로그인하지 않았거나 탈퇴한 회원"
+          }
+        },
+        "summary" : "내 정보 조회",
+        "tags" : [ "회원" ]
+      }
+    },
+    "/api/v1/polls" : {
+      "get" : {
+        "description" : "공개(PUBLIC) 투표를 최신순으로 내린다. 마감된 투표도 closed=true로 포함하고, 각 투표의 전체 참여 수(participantCount)를 담는다. cursor는 이전 응답의 nextCursor를 그대로 넘기는 불투명한 값이다.",
+        "operationId" : "getPolls",
+        "parameters" : [ {
+          "description" : "이전 응답의 nextCursor. 없으면 첫 페이지",
+          "in" : "query",
+          "name" : "cursor",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "한 페이지 개수. 기본 20, 1보다 작으면 1, 50을 넘으면 50으로 보정",
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PollListResponse"
+                }
+              }
+            },
+            "description" : "목록. 투표가 없으면 빈 items"
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PollListResponse"
+                }
+              }
+            },
+            "description" : "MALFORMED_REQUEST: cursor 형식 오류, size가 숫자가 아님"
+          }
+        },
+        "summary" : "투표 목록",
+        "tags" : [ "투표" ]
+      },
+      "post" : {
+        "description" : "투표와 선택지를 한 트랜잭션으로 만든다. 본문은 만든 투표의 공개 ID 문자열이고, 위치는 Location 헤더에도 담긴다. 로그인(액세스 토큰 쿠키)이 필요하다.",
+        "operationId" : "createPoll",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PollCreateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "생성됨. 본문은 공개 ID"
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "VALIDATION_FAILED(errors에 위반 필드) 또는 MALFORMED_REQUEST"
+          },
+          "401" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "UNAUTHENTICATED"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "DUPLICATE_POLL: 직전과 같은 질문"
+          },
+          "429" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "POLL_RATE_LIMITED: 직전 생성 후 30초 미만"
+          }
+        },
+        "summary" : "투표 생성",
+        "tags" : [ "투표" ]
+      }
+    },
+    "/api/v1/polls/{pollId}" : {
+      "get" : {
+        "description" : "선택지·마감·참여 수·노출 상태(status)와 내 선택(myChoice), 결과(result)를 내린다. result는 마감되었거나 내가 참여했을 때만 내려가고 아니면 null이다. 참여 여부는 회원 ID 또는 익명 쿠키로 판단하며 쿠키는 읽기만 한다. 숨김·삭제 투표는 작성자와 관리자(DB의 role이 ADMIN)에게만 200이고 그 밖에는 404다.",
+        "operationId" : "getPoll",
+        "parameters" : [ {
+          "description" : "투표 공개 ID(12자 영숫자)",
+          "example" : "aB3dE5fG7hJk",
+          "in" : "path",
+          "name" : "pollId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PollDetailResponse"
+                }
+              }
+            },
+            "description" : "상세"
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PollDetailResponse"
+                }
+              }
+            },
+            "description" : "MALFORMED_REQUEST: 공개 ID 형식 오류"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PollDetailResponse"
+                }
+              }
+            },
+            "description" : "POLL_NOT_FOUND: 없거나 작성자·관리자가 볼 수 없는 숨김·삭제된 투표"
+          }
+        },
+        "summary" : "투표 상세",
+        "tags" : [ "투표" ]
+      }
+    },
+    "/api/v1/polls/{pollId}/reports" : {
+      "post" : {
+        "description" : "로그인한 회원이면 회원으로, 아니면 익명 식별 쿠키(auddum_anon)로 신고한다. 쿠키가 없거나 위조되었으면 새로 발급해 Set-Cookie로 내린다. 접수하면 201이며 본문은 없다. 신고는 투표당 신고자당 1회이고, 신고해도 투표의 노출 상태는 바뀌지 않는다. 마감된 투표도 신고할 수 있다.",
+        "operationId" : "submitReport",
+        "parameters" : [ {
+          "description" : "투표 공개 ID(12자 영숫자)",
+          "example" : "aB3dE5fG7hJk",
+          "in" : "path",
+          "name" : "pollId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReportSubmitRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "접수함"
+          },
+          "400" : {
+            "description" : "VALIDATION_FAILED(사유 누락·ETC 상세 누락·길이 초과), MALFORMED_REQUEST(공개 ID·본문 형식 오류·허용되지 않은 사유)"
+          },
+          "401" : {
+            "description" : "UNAUTHENTICATED: 탈퇴했거나 없는 회원"
+          },
+          "403" : {
+            "description" : "MEMBER_SUSPENDED"
+          },
+          "404" : {
+            "description" : "POLL_NOT_FOUND: 없거나 숨김·삭제된 투표"
+          },
+          "409" : {
+            "description" : "REPORT_ALREADY_SUBMITTED: 이미 신고함"
+          }
+        },
+        "summary" : "투표 신고",
+        "tags" : [ "신고" ]
+      }
+    },
+    "/api/v1/polls/{pollId}/votes" : {
+      "post" : {
+        "description" : "로그인한 회원이면 회원으로, 아니면 익명 식별 쿠키(auddum_anon)로 참여한다. 쿠키가 없거나 위조되었으면 새로 발급해 Set-Cookie로 내린다. 참여하면 201이며 본문은 { myChoice, result }다. 이미 참여했으면 선택과 관계없이 409이고, 이때는 GET /polls/{pollId}로 내 선택과 결과를 확인한다. 선택을 바꾸는 API는 없다.",
+        "operationId" : "castVote",
+        "parameters" : [ {
+          "description" : "투표 공개 ID(12자 영숫자)",
+          "example" : "aB3dE5fG7hJk",
+          "in" : "path",
+          "name" : "pollId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VoteCastRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VoteCastResponse"
+                }
+              }
+            },
+            "description" : "참여함"
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VoteCastResponse"
+                }
+              }
+            },
+            "description" : "VALIDATION_FAILED, MALFORMED_REQUEST(공개 ID·본문 형식 오류), INVALID_OPTION"
+          },
+          "401" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VoteCastResponse"
+                }
+              }
+            },
+            "description" : "UNAUTHENTICATED: 탈퇴했거나 없는 회원"
+          },
+          "403" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VoteCastResponse"
+                }
+              }
+            },
+            "description" : "MEMBER_SUSPENDED"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VoteCastResponse"
+                }
+              }
+            },
+            "description" : "POLL_NOT_FOUND: 없거나 숨김·삭제된 투표"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VoteCastResponse"
+                }
+              }
+            },
+            "description" : "ALREADY_VOTED: 이미 참여함(선택과 관계없음), POLL_CLOSED: 마감됨"
+          }
+        },
+        "summary" : "투표 참여",
+        "tags" : [ "참여" ]
+      }
+    }
+  },
+  "tags" : [ {
+    "description" : "관리자의 투표 숨김·삭제. 관리자 권한(DB의 role이 ADMIN이고 정상 상태)이 필요하다.",
+    "name" : "관리자 투표"
+  }, {
+    "description" : "토큰 재발급·로그아웃. 로그인 시작과 콜백은 프레임워크가 제공한다.",
+    "name" : "인증"
+  }, {
+    "description" : "투표 생성·조회·삭제",
+    "name" : "투표"
+  }, {
+    "description" : "투표 참여",
+    "name" : "참여"
+  }, {
+    "description" : "관리자의 회원 정지. 관리자 권한(DB의 role이 ADMIN이고 정상 상태)이 필요하다.",
+    "name" : "관리자 회원"
+  }, {
+    "description" : "투표 신고",
+    "name" : "신고"
+  }, {
+    "description" : "탈퇴",
+    "name" : "회원"
+  }, {
+    "description" : "관리자의 신고 조회·처리. 관리자 권한(DB의 role이 ADMIN이고 정상 상태)이 필요하다.",
+    "name" : "관리자 신고"
+  }, {
+    "description" : "내 정보 조회",
+    "name" : "회원"
+  } ]
+}
