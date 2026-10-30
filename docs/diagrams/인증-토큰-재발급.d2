@@ -1,0 +1,33 @@
+vars: {
+  d2-config: { layout-engine: dagre }
+}
+
+classes: {
+  step: { style: { border-radius: 8; fill: "#F4F6FA"; stroke: "#5B6B8C" } }
+  ask:  { style: { border-radius: 24; fill: "#FFF7E0"; stroke: "#C99A2E" } }
+  fail: { style: { border-radius: 8; fill: "#FDECEC"; stroke: "#C0392B"; font-color: "#8E2A20" } }
+  ok:   { style: { border-radius: 8; fill: "#E8F6EE"; stroke: "#2E8B57"; font-color: "#1E6B41" } }
+  ext:  { style: { border-radius: 8; fill: "#EEF3FB"; stroke: "#3F6FB5" } }
+}
+
+direction: down
+a: "재발급 요청" { class: step }
+b: "토큰 서명·만료가 유효한가" { class: ask }
+c: "DB에 해시가 있는가" { class: ask }
+d: "이미 폐기된 토큰인가" { class: ask }
+e: "새 리프레시 토큰 발급\n이전 토큰 revoked_at 기록" { class: step }
+f: "새 액세스 토큰 발급\n204" { class: ok }
+g: "폐기 후 10초 이내인가" { class: ask }
+h: "재사용 감지\n회원의 리프레시 토큰 전부 폐기·로그 기록" { class: fail }
+x: "401" { class: fail }
+a -> b
+b -> c: 예
+b -> x: 아니오
+c -> d: 있음
+c -> x: 없음
+d -> e: 아니오
+e -> f
+d -> g: 예
+g -> f: 예
+g -> h: 아니오
+h -> x

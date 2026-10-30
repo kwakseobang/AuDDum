@@ -1,0 +1,29 @@
+vars: {
+  d2-config: { layout-engine: dagre }
+}
+
+classes: {
+  step: { style: { border-radius: 8; fill: "#F4F6FA"; stroke: "#5B6B8C" } }
+  ask:  { style: { border-radius: 24; fill: "#FFF7E0"; stroke: "#C99A2E" } }
+  fail: { style: { border-radius: 8; fill: "#FDECEC"; stroke: "#C0392B"; font-color: "#8E2A20" } }
+  ok:   { style: { border-radius: 8; fill: "#E8F6EE"; stroke: "#2E8B57"; font-color: "#1E6B41" } }
+  ext:  { style: { border-radius: 8; fill: "#EEF3FB"; stroke: "#3F6FB5" } }
+}
+
+shape: sequence_diagram
+b: 브라우저
+s: 서버
+k: 카카오
+b -> s: GET /oauth2/authorization/kakao
+s -> s: state 생성·보관
+s -> b: 302 카카오 인가 페이지
+b -> k: 로그인·동의
+k -> b: 302 콜백(code, state)
+b -> s: GET /login/oauth2/code/kakao
+s -> s: state 검증
+s -> k: code로 토큰 교환
+k -> s: 액세스 토큰
+s -> k: 유저 정보 조회
+k -> s: 카카오 식별자
+s -> s: 회원 조회 또는 가입
+s -> b: 302 원래 페이지 + 토큰 쿠키(HttpOnly)

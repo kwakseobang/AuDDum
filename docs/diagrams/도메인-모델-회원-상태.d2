@@ -1,0 +1,23 @@
+vars: {
+  d2-config: { layout-engine: dagre }
+}
+
+classes: {
+  step: { style: { border-radius: 8; fill: "#F4F6FA"; stroke: "#5B6B8C" } }
+  ask:  { style: { border-radius: 24; fill: "#FFF7E0"; stroke: "#C99A2E" } }
+  fail: { style: { border-radius: 8; fill: "#FDECEC"; stroke: "#C0392B"; font-color: "#8E2A20" } }
+  ok:   { style: { border-radius: 8; fill: "#E8F6EE"; stroke: "#2E8B57"; font-color: "#1E6B41" } }
+  ext:  { style: { border-radius: 8; fill: "#EEF3FB"; stroke: "#3F6FB5" } }
+}
+
+direction: right
+s: "시작" { class: step }
+ACTIVE: "ACTIVE\n정상 이용" { class: ok }
+SUSPENDED: "SUSPENDED\n이용 정지" { class: fail }
+WITHDRAWN: "WITHDRAWN\n탈퇴(끝)" { class: step }
+
+s -> ACTIVE: 소셜 로그인으로 가입
+ACTIVE -> SUSPENDED: 관리자 정지
+SUSPENDED -> ACTIVE: 관리자 해제
+ACTIVE -> WITHDRAWN: 본인 탈퇴
+SUSPENDED -> WITHDRAWN: 본인 탈퇴

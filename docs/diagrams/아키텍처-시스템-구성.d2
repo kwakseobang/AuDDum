@@ -1,0 +1,21 @@
+vars: {
+  d2-config: { layout-engine: dagre }
+}
+
+classes: {
+  step: { style: { border-radius: 8; fill: "#F4F6FA"; stroke: "#5B6B8C" } }
+  ask:  { style: { border-radius: 24; fill: "#FFF7E0"; stroke: "#C99A2E" } }
+  fail: { style: { border-radius: 8; fill: "#FDECEC"; stroke: "#C0392B"; font-color: "#8E2A20" } }
+  ok:   { style: { border-radius: 8; fill: "#E8F6EE"; stroke: "#2E8B57"; font-color: "#1E6B41" } }
+  ext:  { style: { border-radius: 8; fill: "#EEF3FB"; stroke: "#3F6FB5" } }
+}
+
+direction: right
+b: "브라우저" { class: step }
+a: "Spring Boot\n모놀리스" { class: step }
+db: "MySQL" { shape: cylinder }
+k: "카카오" { class: ext }
+b -> a: "HTTPS, JWT 쿠키"
+a -> db
+a -> k: "토큰 교환·유저 정보 조회"
+b -> k: "로그인 시 이동" { style.stroke-dash: 4 }

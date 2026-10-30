@@ -1,0 +1,23 @@
+vars: {
+  d2-config: { layout-engine: dagre }
+}
+
+classes: {
+  step: { style: { border-radius: 8; fill: "#F4F6FA"; stroke: "#5B6B8C" } }
+  ask:  { style: { border-radius: 24; fill: "#FFF7E0"; stroke: "#C99A2E" } }
+  fail: { style: { border-radius: 8; fill: "#FDECEC"; stroke: "#C0392B"; font-color: "#8E2A20" } }
+  ok:   { style: { border-radius: 8; fill: "#E8F6EE"; stroke: "#2E8B57"; font-color: "#1E6B41" } }
+  ext:  { style: { border-radius: 8; fill: "#EEF3FB"; stroke: "#3F6FB5" } }
+}
+
+shape: sequence_diagram
+a: 요청 A
+b: 요청 B
+db: "DB(유니크 제약)"
+a -> db: 참여 기록 조회 (없음)
+b -> db: 참여 기록 조회 (없음)
+a -> db: INSERT
+db -> a: 성공 → 201
+b -> db: INSERT
+db -> b: 유니크 위반
+b -> b: 409 ALREADY_VOTED
