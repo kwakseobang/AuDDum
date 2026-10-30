@@ -22,9 +22,9 @@ test-writer, domain-reviewer, code-reviewer가 **같은 기준**을 쓰기 위�
 | Report 행위·규칙·신고 상태 전이 | `domain/도메인-모델.md` §6 |
 | AdminAction | `domain/도메인-모델.md` §7 |
 | 값 객체 검증 규칙 | `domain/도메인-모델.md` §8 |
-| 확정 정책 P-xx | 해당 기능 페이지의 '정책 정의'. 어느 페이지인지는 `engineering/예외-응답.md`의 정책 색인 |
-| 예외 상황별 응답 | `engineering/예외-응답.md`의 '예외 상황과 응답' |
-| 동시성 시나리오 | `engineering/예외-응답.md`의 '동시성·정합성', `engineering/동시성-중복-방지.md` |
+| 확정 정책 P-xx | 해당 기능 페이지의 '정책 정의'(번호로 검색) |
+| 예외 상황별 응답 | 해당 기능 페이지의 '이럴 때는'과 규칙 표 |
+| 동시성 시나리오 | `engineering/동시성-중복-방지.md`, 기능 페이지의 '동시 요청과 경계에서 확인할 것' |
 | 관리자 운영 시나리오(OP-xx) | `features/06-관리자-조치.md`의 '운영 시나리오' |
 | 유스케이스 흐름(UC-01~17) | 해당 기능 페이지의 '이럴 때는' |
 | 인증·회원 API | `API-명세.md` §2 |
@@ -32,7 +32,7 @@ test-writer, domain-reviewer, code-reviewer가 **같은 기준**을 쓰기 위�
 | 참여·결과 API, 결과 공개 규칙 | `API-명세.md` §4 |
 | 신고 API | `API-명세.md` §5 |
 | 관리자 API | `API-명세.md` §6 |
-| 오류 코드와 상태 코드 | `API-명세.md` §7 |
+| 오류 코드와 상태 코드 | `generated/오류-코드.md` |
 | 토큰·쿠키, 익명 쿠키 | `engineering/인증.md` |
 | 동시성 검증 항목 | `engineering/동시성-중복-방지.md`, `features/03-참여하기.md`의 '동시 요청과 경계에서 확인할 것' |
 | 패키지·레이어·서비스·응답 규칙, `domain` 레이어, 조회 조합 | `engineering/아키텍처.md` §2 |
