@@ -21,8 +21,8 @@ import java.util.stream.Stream;
  * <p>정의는 정해진 파일에서만 모은다. 정의가 없는 참조, 중복 정의, 형식 오류, 도메인-모델 밖의 R-ID 정의는 실패다.
  * 기능 페이지(docs/features)의 P·OP·UC 정의도 모으고, sketch(docs/records/sketches)의 머리말과 기능 페이지의 이력 링크가 서로를 가리키는지 본다.
  * docs의 상대 링크가 가리키는 파일이 없으면 실패다. 옮기거나 없앤 문서의 이름(퇴역 이름)을 docs·.claude·CLAUDE.md에서 쓰면 실패다(시점 기록인 docs/records는 제외).
- * src의 문서 이름 언급은 실패다. 절 번호(§) 참조는 docs와 src에서는 실패이고, .claude와 CLAUDE.md는 개수만 보고한다(하네스는 1단계에서 정리한다).
- * docs의 가독성(긴 문장, #### 제목, 줄 전체 굵은 글씨, 알림 상자 초과, 굵은 글씨가 많은 절)은 개수만 보고한다. 기준은 docs/index.md의 표기 규칙이다.
+ * src의 문서 이름 언급은 실패다. 절 번호 참조(§3, 2장, 3절, 3~6장)는 docs와 src에서는 실패이고(시점 기록인 docs/records는 제외), .claude와 CLAUDE.md는 개수만 보고한다(하네스는 1단계에서 정리한다).
+ * docs의 가독성(긴 문장, #### 제목, 줄 전체 굵은·기울임 글씨, 알림 상자 초과, 굵은 글씨가 많은 절)은 개수만 보고한다. 기준은 docs/index.md의 표기 규칙이다.
  *
  * <p>사용법: {@code scripts/docs-check [--root <디렉터리>] [--readability]} (저장소 루트에서 실행, --readability는 가독성 위치를 모두 보인다)
  */
@@ -55,7 +55,8 @@ public class DocsCheck {
         "(?<![A-Za-z0-9_-])((?:P|OP|UC)-\\d+|R-[A-Za-z]+-\\d+)(?![A-Za-z0-9])");
 
     static final Pattern CODE_SPAN = Pattern.compile("`[^`]*`");
-    static final Pattern SECTION_REF = Pattern.compile("§\\s?\\d");
+    // 절 번호는 문서를 나누거나 절을 옮기면 조용히 틀린다. "2장", "3절", "3~6장"도 § 표기와 같게 본다(절차·장애 같은 낱말은 뺀다).
+    static final Pattern SECTION_REF = Pattern.compile("§\\s?\\d|(?<![0-9])\\d+(?:~\\d+)?\\s?(?:장|절)(?![차점애기대약반])");
 
     // 코드 주석은 문서 이름을 쓰지 않는다(문서를 나누거나 이름을 바꾸면 조용히 낡는다). 근거는 ID나 코드 식별자로 단다.
     // docs/generated는 코드가 만드는 문서라 생성기가 경로를 알아야 하므로 예외다.
@@ -102,11 +103,12 @@ public class DocsCheck {
     static final int MAX_INLINE_BOLDS = 1;
     static final String LONG = "긴 문장";
     static final String DEEP_HEADING = "#### 제목";
-    static final String BOLD_LINE = "줄 전체 굵은 글씨";
+    static final String BOLD_LINE = "줄 전체 굵은·기울임 글씨";
     static final String TOO_MANY_ALERTS = "알림 상자 초과";
     static final String BOLD_HEAVY = "굵은 글씨가 많은 절";
     static final Pattern ALERT = Pattern.compile("^>\\s*\\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)]");
     static final Pattern BOLD_ONLY_LINE = Pattern.compile("^\\*\\*[^*]+\\*\\*(\\([^)]*\\))?(\\s+—\\s+.{1,40})?:?$");
+    static final Pattern ITALIC_ONLY_LINE = Pattern.compile("^\\*[^*\\s][^*]*\\*:?$");
     static final Pattern BOLD = Pattern.compile("\\*\\*([^*]+)\\*\\*");
     static final Pattern LIST_LABEL = Pattern.compile("^\\s*(?:[-*]|\\d+\\.|>)\\s*\\*\\*[^*]+\\*\\*");
     static final Pattern CELL_LABEL = Pattern.compile("\\|\\s*\\*\\*[^*]+\\*\\*");
@@ -160,7 +162,7 @@ public class DocsCheck {
             out.println("오류 " + result.errors().size() + "건");
             result.errors().forEach(e -> out.println("  " + e));
         }
-        out.println("절 번호(§) 참조 개수(docs·src는 실패, 나머지는 보고만): " + result.sectionRefs());
+        out.println("절 번호(§·N장·N절) 참조 개수(docs·src는 실패, 나머지는 보고만): " + result.sectionRefs());
         Map<String, Integer> byKind = new LinkedHashMap<>();
         List.of(LONG, DEEP_HEADING, BOLD_LINE, TOO_MANY_ALERTS, BOLD_HEAVY).forEach(kind -> byKind.put(kind, 0));
         result.readability().forEach(r -> byKind.merge(r.kind(), 1, Integer::sum));
@@ -211,7 +213,9 @@ public class DocsCheck {
                     checkMarkdownLinks(file, line, location, errors);
                 }
 
-                int sections = countMatches(SECTION_REF, line);
+                // 시점 기록(docs/records)은 그때의 절 번호를 그대로 둔다. 코드 글꼴 안의 표기는 예시라 세지 않는다.
+                String outsideCode = CODE_SPAN.matcher(line).replaceAll(" ");
+                int sections = relative.startsWith(RECORDS_DIR) ? 0 : countMatches(SECTION_REF, outsideCode);
                 sectionRefs.merge(area, sections, Integer::sum);
                 if (sections > 0 && SECTION_REF_FAIL_AREAS.contains(area)) {
                     errors.add(location + "  절 번호 참조: " + sectionToken(line) + " (정책·규칙·시나리오 ID로 바꾸거나 지운다)");
@@ -252,7 +256,7 @@ public class DocsCheck {
                 continue;
             }
             String text = CODE_SPAN.matcher(line).replaceAll("`x`");
-            if (BOLD_ONLY_LINE.matcher(text.strip()).matches()) {
+            if (BOLD_ONLY_LINE.matcher(text.strip()).matches() || ITALIC_ONLY_LINE.matcher(text.strip()).matches()) {
                 found.add(new Readability(BOLD_LINE, location));
                 continue;
             }
@@ -650,6 +654,7 @@ public class DocsCheck {
     }
 
     private static String sectionToken(String line) {
+        line = CODE_SPAN.matcher(line).replaceAll(" ");
         Matcher matcher = SECTION_REF.matcher(line);
         return matcher.find() ? line.substring(matcher.start(), Math.min(line.length(), matcher.end() + 6)).trim() : "";
     }

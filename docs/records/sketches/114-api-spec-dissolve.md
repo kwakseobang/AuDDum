@@ -1,9 +1,9 @@
 ---
 issue: 114
-features: [04-결과-보기, 06-관리자-조치, 07-로그인과-회원]
+features: [없음]
 ids: [R-POLL-19, R-ACTION-02]
 decisions: []
-status: 진행 중
+status: 완료
 ---
 
 # 손으로 쓴 API 명세를 없애고 생성 문서와 공통 규칙으로 옮긴다

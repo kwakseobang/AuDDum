@@ -1,9 +1,9 @@
 ---
 issue: 114
-features: [02-투표-만들기]
+features: [없음]
 ids: [UC-17, P-02]
 decisions: []
-status: 진행 중
+status: 완료
 ---
 
 # OpenAPI 문서를 코드에서 만들고 기능 페이지와 대조한다

@@ -3,7 +3,7 @@ issue: 120
 features: [없음]
 ids: []
 decisions: []
-status: 진행 중
+status: 완료
 ---
 
 # 낡은 안내 문구를 정리하고 용어집을 도메인 모델에서 뺀다

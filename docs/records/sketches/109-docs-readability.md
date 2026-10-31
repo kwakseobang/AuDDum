@@ -3,7 +3,7 @@ issue: 109
 features: [없음]
 ids: []
 decisions: []
-status: 진행 중
+status: 완료
 ---
 
 # Mermaid를 D2로 바꾸고 읽기 쉽게 한다

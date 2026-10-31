@@ -1,6 +1,6 @@
 ---
 issue: 106
-features: [03-참여하기]
+features: [없음]
 ids: [UC-03, UC-04, UC-10, UC-11, UC-12, P-08, P-09, P-10, P-11, P-12, P-24, R-VOTE-01, R-VOTE-02, R-VOTE-03, R-VOTE-04, R-VOTE-05, R-VOTE-06, R-VOTE-07, R-VOTE-08]
 decisions: []
 status: 완료

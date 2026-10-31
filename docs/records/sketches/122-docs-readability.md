@@ -3,7 +3,7 @@ issue: 122
 features: [없음]
 ids: []
 decisions: []
-status: 진행 중
+status: 완료
 ---
 
 # 가독성 기준을 정하고 모든 문서에 적용한다
