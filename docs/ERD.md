@@ -19,11 +19,11 @@ AuDDum(어떰)의 확정 정책과 [도메인 모델](domain/도메인-모델.md
 3. [ERD](#3-erd)
 4. [테이블 정의](#4-테이블-정의)
 5. [제약조건과 인덱스](#5-제약조건과-인덱스)
-6. [핵심 쿼리 패턴](#6-핵심-쿼리-패턴)
+6. [쿼리가 스키마를 쓰는 방식](#6-쿼리가-스키마를-쓰는-방식)
 
 ## 1. 정책 → 모델 반영
 
-확정된 정책 중 데이터 모델에 직접 영향을 주는 것만 모았다. 응답 코드나 화면 규칙은 API 설계 단계에서 다룬다. 이 문서의 컬럼 타입, 제약조건, 인덱스는 모두 `[기술 초안]`이며 MySQL을 기준으로 한다.
+확정된 정책 중 데이터 모델에 직접 영향을 주는 것만 모았다. 응답 코드와 화면 규칙은 기능 페이지와 [API 목록](generated/API-목록.md)에 있다. 컬럼 타입, 제약조건, 인덱스의 기준은 마이그레이션(`src/main/resources/db/migration`)이고 이 문서는 그 요약이다. 둘이 다르면 마이그레이션이 맞고 이 문서를 고친다.
 
 | 확정 정책 | 모델 반영 | 관련 테이블 |
 | --- | --- | --- |
@@ -62,10 +62,9 @@ AuDDum(어떰)의 확정 정책과 [도메인 모델](domain/도메인-모델.md
 ### 설계 결정
 
 - **Vote를 Poll 안에 넣지 않는다.** 참여가 쌓일수록 Poll을 불러오고 잠그는 범위가 커지고, 중복 참여 방지는 DB 유니크 제약이 맡기 때문이다. Vote는 poll_id와 option_id 값으로만 Poll을 가리킨다.
-- **애그리거트 사이는 ID 값으로만 참조한다.** 예: Vote는 Poll 객체가 아니라 pollId를 가진다. JPA 연관관계를 최소화해 불필요한 로딩을 줄인다. `[기술 초안]`
-- **마감은 저장하지 않고 계산한다.** Poll이 `isClosed(now)`를 제공하고, 참여 가능 여부(공개 상태이면서 마감 전)도 Poll이 판단한다. now는 한 곳에서 주입하는 시각 하나만 쓴다.
-- **결과 공개 규칙은 Poll이 갖고, 참여 여부는 서비스가 모아 넘긴다.** "마감 후이거나 이 신원이 참여했는가" 중 마감은 Poll(`isResultOpen(participated, now)`)이 판단하고, 이 신원이 참여했는가는 Vote 기록을 읽는 쪽(조회 서비스)이 구해서 넘긴다.
-- **중복 참여는 DB 유니크 제약이 최종 방어선이다.** 애플리케이션의 사전 조회는 빠른 응답을 위한 것이고, 유니크 제약 위반 예외(외래키·CHECK 위반은 제외)를 409 "이미 참여" 응답으로 변환한다.
+- **애그리거트 사이는 ID 값으로만 참조한다.** 예: Vote는 Poll 객체가 아니라 pollId를 가진다. JPA 연관관계를 최소화해 불필요한 로딩을 줄인다.
+- **마감·결과 공개는 컬럼이 아니라 계산이다.** 마감 여부와 결과 공개 여부를 저장하는 컬럼은 없다. 판단 규칙은 [도메인 모델](domain/도메인-모델.md)(R-POLL-07, R-POLL-19)에 있다.
+- **중복 참여는 DB 유니크 제약이 최종 방어선이다.** 위반을 어떤 응답으로 바꾸는지는 [동시성·중복 방지](engineering/동시성-중복-방지.md)에 있다.
 
 ## 3. ERD
 
@@ -123,7 +122,7 @@ vote는 poll이 아니라 poll_option을 통해 poll에 연결된다. (poll_id, 
 
 ## 4. 테이블 정의
 
-테이블이 8개다. `[기술 초안]`
+테이블이 8개다.
 
 - 시각 컬럼은 모두 한국 시간(KST) 기준으로 저장하는 DATETIME(6)이고, PK는 BIGINT AUTO_INCREMENT다.
 - 모든 테이블이 `created_at`·`updated_at`을 가지며 엔티티의 부모 `BaseEntity`가 자동으로 채운다.
@@ -258,26 +257,7 @@ V1에는 제약(UNIQUE, CHECK, FK)과 그것이 쓰는 인덱스만 둔다. 이�
 | report (status, created_at) | 관리자 신고 대기 목록 | 대기 건수가 많을 때 정렬 비용 |
 | admin_action (admin_id, created_at) | 관리자별 이력 조회 | admin_id 외래키 인덱스만으로 충분한가 |
 
-### vote 테이블 DDL `[기술 초안]`
-
-```sql
-CREATE TABLE vote (
-  id         BIGINT AUTO_INCREMENT PRIMARY KEY,
-  poll_id    BIGINT   NOT NULL,
-  option_id  BIGINT   NOT NULL,
-  member_id  BIGINT   NULL,
-  anon_id    CHAR(36) NULL,
-  created_at DATETIME(6) NOT NULL,
-  updated_at DATETIME(6) NOT NULL,
-  CONSTRAINT uq_vote_member UNIQUE (poll_id, member_id),
-  CONSTRAINT uq_vote_anon   UNIQUE (poll_id, anon_id),
-  CONSTRAINT fk_vote_option FOREIGN KEY (poll_id, option_id)
-    REFERENCES poll_option (poll_id, id),
-  CONSTRAINT fk_vote_member FOREIGN KEY (member_id) REFERENCES member (id),
-  CONSTRAINT ck_vote_voter  CHECK ((member_id IS NULL) <> (anon_id IS NULL)),
-  INDEX ix_vote_result (poll_id, option_id)
-);
-```
+vote 테이블의 실제 DDL은 `V1__init_schema.sql`에 있다(`updated_at`은 V2에서 더했다).
 
 ### 알아둘 점
 
@@ -286,75 +266,16 @@ CREATE TABLE vote (
 - 선택지 내용은 대소문자와 악센트를 구분하지 않고 중복 여부를 판단한다. (확정) MySQL 8의 기본 콜레이션 utf8mb4_0900_ai_ci가 이 방식이므로 poll_option.content에 그대로 쓰고, 저장 전에 앞뒤 공백을 제거한다.
 - 위 제약이 모든 위반을 막는 것은 아니다. 선택지 2~5개 하한, 마감 시각, 질문 500자 같은 규칙은 애플리케이션이 검증한다.
 
-## 6. 핵심 쿼리 패턴
+## 6. 쿼리가 스키마를 쓰는 방식
 
-구현 전에 인덱스와 제약이 이 쿼리들을 받쳐 주는지 확인하기 위한 `[기술 초안]`이다. 성능 수치는 측정하기 전에는 주장하지 않는다.
+인덱스와 제약이 받쳐 주는 쿼리의 모양만 적는다. 실제 쿼리는 각 `*JpaRepository`에 있고, 성능 수치는 측정하기 전에는 주장하지 않는다.
 
-### 목록 (커서 기반)
-
-```sql
-SELECT id, public_id, question, category, close_at, created_at
-FROM poll
-WHERE status = 'PUBLIC' AND id < :cursor
-ORDER BY id DESC
-LIMIT :size;
-```
-
-정렬과 커서는 내부 id 기준이다. 응답에는 내부 id를 담지 않고 public_id만 내려주며, 다음 페이지 커서는 마지막 항목의 id를 불투명한 문자열로 인코딩해 담는다. 상세 조회, 참여, 신고처럼 투표를 가리키는 요청은 `WHERE public_id = :publicId`로 투표를 찾은 뒤 내부 id로 이어서 처리한다.
-
-참여 수는 위 결과의 poll ID 묶음으로 한 번에 집계한다. 투표마다 따로 세는 N+1을 피한다.
-
-```sql
-SELECT poll_id, COUNT(*) AS participants
-FROM vote
-WHERE poll_id IN (:pollIds)
-GROUP BY poll_id;
-```
-
-### 결과 집계
-
-```sql
-SELECT o.id, o.content, COUNT(v.id) AS votes
-FROM poll_option o
-LEFT JOIN vote v ON v.poll_id = o.poll_id AND v.option_id = o.id
-WHERE o.poll_id = :pollId
-GROUP BY o.id, o.content, o.position
-ORDER BY o.position;
-```
-
-득표율은 애플리케이션에서 계산한다. 전체 참여가 0건이면 0으로 반환한다. 결과는 항상 투표 기록(vote)에서 계산하므로 집계와 기록이 어긋날 수 없다.
-
-### 참여 여부 (결과 공개 판단)
-
-```sql
--- 회원
-SELECT option_id FROM vote WHERE poll_id = :pollId AND member_id = :memberId;
--- 비회원
-SELECT option_id FROM vote WHERE poll_id = :pollId AND anon_id = :anonId;
-```
-
-두 쿼리 모두 중복 방지용 유니크 인덱스를 그대로 사용한다. 결과를 공개할지는 "마감 후이거나 이 조회에 행이 있는가"로 판단한다.
-
-### 참여 저장
-
-```sql
--- 1) 트랜잭션 안에서 투표 상태 확인
-SELECT status, close_at FROM poll WHERE id = :pollId;
--- 2) 저장 (유니크·복합 외래키 위반이면 예외)
-INSERT INTO vote (poll_id, option_id, member_id, anon_id, created_at, updated_at)
-VALUES (:pollId, :optionId, :memberId, :anonId, :now, :now);
-```
-
-- 참여 처리 순서와 동시 요청(진 쪽 409)은 [03-참여하기](features/03-참여하기.md)와 [동시성·중복 방지](engineering/동시성-중복-방지.md)가 기준이다. 이 문서는 두 곳에 영향을 주는 스키마 쪽만 적는다.
-- 요청은 선택지 id가 아니라 표시 순서(position)로 선택지를 가리키고, 서버가 (투표, position)으로 선택지 id를 찾는다. 해당 순서의 선택지가 없으면 400으로 응답한다. 복합 외래키는 그래도 DB 단의 마지막 방어선으로 둔다.
-- 마감 판단은 요청을 받은 시점에 한 번만 한다. (P-11)
-
-### 관리자 신고 대기 목록
-
-```sql
-SELECT id, poll_id, reason, created_at
-FROM report
-WHERE status = 'PENDING'
-ORDER BY created_at, id
-LIMIT :size;
-```
+| 쿼리 | 스키마를 쓰는 방식 |
+| --- | --- |
+| 투표 목록 | `status = 'PUBLIC'`인 투표를 내부 id 내림차순으로 읽고, 커서는 마지막 항목의 id를 밖에서 해석할 수 없는 문자열로 담는다. 응답에는 public_id만 담는다 |
+| 투표 한 건 | 상세·참여·신고는 `public_id`(유니크)로 투표를 찾은 뒤 내부 id로 이어서 처리한다 |
+| 참여 수 | 목록 한 페이지의 투표 ID를 `IN`으로 묶어 `GROUP BY poll_id` 한 번으로 센다(투표마다 따로 세는 N+1을 피한다) |
+| 결과 집계 | 선택지별 득표 수를 vote에서 센다. 득표가 없는 선택지도 0으로 나온다. 결과는 항상 기록에서 계산하므로 집계와 기록이 어긋날 수 없다. 비율은 서버가 계산하지 않는다 |
+| 참여 여부 | 회원은 `(poll_id, member_id)`, 비회원은 `(poll_id, anon_id)`로 찾는다. 중복 방지용 유니크 인덱스를 그대로 쓴다 |
+| 참여 저장 | 요청은 선택지를 순번(position)으로 가리키고 서버가 선택지 id를 찾는다. 저장할 때 유니크·복합 외래키가 마지막 방어선이다. 처리 순서와 동시 요청은 [03-참여하기](features/03-참여하기.md)와 [동시성·중복 방지](engineering/동시성-중복-방지.md)가 기준이다 |
+| 관리자 신고 목록 | 상태 하나(없으면 PENDING)로 거르고 접수 순(id 오름차순)으로 읽는다. 커서는 마지막 신고 id다([설계-결정](engineering/설계-결정.md)) |
