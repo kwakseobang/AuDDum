@@ -1,9 +1,9 @@
 ---
 issue: 109
-features: [01-둘러보기, 04-결과-보기, 05-신고하기]
+features: [없음]
 ids: [UC-01, UC-02, UC-13, UC-14, P-03, P-07, P-18, P-23, P-25, R-POLL-07, R-POLL-10, R-POLL-18, R-POLL-19, R-POLL-21, R-POLL-22, R-REPORT-01, R-REPORT-02, R-REPORT-03, R-REPORT-04]
 decisions: []
-status: 진행 중
+status: 완료
 ---
 
 # 둘러보기·결과 보기·신고하기 기능 페이지

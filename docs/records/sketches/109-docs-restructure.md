@@ -1,9 +1,9 @@
 ---
 issue: 109
-features: [03-참여하기]
+features: [없음]
 ids: [P-11, R-VOTE-03]
 decisions: []
-status: 진행 중
+status: 완료
 ---
 
 # 폴더 정리와 사용자-시나리오 폐지

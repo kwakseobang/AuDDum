@@ -3,7 +3,7 @@ issue: 114
 features: [없음]
 ids: []
 decisions: []
-status: 진행 중
+status: 완료
 ---
 
 # 기능 페이지의 오류 코드·테스트 이름을 코드와 대조한다

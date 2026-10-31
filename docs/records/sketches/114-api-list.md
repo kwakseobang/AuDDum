@@ -3,7 +3,7 @@ issue: 114
 features: [없음]
 ids: []
 decisions: []
-status: 진행 중
+status: 완료
 ---
 
 # 읽을 수 있는 API 목록을 코드에서 만든다

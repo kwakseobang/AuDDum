@@ -1,9 +1,9 @@
 ---
 issue: 114
-features: [02-투표-만들기, 05-신고하기, 06-관리자-조치]
+features: [없음]
 ids: [P-28, R-POLL-03, R-POLL-04, R-MEMBER-09]
 decisions: []
-status: 진행 중
+status: 완료
 ---
 
 # 오류 코드 표를 코드에서 만들고 예외-응답 문서를 없앤다
