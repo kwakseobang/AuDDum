@@ -125,6 +125,19 @@ public class DocsCheckTest {
 
         var src = DocsCheck.check(fixture(Map.of("src/main/java/B.java", "// 아키텍처 §2를 따른다\nclass B {}\n")));
         expect("src의 절 번호 참조는 실패다", hasError(src, "src/main/java/B.java:1", "절 번호 참조"), src.errors().toString());
+
+        var chapter = DocsCheck.check(fixture(Map.of("docs/기능.md", "[인증](인증.md) 3절에 있다. 아키텍처 2장, 도메인 3~6장\n")));
+        expect("N장·N절 참조도 실패다", hasError(chapter, "docs/기능.md:1", "절 번호 참조"), chapter.errors().toString());
+        expect("N장·N절 참조를 센다", chapter.sectionRefs().get("docs") == 3, chapter.sectionRefs().toString());
+
+        var words = DocsCheck.check(fixture(Map.of("docs/기능.md", "작업 절차와 장애 대응, 1개월 차\n")));
+        expect("절차·장애 같은 낱말은 절 번호가 아니다", words.errors().isEmpty(), words.errors().toString());
+
+        var record = DocsCheck.check(fixture(Map.of("docs/records/sketches/README.md", "그때는 3장에 있었다\n")));
+        var example = DocsCheck.check(fixture(Map.of("docs/기능.md", "절 번호(`§3`, `2장`)는 쓰지 않는다\n")));
+        expect("코드 글꼴 안의 표기는 예시라 세지 않는다", example.errors().isEmpty(), example.errors().toString());
+
+        expect("시점 기록의 절 번호는 검사하지 않는다", record.errors().isEmpty() && record.sectionRefs().get("docs") == 0, record.errors().toString());
     }
 
     static void 하네스_문서의_절_번호_참조는_보고만_한다() throws IOException {
@@ -317,15 +330,15 @@ public class DocsCheckTest {
     }
 
     static void 가독성은_실패시키지_않고_보고만_한다() throws IOException {
-        var page = "# 문서\n\n**규칙**\n\n**커밋 메시지** — 형식\n\n#### 깊은 제목\n\n" + "가".repeat(101) + "다.\n\n"
+        var page = "# 문서\n\n**규칙**\n\n**커밋 메시지** — 형식\n\n*참조 규칙*\n\n- * 목록은 아니다\n\n#### 깊은 제목\n\n" + "가".repeat(101) + "다.\n\n"
             + "> [!NOTE]\n> 하나\n\n> [!NOTE]\n> 둘\n\n> [!WARNING]\n> 셋\n\n## 절\n\n**강조 하나**와 **강조 둘**이 있다.\n";
         var result = DocsCheck.check(fixture(Map.of("docs/문서.md", page)));
         expect("가독성 위반은 오류가 아니다", result.errors().isEmpty(), result.errors().toString());
         for (String kind : List.of(DocsCheck.LONG, DocsCheck.DEEP_HEADING, DocsCheck.BOLD_LINE, DocsCheck.TOO_MANY_ALERTS, DocsCheck.BOLD_HEAVY)) {
             expect("가독성 보고: " + kind, result.readability().stream().anyMatch(r -> r.kind().equals(kind)), result.readability().toString());
         }
-        expect("줄 전체 굵은 글씨는 짧은 덧말(— 형식)이 붙어도 잡는다",
-            result.readability().stream().filter(r -> r.kind().equals(DocsCheck.BOLD_LINE)).count() == 2, result.readability().toString());
+        expect("줄 전체 굵은 글씨는 짧은 덧말(— 형식)이 붙어도 잡고, 줄 전체 기울임 글씨도 잡는다",
+            result.readability().stream().filter(r -> r.kind().equals(DocsCheck.BOLD_LINE)).count() == 3, result.readability().toString());
         var skipped = DocsCheck.check(fixture(Map.of(
             "docs/records/sketches/README.md", "**규칙**\n", "docs/generated/표.md", "#### 생성\n", "docs/문서.md", "```\n#### 코드 안\n```\n")));
         expect("기록·생성 문서와 코드 블록은 보지 않는다", skipped.readability().isEmpty(), skipped.readability().toString());
