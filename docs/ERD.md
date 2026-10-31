@@ -23,7 +23,7 @@ AuDDum(어떰)의 확정 정책과 [도메인 모델](domain/도메인-모델.md
 
 ## 1. 정책 → 모델 반영
 
-확정된 정책 중 데이터 모델에 직접 영향을 주는 것만 모았다. 응답 코드나 화면 규칙은 API 설계 단계에서 다룬다. 이 문서의 컬럼 타입, 제약조건, 인덱스는 모두 **[기술 초안]**이며 MySQL을 기준으로 한다.
+확정된 정책 중 데이터 모델에 직접 영향을 주는 것만 모았다. 응답 코드나 화면 규칙은 API 설계 단계에서 다룬다. 이 문서의 컬럼 타입, 제약조건, 인덱스는 모두 `[기술 초안]`이며 MySQL을 기준으로 한다.
 
 | 확정 정책 | 모델 반영 | 관련 테이블 |
 | --- | --- | --- |
@@ -47,7 +47,7 @@ AuDDum(어떰)의 확정 정책과 [도메인 모델](domain/도메인-모델.md
 
 ## 2. 애그리거트와 설계 결정
 
-애그리거트는 Member, Poll, Vote, Report, AdminAction 다섯 개로 나눈다. PRD의 영역(Member, Authentication, Poll, PollOption, Vote, Report, Admin) 중 Authentication은 Member에, PollOption은 Poll에 포함시켰다.
+애그리거트는 Member, Poll, Vote, Report, AdminAction 다섯 개로 나눈다. PRD의 영역은 Member, Authentication, Poll, PollOption, Vote, Report, Admin이다. 그중 Authentication은 Member에, PollOption은 Poll에 포함시켰다.
 
 | 애그리거트 | 구성 | 테이블 |
 | --- | --- | --- |
@@ -62,7 +62,7 @@ AuDDum(어떰)의 확정 정책과 [도메인 모델](domain/도메인-모델.md
 ### 설계 결정
 
 - **Vote를 Poll 안에 넣지 않는다.** 참여가 쌓일수록 Poll을 불러오고 잠그는 범위가 커지고, 중복 참여 방지는 DB 유니크 제약이 맡기 때문이다. Vote는 poll_id와 option_id 값으로만 Poll을 가리킨다.
-- **애그리거트 사이는 ID 값으로만 참조한다.** 예: Vote는 Poll 객체가 아니라 pollId를 가진다. JPA 연관관계를 최소화해 불필요한 로딩을 줄인다. **[기술 초안]**
+- **애그리거트 사이는 ID 값으로만 참조한다.** 예: Vote는 Poll 객체가 아니라 pollId를 가진다. JPA 연관관계를 최소화해 불필요한 로딩을 줄인다. `[기술 초안]`
 - **마감은 저장하지 않고 계산한다.** Poll이 `isClosed(now)`를 제공하고, 참여 가능 여부(공개 상태이면서 마감 전)도 Poll이 판단한다. now는 한 곳에서 주입하는 시각 하나만 쓴다.
 - **결과 공개 규칙은 Poll이 갖고, 참여 여부는 서비스가 모아 넘긴다.** "마감 후이거나 이 신원이 참여했는가" 중 마감은 Poll(`isResultOpen(participated, now)`)이 판단하고, 이 신원이 참여했는가는 Vote 기록을 읽는 쪽(조회 서비스)이 구해서 넘긴다.
 - **중복 참여는 DB 유니크 제약이 최종 방어선이다.** 애플리케이션의 사전 조회는 빠른 응답을 위한 것이고, 유니크 제약 위반 예외(외래키·CHECK 위반은 제외)를 409 "이미 참여" 응답으로 변환한다.
@@ -123,7 +123,7 @@ vote는 poll이 아니라 poll_option을 통해 poll에 연결된다. (poll_id, 
 
 ## 4. 테이블 정의
 
-테이블이 8개다. **[기술 초안]**
+테이블이 8개다. `[기술 초안]`
 
 - 시각 컬럼은 모두 한국 시간(KST) 기준으로 저장하는 DATETIME(6)이고, PK는 BIGINT AUTO_INCREMENT다.
 - 모든 테이블이 `created_at`·`updated_at`을 가지며 엔티티의 부모 `BaseEntity`가 자동으로 채운다.
@@ -258,7 +258,7 @@ V1에는 제약(UNIQUE, CHECK, FK)과 그것이 쓰는 인덱스만 둔다. 이�
 | report (status, created_at) | 관리자 신고 대기 목록 | 대기 건수가 많을 때 정렬 비용 |
 | admin_action (admin_id, created_at) | 관리자별 이력 조회 | admin_id 외래키 인덱스만으로 충분한가 |
 
-### vote 테이블 DDL **[기술 초안]**
+### vote 테이블 DDL `[기술 초안]`
 
 ```sql
 CREATE TABLE vote (
@@ -288,7 +288,7 @@ CREATE TABLE vote (
 
 ## 6. 핵심 쿼리 패턴
 
-구현 전에 인덱스와 제약이 이 쿼리들을 받쳐 주는지 확인하기 위한 **[기술 초안]**이다. 성능 수치는 측정하기 전에는 주장하지 않는다.
+구현 전에 인덱스와 제약이 이 쿼리들을 받쳐 주는지 확인하기 위한 `[기술 초안]`이다. 성능 수치는 측정하기 전에는 주장하지 않는다.
 
 ### 목록 (커서 기반)
 

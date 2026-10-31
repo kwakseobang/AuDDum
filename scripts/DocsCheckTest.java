@@ -45,6 +45,8 @@ public class DocsCheckTest {
         기능_페이지의_오류_코드와_상태를_코드와_맞춰_본다();
         기능_페이지의_테스트_클래스_이름을_코드와_맞춰_본다();
         기능_페이지의_API_목록을_OpenAPI_문서와_맞춰_본다();
+        가독성은_실패시키지_않고_보고만_한다();
+        가독성에서_허용한_굵은_글씨는_세지_않는다();
 
         System.out.println(total + "개 중 " + (total - failures.size()) + "개 통과");
         failures.forEach(f -> System.out.println("실패: " + f));
@@ -312,6 +314,27 @@ public class DocsCheckTest {
 
         var noFile = DocsCheck.check(fixture(Map.of("docs/features/01-둘러보기.md", PAGE_HEAD + API_ROWS)));
         expect("OpenAPI 문서가 없는 저장소에서는 건너뛴다", noFile.errors().isEmpty(), noFile.errors().toString());
+    }
+
+    static void 가독성은_실패시키지_않고_보고만_한다() throws IOException {
+        var page = "# 문서\n\n**규칙**\n\n**커밋 메시지** — 형식\n\n#### 깊은 제목\n\n" + "가".repeat(101) + "다.\n\n"
+            + "> [!NOTE]\n> 하나\n\n> [!NOTE]\n> 둘\n\n> [!WARNING]\n> 셋\n\n## 절\n\n**강조 하나**와 **강조 둘**이 있다.\n";
+        var result = DocsCheck.check(fixture(Map.of("docs/문서.md", page)));
+        expect("가독성 위반은 오류가 아니다", result.errors().isEmpty(), result.errors().toString());
+        for (String kind : List.of(DocsCheck.LONG, DocsCheck.DEEP_HEADING, DocsCheck.BOLD_LINE, DocsCheck.TOO_MANY_ALERTS, DocsCheck.BOLD_HEAVY)) {
+            expect("가독성 보고: " + kind, result.readability().stream().anyMatch(r -> r.kind().equals(kind)), result.readability().toString());
+        }
+        expect("줄 전체 굵은 글씨는 짧은 덧말(— 형식)이 붙어도 잡는다",
+            result.readability().stream().filter(r -> r.kind().equals(DocsCheck.BOLD_LINE)).count() == 2, result.readability().toString());
+        var skipped = DocsCheck.check(fixture(Map.of(
+            "docs/records/sketches/README.md", "**규칙**\n", "docs/generated/표.md", "#### 생성\n", "docs/문서.md", "```\n#### 코드 안\n```\n")));
+        expect("기록·생성 문서와 코드 블록은 보지 않는다", skipped.readability().isEmpty(), skipped.readability().toString());
+    }
+
+    static void 가독성에서_허용한_굵은_글씨는_세지_않는다() throws IOException {
+        var page = "## 절\n\n- **라벨이다.** 설명\n- **또 라벨.** 설명\n\n질문은 **1~500자**, 선택지는 **2~5개**다. **R-POLL-01** 정의.\n\n| **표 칸 라벨.** 설명 | **둘째 칸 라벨** |\n\n> [!NOTE]\n> **한계**(막을 수 없는 것)\n\n**핵심 문장 하나.** 이어지는 말.\n";
+        var result = DocsCheck.check(fixture(Map.of("docs/문서.md", page)));
+        expect("목록·표 칸 라벨, 숫자, R-ID와 핵심 문장 하나는 허용한다", result.readability().isEmpty(), result.readability().toString());
     }
 
     static Path fixture(Map<String, String> overrides) throws IOException {
